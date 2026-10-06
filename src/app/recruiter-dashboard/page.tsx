@@ -1,12 +1,12 @@
 'use client';
 
-import AppLayout from '@/components/AppLayout';
-import RecruiterDashboardContent from './components/RecruiterDashboardContent';
+import RecruiterLayout from '@/components/RecruiterLayout';
+import RecruiterOverview from './components/RecruiterOverview';
 
 export default function RecruiterDashboardPage() {
   return (
-    <AppLayout>
-      <RecruiterDashboardContent />
-    </AppLayout>
+    <RecruiterLayout pageTitle="Vue d'ensemble" pageSubtitle="Tableau de bord recruteur">
+      <RecruiterOverview />
+    </RecruiterLayout>
   );
 }
