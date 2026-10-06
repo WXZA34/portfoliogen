@@ -120,6 +120,12 @@ export default function TalentHubLanding() {
             )}
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm text-violet-700 hover:text-violet-900 font-semibold border border-violet-200 rounded-xl hover:bg-violet-50 transition-colors">
+              <Icon name="BriefcaseIcon" size={14} />
+              Espace Recruteur
+            </Link>
             <Link href="/login" className="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">
               Connexion
             </Link>
@@ -165,6 +171,18 @@ export default function TalentHubLanding() {
           </Link>
         </div>
         <p className="text-sm text-slate-400 mt-4">Gratuit · Aucune carte bancaire requise · Publié en 5 min</p>
+
+        {/* Recruiter CTA Banner */}
+        <div className="mt-10 inline-flex items-center gap-3 px-6 py-3 bg-slate-900 rounded-2xl text-sm text-slate-300 shadow-lg">
+          <Icon name="BriefcaseIcon" size={16} className="text-violet-400 shrink-0" />
+          <span>Vous êtes recruteur ?</span>
+          <Link
+            href="/login"
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
+            Accéder à l&apos;Espace Recruteur
+            <Icon name="ArrowRightIcon" size={14} />
+          </Link>
+        </div>
       </section>
 
       {/* Stats */}
