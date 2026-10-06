@@ -31,6 +31,8 @@ const translations = {
       tools: 'Outils',
       preview: 'Aperçu',
       collapse: 'Réduire',
+      recruiter: 'Recruteur',
+      recruiterDashboard: 'Dashboard Recruteur',
     },
     // Topbar
     topbar: {
@@ -370,6 +372,8 @@ const translations = {
       tools: 'Tools',
       preview: 'Preview',
       collapse: 'Collapse',
+      recruiter: 'Recruiter',
+      recruiterDashboard: 'Recruiter Dashboard',
     },
     topbar: {
       search: 'Search...',

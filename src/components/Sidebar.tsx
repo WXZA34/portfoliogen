@@ -34,9 +34,10 @@ const navItems: NavItem[] = [
   { labelKey: 'publicPortfolio', href: '/public-portfolio-view', icon: 'GlobeIcon', groupKey: 'preview' },
   { labelKey: 'landing', href: '/landing', icon: 'HomeIcon', groupKey: 'preview' },
   { labelKey: 'recruiterSpace', href: '/recruiter-space', icon: 'SearchIcon', groupKey: 'preview' },
+  { labelKey: 'recruiterDashboard', href: '/recruiter-dashboard', icon: 'BuildingIcon', groupKey: 'recruiter' },
 ];
 
-const groupOrder = ['overview', 'content', 'optimize', 'ai', 'tools', 'preview'];
+const groupOrder = ['overview', 'content', 'optimize', 'ai', 'tools', 'preview', 'recruiter'];
 
 interface SidebarProps {
   collapsed: boolean;
