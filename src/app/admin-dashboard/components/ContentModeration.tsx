@@ -39,6 +39,12 @@ interface ContentItem {
   sections?: string[];
   colors?: string[];
   previewUrl?: string;
+  // Credential specific
+  issuer?: string;
+  issueDate?: string;
+  expiryDate?: string;
+  credentialId?: string;
+  verificationUrl?: string;
 }
 
 const PORTFOLIOS: ContentItem[] = [
@@ -170,10 +176,38 @@ const TEMPLATES: ContentItem[] = [
 ];
 
 const CREDENTIALS: ContentItem[] = [
-  { id: 'c1', title: 'AWS Solutions Architect - Thomas M.', author: 'Thomas Moreau', submittedAt: 'il y a 1h', status: 'pending', type: 'credential', category: 'Cloud' },
-  { id: 'c2', title: 'Google Analytics Certified - Sophie L.', author: 'Sophie Laurent', submittedAt: 'il y a 3h', status: 'pending', type: 'credential', category: 'Marketing' },
-  { id: 'c3', title: 'PMP Certification - Antoine B.', author: 'Antoine Bernard', submittedAt: 'il y a 5h', status: 'pending', type: 'credential', category: 'Management' },
-  { id: 'c4', title: 'Scrum Master - Léa R.', author: 'Léa Rousseau', submittedAt: 'il y a 1j', status: 'approved', type: 'credential', category: 'Agile' },
+  {
+    id: 'c1', title: 'AWS Solutions Architect', author: 'Thomas Moreau', submittedAt: 'il y a 1h',
+    status: 'pending', type: 'credential', category: 'Cloud',
+    issuer: 'Amazon Web Services', issueDate: 'Janvier 2024', expiryDate: 'Janvier 2027',
+    credentialId: 'AWS-SAA-C03-TM2024', verificationUrl: 'https://aws.amazon.com/verify',
+    description: 'Certification AWS Solutions Architect Associate validant la conception de systèmes distribués sur AWS.',
+    skills: ['EC2', 'S3', 'RDS', 'Lambda', 'CloudFormation', 'IAM'],
+  },
+  {
+    id: 'c2', title: 'Google Analytics Certified', author: 'Sophie Laurent', submittedAt: 'il y a 3h',
+    status: 'pending', type: 'credential', category: 'Marketing',
+    issuer: 'Google', issueDate: 'Mars 2024', expiryDate: 'Mars 2025',
+    credentialId: 'GA4-SL-2024-03', verificationUrl: 'https://skillshop.google.com/verify',
+    description: 'Certification Google Analytics 4 attestant la maîtrise de l\'analyse de données web et des rapports avancés.',
+    skills: ['Google Analytics 4', 'Data Studio', 'Tag Manager', 'Conversion Tracking'],
+  },
+  {
+    id: 'c3', title: 'PMP Certification', author: 'Antoine Bernard', submittedAt: 'il y a 5h',
+    status: 'pending', type: 'credential', category: 'Management',
+    issuer: 'Project Management Institute', issueDate: 'Juin 2023', expiryDate: 'Juin 2026',
+    credentialId: 'PMP-AB-2023-06', verificationUrl: 'https://pmi.org/certifications/verify',
+    description: 'Project Management Professional — certification internationale en gestion de projets complexes.',
+    skills: ['Agile', 'Scrum', 'Risk Management', 'Stakeholder Management', 'Budget Planning'],
+  },
+  {
+    id: 'c4', title: 'Scrum Master Certified', author: 'Léa Rousseau', submittedAt: 'il y a 1j',
+    status: 'approved', type: 'credential', category: 'Agile',
+    issuer: 'Scrum Alliance', issueDate: 'Septembre 2023', expiryDate: 'Septembre 2025',
+    credentialId: 'CSM-LR-2023-09', verificationUrl: 'https://scrumalliance.org/verify',
+    description: 'Certified ScrumMaster attestant la maîtrise des pratiques Scrum et la facilitation d\'équipes agiles.',
+    skills: ['Scrum', 'Sprint Planning', 'Retrospectives', 'Team Facilitation'],
+  },
 ];
 
 const STATUS_CONFIG = {
@@ -190,9 +224,349 @@ const TABS: { id: ModerationTab; label: string; icon: string; data: ContentItem[
   { id: 'credentials', label: 'Credentials', icon: 'ShieldCheckIcon', data: CREDENTIALS },
 ];
 
+// ─── Public Portfolio Preview ─────────────────────────────────────────────────
+function PublicPortfolioPreview({ item }: { item: ContentItem }) {
+  const initials = item.author.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  return (
+    <div className="rounded-xl border border-border overflow-hidden bg-white text-gray-900">
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-slate-800 to-slate-900 px-8 py-10 text-white">
+        <div className="flex items-center gap-5">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-rose-400 to-purple-500 flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
+            {initials}
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">{item.author}</h1>
+            <p className="text-slate-300 mt-1">{item.category} · {item.location}</p>
+            <p className="text-slate-400 text-sm mt-1">{item.email}</p>
+          </div>
+        </div>
+        {item.experience && (
+          <p className="mt-4 text-slate-300 text-sm leading-relaxed">{item.experience}</p>
+        )}
+      </div>
+      {/* Skills */}
+      {item.skills && item.skills.length > 0 && (
+        <div className="px-8 py-5 border-b border-gray-100">
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Compétences</h2>
+          <div className="flex flex-wrap gap-2">
+            {item.skills.map(s => (
+              <span key={s} className="px-3 py-1 rounded-full bg-rose-50 text-rose-700 text-xs font-semibold border border-rose-100">{s}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Education */}
+      {item.education && (
+        <div className="px-8 py-5 border-b border-gray-100">
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Formation</h2>
+          <p className="text-sm text-gray-700">{item.education}</p>
+        </div>
+      )}
+      {/* Projects */}
+      {item.projects && item.projects.length > 0 && (
+        <div className="px-8 py-5">
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Projets</h2>
+          <div className="space-y-3">
+            {item.projects.map((p, i) => (
+              <div key={i} className="p-4 rounded-xl border border-gray-100 bg-gray-50">
+                <p className="font-semibold text-sm text-gray-900">{p.name}</p>
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{p.description}</p>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {p.tech.map(t => (
+                    <span key={t} className="px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[10px] font-semibold text-gray-600">{t}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Footer CTA */}
+      <div className="px-8 py-5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+        <p className="text-xs text-gray-400">Portfolio vérifié · PortfolioGen</p>
+        <button className="px-4 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors">
+          Contacter
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Public Job Preview ───────────────────────────────────────────────────────
+function PublicJobPreview({ item }: { item: ContentItem }) {
+  return (
+    <div className="rounded-xl border border-border overflow-hidden bg-white text-gray-900">
+      {/* Header */}
+      <div className="px-8 py-6 border-b border-gray-100">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
+            {(item.company || item.author).charAt(0)}
+          </div>
+          <div className="flex-1">
+            <h1 className="text-xl font-bold text-gray-900">{item.title}</h1>
+            <p className="text-blue-600 font-semibold mt-0.5">{item.company || item.author}</p>
+            <div className="flex flex-wrap gap-3 mt-2">
+              {item.location && (
+                <span className="flex items-center gap-1 text-xs text-gray-500">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  {item.location}
+                </span>
+              )}
+              {item.contractType && (
+                <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold">{item.contractType}</span>
+              )}
+              {item.remote && (
+                <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-xs font-semibold">Télétravail</span>
+              )}
+            </div>
+          </div>
+          {item.salary && (
+            <div className="text-right flex-shrink-0">
+              <p className="text-lg font-bold text-emerald-600">{item.salary}</p>
+              <p className="text-xs text-gray-400">Rémunération</p>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Description */}
+      {item.description && (
+        <div className="px-8 py-5 border-b border-gray-100">
+          <h2 className="text-sm font-bold text-gray-700 mb-2">Description du poste</h2>
+          <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
+        </div>
+      )}
+      {/* Requirements */}
+      {item.requirements && item.requirements.length > 0 && (
+        <div className="px-8 py-5 border-b border-gray-100">
+          <h2 className="text-sm font-bold text-gray-700 mb-3">Prérequis</h2>
+          <ul className="space-y-2">
+            {item.requirements.map((req, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">✓</span>
+                {req}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {/* Benefits */}
+      {item.benefits && item.benefits.length > 0 && (
+        <div className="px-8 py-5 border-b border-gray-100">
+          <h2 className="text-sm font-bold text-gray-700 mb-3">Avantages</h2>
+          <div className="flex flex-wrap gap-2">
+            {item.benefits.map((b, i) => (
+              <span key={i} className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-100">{b}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* CTA */}
+      <div className="px-8 py-5 bg-gray-50 flex items-center justify-between">
+        <p className="text-xs text-gray-400">Offre vérifiée · PortfolioGen Jobs</p>
+        <button className="px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors">
+          Postuler maintenant
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Public Template Marketplace Preview ─────────────────────────────────────
+function PublicTemplatePreview({ item }: { item: ContentItem }) {
+  const bg = item.colors?.[0] || '#fff';
+  const accent = item.colors?.[2] || '#6366F1';
+  const text = item.colors?.[1] || '#1A1A1A';
+  return (
+    <div className="space-y-4">
+      {/* Marketplace card */}
+      <div className="rounded-xl border border-border overflow-hidden bg-white text-gray-900">
+        {/* Template live preview */}
+        <div className="relative" style={{ background: bg, minHeight: '220px' }}>
+          <div className="absolute top-2 right-2 flex gap-1">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white" style={{ background: accent }}>{item.category}</span>
+          </div>
+          <div className="px-8 py-8">
+            <div className="max-w-xs mx-auto space-y-4">
+              {/* Avatar */}
+              <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center text-white text-xl font-bold" style={{ background: accent }}>
+                {item.author.charAt(0)}
+              </div>
+              {/* Name placeholder */}
+              <div className="text-center space-y-1">
+                <div className="h-4 rounded-full mx-auto w-36" style={{ background: text, opacity: 0.85 }} />
+                <div className="h-2.5 rounded-full mx-auto w-24" style={{ background: text, opacity: 0.35 }} />
+              </div>
+              {/* Skill pills */}
+              <div className="flex gap-1.5 justify-center flex-wrap">
+                {(item.skills || ['Design', 'UX', 'Figma', 'React']).slice(0, 4).map((s, i) => (
+                  <span key={i} className="px-2 py-0.5 rounded-md text-[10px] font-semibold text-white" style={{ background: accent }}>{s}</span>
+                ))}
+              </div>
+              {/* Progress bars */}
+              <div className="space-y-1.5">
+                {[85, 70, 90].map((w, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="h-1.5 rounded-full flex-1" style={{ background: `${text}20` }}>
+                      <div className="h-full rounded-full" style={{ width: `${w}%`, background: accent }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Sections preview */}
+              {item.sections && (
+                <div className="flex flex-wrap gap-1 justify-center">
+                  {item.sections.slice(0, 4).map((s, i) => (
+                    <span key={i} className="text-[9px] font-semibold px-1.5 py-0.5 rounded" style={{ background: `${text}15`, color: text }}>{s}</span>
+                  ))}
+                  {item.sections.length > 4 && (
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded" style={{ background: `${text}15`, color: text }}>+{item.sections.length - 4}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        {/* Marketplace info */}
+        <div className="px-5 py-4 border-t border-gray-100">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-bold text-gray-900">{item.title}</p>
+              <p className="text-xs text-gray-500 mt-0.5">par {item.author}</p>
+              {item.description && <p className="text-xs text-gray-500 mt-1.5 leading-relaxed line-clamp-2">{item.description}</p>}
+              {item.tags && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {item.tags.map(t => (
+                    <span key={t} className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px] font-semibold">{t}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className="text-xl font-bold text-gray-900">{item.price}€</p>
+              {item.rating !== undefined && item.rating > 0 && (
+                <p className="text-xs text-amber-500 font-semibold">★ {item.rating}</p>
+              )}
+              {item.downloads !== undefined && item.downloads > 0 && (
+                <p className="text-[10px] text-gray-400">{item.downloads} téléchargements</p>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button className="flex-1 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+              Aperçu complet
+            </button>
+            <button className="flex-1 py-2 rounded-lg text-xs font-semibold text-white transition-colors" style={{ background: accent }}>
+              Acheter — {item.price}€
+            </button>
+          </div>
+        </div>
+      </div>
+      {/* Color palette */}
+      {item.colors && (
+        <div>
+          <p className="text-xs font-700 text-muted-foreground uppercase tracking-wide mb-2">Palette de couleurs</p>
+          <div className="flex gap-2">
+            {item.colors.map((color, i) => (
+              <div key={i} className="flex flex-col items-center gap-1">
+                <div className="w-10 h-10 rounded-xl border border-border shadow-sm" style={{ background: color }} />
+                <span className="text-[9px] text-muted-foreground font-600">{color}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Public Credential Preview ────────────────────────────────────────────────
+function PublicCredentialPreview({ item }: { item: ContentItem }) {
+  const categoryColors: Record<string, { bg: string; text: string; border: string }> = {
+    Cloud: { bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE' },
+    Marketing: { bg: '#F0FDF4', text: '#15803D', border: '#BBF7D0' },
+    Management: { bg: '#FFF7ED', text: '#C2410C', border: '#FED7AA' },
+    Agile: { bg: '#F5F3FF', text: '#6D28D9', border: '#DDD6FE' },
+  };
+  const colors = categoryColors[item.category || ''] || { bg: '#F8FAFC', text: '#475569', border: '#E2E8F0' };
+
+  return (
+    <div className="space-y-4">
+      {/* Credential Badge Card */}
+      <div className="rounded-2xl border-2 overflow-hidden" style={{ borderColor: colors.border, background: colors.bg }}>
+        <div className="px-6 py-5">
+          <div className="flex items-start gap-4">
+            {/* Badge icon */}
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ background: colors.text }}>
+              <svg className="w-8 h-8 text-white" fill="none" stroke="white" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg font-bold" style={{ color: colors.text }}>{item.title}</h2>
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white" style={{ background: colors.text }}>
+                  <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                  Vérifié
+                </span>
+              </div>
+              <p className="text-sm font-semibold mt-0.5" style={{ color: colors.text, opacity: 0.8 }}>{item.issuer}</p>
+              <p className="text-sm mt-1" style={{ color: colors.text, opacity: 0.7 }}>Obtenu par <strong>{item.author}</strong></p>
+            </div>
+          </div>
+          {item.description && (
+            <p className="mt-4 text-sm leading-relaxed" style={{ color: colors.text, opacity: 0.75 }}>{item.description}</p>
+          )}
+        </div>
+        {/* Details grid */}
+        <div className="px-6 py-4 border-t" style={{ borderColor: colors.border, background: `${colors.bg}` }}>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Émetteur', value: item.issuer || '—' },
+              { label: 'Catégorie', value: item.category || '—' },
+              { label: 'Date d\'obtention', value: item.issueDate || '—' },
+              { label: 'Expiration', value: item.expiryDate || '—' },
+            ].map(row => (
+              <div key={row.label}>
+                <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: colors.text, opacity: 0.5 }}>{row.label}</p>
+                <p className="text-xs font-semibold mt-0.5" style={{ color: colors.text }}>{row.value}</p>
+              </div>
+            ))}
+          </div>
+          {item.credentialId && (
+            <div className="mt-3 pt-3 border-t" style={{ borderColor: colors.border }}>
+              <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: colors.text, opacity: 0.5 }}>ID de certification</p>
+              <p className="text-xs font-mono mt-0.5" style={{ color: colors.text }}>{item.credentialId}</p>
+            </div>
+          )}
+        </div>
+        {/* Skills */}
+        {item.skills && item.skills.length > 0 && (
+          <div className="px-6 py-4 border-t" style={{ borderColor: colors.border }}>
+            <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: colors.text, opacity: 0.5 }}>Compétences validées</p>
+            <div className="flex flex-wrap gap-1.5">
+              {item.skills.map(s => (
+                <span key={s} className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: `${colors.text}15`, color: colors.text }}>{s}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* Verify CTA */}
+        <div className="px-6 py-4 border-t flex items-center justify-between" style={{ borderColor: colors.border }}>
+          <p className="text-[10px]" style={{ color: colors.text, opacity: 0.5 }}>Certification authentifiée · PortfolioGen</p>
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors" style={{ background: colors.text }}>
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+            Vérifier
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Portfolio Detail Modal ───────────────────────────────────────────────────
 function PortfolioDetailModal({ item, onClose, onApprove, onReject }: { item: ContentItem; onClose: () => void; onApprove: () => void; onReject: () => void }) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'review'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'review' | 'public'>('overview');
   const statusCfg = STATUS_CONFIG[item.status];
 
   return (
@@ -249,16 +623,21 @@ function PortfolioDetailModal({ item, onClose, onApprove, onReject }: { item: Co
             { id: 'overview', label: 'Vue d\'ensemble', icon: 'UserIcon' },
             { id: 'projects', label: 'Projets', icon: 'FolderIcon' },
             { id: 'review', label: 'Vérification', icon: 'ShieldCheckIcon' },
+            { id: 'public', label: 'Rendu final', icon: 'MonitorIcon' },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-1.5 px-3 py-2 text-xs font-600 rounded-t-lg border-b-2 transition-all -mb-px ${
-                activeTab === tab.id ? 'border-rose-500 text-rose-600' : 'border-transparent text-muted-foreground hover:text-foreground'
+                activeTab === tab.id
+                  ? tab.id === 'public' ? 'border-indigo-500 text-indigo-600' : 'border-rose-500 text-rose-600' :'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               <Icon name={tab.icon as any} size={12} />
               {tab.label}
+              {tab.id === 'public' && (
+                <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 text-[9px] font-700">NOUVEAU</span>
+              )}
             </button>
           ))}
         </div>
@@ -344,6 +723,16 @@ function PortfolioDetailModal({ item, onClose, onApprove, onReject }: { item: Co
               ))}
             </div>
           )}
+
+          {activeTab === 'public' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-500/5 border border-indigo-500/20">
+                <Icon name="MonitorIcon" size={14} className="text-indigo-500 flex-shrink-0" />
+                <p className="text-xs text-indigo-700 font-600">Rendu final — Vue publique exactement comme les candidats et recruteurs la voient</p>
+              </div>
+              <PublicPortfolioPreview item={item} />
+            </div>
+          )}
         </div>
 
         {/* Actions */}
@@ -366,7 +755,7 @@ function PortfolioDetailModal({ item, onClose, onApprove, onReject }: { item: Co
 
 // ─── Job Detail Modal ─────────────────────────────────────────────────────────
 function JobDetailModal({ item, onClose, onApprove, onReject }: { item: ContentItem; onClose: () => void; onApprove: () => void; onReject: () => void }) {
-  const [activeTab, setActiveTab] = useState<'details' | 'requirements' | 'review'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'requirements' | 'review' | 'public'>('details');
   const statusCfg = STATUS_CONFIG[item.status];
 
   return (
@@ -422,16 +811,21 @@ function JobDetailModal({ item, onClose, onApprove, onReject }: { item: ContentI
             { id: 'details', label: 'Description', icon: 'FileTextIcon' },
             { id: 'requirements', label: 'Prérequis & Avantages', icon: 'ListChecksIcon' },
             { id: 'review', label: 'Vérification', icon: 'ShieldCheckIcon' },
+            { id: 'public', label: 'Rendu final', icon: 'MonitorIcon' },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-1.5 px-3 py-2 text-xs font-600 rounded-t-lg border-b-2 transition-all -mb-px ${
-                activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-muted-foreground hover:text-foreground'
+                activeTab === tab.id
+                  ? tab.id === 'public' ? 'border-indigo-500 text-indigo-600' : 'border-blue-500 text-blue-600' :'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               <Icon name={tab.icon as any} size={12} />
               {tab.label}
+              {tab.id === 'public' && (
+                <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 text-[9px] font-700">NOUVEAU</span>
+              )}
             </button>
           ))}
         </div>
@@ -510,6 +904,16 @@ function JobDetailModal({ item, onClose, onApprove, onReject }: { item: ContentI
               ))}
             </div>
           )}
+
+          {activeTab === 'public' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-500/5 border border-indigo-500/20">
+                <Icon name="MonitorIcon" size={14} className="text-indigo-500 flex-shrink-0" />
+                <p className="text-xs text-indigo-700 font-600">Rendu final — Vue publique exactement comme les candidats la voient sur la page des offres</p>
+              </div>
+              <PublicJobPreview item={item} />
+            </div>
+          )}
         </div>
 
         {/* Actions */}
@@ -532,7 +936,7 @@ function JobDetailModal({ item, onClose, onApprove, onReject }: { item: ContentI
 
 // ─── Template Detail Modal ────────────────────────────────────────────────────
 function TemplateDetailModal({ item, onClose, onApprove, onReject }: { item: ContentItem; onClose: () => void; onApprove: () => void; onReject: () => void }) {
-  const [activeTab, setActiveTab] = useState<'preview' | 'details' | 'review'>('preview');
+  const [activeTab, setActiveTab] = useState<'preview' | 'details' | 'review' | 'public'>('preview');
   const statusCfg = STATUS_CONFIG[item.status];
 
   return (
@@ -600,16 +1004,21 @@ function TemplateDetailModal({ item, onClose, onApprove, onReject }: { item: Con
             { id: 'preview', label: 'Aperçu', icon: 'EyeIcon' },
             { id: 'details', label: 'Détails', icon: 'InfoIcon' },
             { id: 'review', label: 'Vérification', icon: 'ShieldCheckIcon' },
+            { id: 'public', label: 'Rendu final', icon: 'MonitorIcon' },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-1.5 px-3 py-2 text-xs font-600 rounded-t-lg border-b-2 transition-all -mb-px ${
-                activeTab === tab.id ? 'border-purple-500 text-purple-600' : 'border-transparent text-muted-foreground hover:text-foreground'
+                activeTab === tab.id
+                  ? tab.id === 'public' ? 'border-indigo-500 text-indigo-600' : 'border-purple-500 text-purple-600' :'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               <Icon name={tab.icon as any} size={12} />
               {tab.label}
+              {tab.id === 'public' && (
+                <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 text-[9px] font-700">NOUVEAU</span>
+              )}
             </button>
           ))}
         </div>
@@ -731,6 +1140,16 @@ function TemplateDetailModal({ item, onClose, onApprove, onReject }: { item: Con
               ))}
             </div>
           )}
+
+          {activeTab === 'public' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-500/5 border border-indigo-500/20">
+                <Icon name="MonitorIcon" size={14} className="text-indigo-500 flex-shrink-0" />
+                <p className="text-xs text-indigo-700 font-600">Rendu final — Vue marketplace exactement comme les acheteurs la voient</p>
+              </div>
+              <PublicTemplatePreview item={item} />
+            </div>
+          )}
         </div>
 
         {/* Actions */}
@@ -739,6 +1158,172 @@ function TemplateDetailModal({ item, onClose, onApprove, onReject }: { item: Con
             <button onClick={onApprove} className="flex-1 py-2.5 rounded-xl bg-emerald-500/10 text-sm font-600 text-emerald-600 hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2">
               <Icon name="CheckIcon" size={14} />
               Publier sur la marketplace
+            </button>
+            <button onClick={onReject} className="flex-1 py-2.5 rounded-xl bg-rose-500/10 text-sm font-600 text-rose-600 hover:bg-rose-500/20 transition-all flex items-center justify-center gap-2">
+              <Icon name="XIcon" size={14} />
+              Rejeter
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Credential Detail Modal ──────────────────────────────────────────────────
+function CredentialDetailModal({ item, onClose, onApprove, onReject }: { item: ContentItem; onClose: () => void; onApprove: () => void; onReject: () => void }) {
+  const [activeTab, setActiveTab] = useState<'details' | 'review' | 'public'>('details');
+  const statusCfg = STATUS_CONFIG[item.status];
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+              <Icon name="ShieldCheckIcon" size={16} className="text-emerald-500" />
+            </div>
+            <div>
+              <h3 className="font-700 text-foreground text-sm">Détail du credential</h3>
+              <p className="text-xs text-muted-foreground">Vérification de certification</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-600 ${statusCfg.bg} ${statusCfg.color}`}>
+              <Icon name={statusCfg.icon as any} size={11} />
+              {statusCfg.label}
+            </span>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-all">
+              <Icon name="XIcon" size={16} className="text-muted-foreground" />
+            </button>
+          </div>
+        </div>
+
+        {/* Credential info */}
+        <div className="px-6 py-4 bg-muted/30 border-b border-border flex-shrink-0">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white flex-shrink-0">
+              <Icon name="AwardIcon" size={20} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-700 text-foreground">{item.title}</p>
+              <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                <span className="text-xs text-muted-foreground flex items-center gap-1"><Icon name="UserIcon" size={11} />Par {item.author}</span>
+                {item.issuer && <span className="text-xs text-muted-foreground flex items-center gap-1"><Icon name="BuildingIcon" size={11} />{item.issuer}</span>}
+                <span className="text-xs text-muted-foreground flex items-center gap-1"><Icon name="ClockIcon" size={11} />Soumis {item.submittedAt}</span>
+              </div>
+            </div>
+            {item.category && <span className="text-xs font-600 px-2.5 py-1 rounded-lg bg-card border border-border text-foreground">{item.category}</span>}
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex items-center gap-1 px-6 pt-3 border-b border-border flex-shrink-0">
+          {[
+            { id: 'details', label: 'Informations', icon: 'InfoIcon' },
+            { id: 'review', label: 'Vérification', icon: 'ShieldCheckIcon' },
+            { id: 'public', label: 'Rendu final', icon: 'MonitorIcon' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-600 rounded-t-lg border-b-2 transition-all -mb-px ${
+                activeTab === tab.id
+                  ? tab.id === 'public' ? 'border-indigo-500 text-indigo-600' : 'border-emerald-500 text-emerald-600' :'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon name={tab.icon as any} size={12} />
+              {tab.label}
+              {tab.id === 'public' && (
+                <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 text-[9px] font-700">NOUVEAU</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+          {activeTab === 'details' && (
+            <>
+              {item.description && (
+                <div className="bg-muted/40 rounded-xl p-4">
+                  <p className="text-xs font-700 text-muted-foreground uppercase tracking-wide mb-1.5">Description</p>
+                  <p className="text-sm text-foreground leading-relaxed">{item.description}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Émetteur', value: item.issuer || '—', icon: 'BuildingIcon' },
+                  { label: 'Catégorie', value: item.category || '—', icon: 'TagIcon' },
+                  { label: 'Date d\'obtention', value: item.issueDate || '—', icon: 'CalendarIcon' },
+                  { label: 'Expiration', value: item.expiryDate || '—', icon: 'CalendarCheckIcon' },
+                ].map((row) => (
+                  <div key={row.label} className="bg-muted/40 rounded-xl p-3">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5 flex items-center gap-1">
+                      <Icon name={row.icon as any} size={10} />{row.label}
+                    </p>
+                    <p className="text-xs font-600 text-foreground">{row.value}</p>
+                  </div>
+                ))}
+              </div>
+              {item.credentialId && (
+                <div className="bg-muted/40 rounded-xl p-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">ID de certification</p>
+                  <p className="text-xs font-mono text-foreground">{item.credentialId}</p>
+                </div>
+              )}
+              {item.skills && item.skills.length > 0 && (
+                <div>
+                  <p className="text-xs font-700 text-muted-foreground uppercase tracking-wide mb-2">Compétences validées</p>
+                  <div className="flex flex-wrap gap-2">
+                    {item.skills.map((skill) => (
+                      <span key={skill} className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 text-xs font-600">{skill}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'review' && (
+            <div className="space-y-3">
+              <p className="text-xs font-700 text-muted-foreground uppercase tracking-wide">Checklist de vérification</p>
+              {[
+                { label: 'Émetteur reconnu identifié', ok: !!item.issuer },
+                { label: 'Date d\'obtention renseignée', ok: !!item.issueDate },
+                { label: 'Date d\'expiration précisée', ok: !!item.expiryDate },
+                { label: 'ID de certification fourni', ok: !!item.credentialId },
+                { label: 'Description de la certification', ok: !!(item.description && item.description.length > 30) },
+                { label: 'Compétences validées listées', ok: !!(item.skills && item.skills.length > 0) },
+              ].map((check, i) => (
+                <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border ${check.ok ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-rose-500/20 bg-rose-500/5'}`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${check.ok ? 'bg-emerald-500/20' : 'bg-rose-500/20'}`}>
+                    <Icon name={check.ok ? 'CheckIcon' : 'XIcon'} size={12} className={check.ok ? 'text-emerald-600' : 'text-rose-600'} />
+                  </div>
+                  <p className={`text-xs font-600 ${check.ok ? 'text-emerald-700' : 'text-rose-700'}`}>{check.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeTab === 'public' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-500/5 border border-indigo-500/20">
+                <Icon name="MonitorIcon" size={14} className="text-indigo-500 flex-shrink-0" />
+                <p className="text-xs text-indigo-700 font-600">Rendu final — Badge credential tel qu'affiché sur le portfolio public</p>
+              </div>
+              <PublicCredentialPreview item={item} />
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        {(item.status === 'pending' || item.status === 'flagged') && (
+          <div className="px-6 py-4 border-t border-border flex gap-2 flex-shrink-0">
+            <button onClick={onApprove} className="flex-1 py-2.5 rounded-xl bg-emerald-500/10 text-sm font-600 text-emerald-600 hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2">
+              <Icon name="CheckIcon" size={14} />
+              Valider le credential
             </button>
             <button onClick={onReject} className="flex-1 py-2.5 rounded-xl bg-rose-500/10 text-sm font-600 text-rose-600 hover:bg-rose-500/20 transition-all flex items-center justify-center gap-2">
               <Icon name="XIcon" size={14} />
@@ -794,45 +1379,7 @@ export default function ContentModeration() {
     if (selectedItem.type === 'portfolio') return <PortfolioDetailModal {...props} />;
     if (selectedItem.type === 'job') return <JobDetailModal {...props} />;
     if (selectedItem.type === 'template') return <TemplateDetailModal {...props} />;
-    // Credentials fallback
-    return (
-      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
-        <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-            <h3 className="font-700 text-foreground">Détail du credential</h3>
-            <button onClick={() => setSelectedItem(null)} className="p-1.5 rounded-lg hover:bg-muted transition-all">
-              <Icon name="XIcon" size={16} className="text-muted-foreground" />
-            </button>
-          </div>
-          <div className="px-6 py-5 space-y-4">
-            <p className="font-700 text-foreground">{selectedItem.title}</p>
-            <p className="text-sm text-muted-foreground">Par {selectedItem.author}</p>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: 'Catégorie', value: selectedItem.category ?? '—' },
-                { label: 'Soumis', value: selectedItem.submittedAt },
-                { label: 'Statut', value: STATUS_CONFIG[selectedItem.status].label },
-              ].map((row) => (
-                <div key={row.label} className="bg-muted rounded-xl p-3">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{row.label}</p>
-                  <p className="text-xs font-600 text-foreground">{row.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          {(selectedItem.status === 'pending' || selectedItem.status === 'flagged') && (
-            <div className="px-6 py-4 border-t border-border flex gap-2">
-              <button onClick={() => handleApprove(selectedItem.id)} className="flex-1 py-2 rounded-xl bg-emerald-500/10 text-sm font-600 text-emerald-600 hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2">
-                <Icon name="CheckIcon" size={14} />Approuver
-              </button>
-              <button onClick={() => handleReject(selectedItem.id)} className="flex-1 py-2 rounded-xl bg-rose-500/10 text-sm font-600 text-rose-600 hover:bg-rose-500/20 transition-all flex items-center justify-center gap-2">
-                <Icon name="XIcon" size={14} />Rejeter
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+    return <CredentialDetailModal {...props} />;
   };
 
   return (
