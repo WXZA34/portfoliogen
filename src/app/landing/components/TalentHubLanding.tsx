@@ -121,7 +121,7 @@ export default function TalentHubLanding() {
           </div>
           <div className="flex items-center gap-3">
             <Link
-              href="/login"
+              href="/recruiter-dashboard"
               className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm text-violet-700 hover:text-violet-900 font-semibold border border-violet-200 rounded-xl hover:bg-violet-50 transition-colors">
               <Icon name="BriefcaseIcon" size={14} />
               Espace Recruteur
@@ -177,7 +177,7 @@ export default function TalentHubLanding() {
           <Icon name="BriefcaseIcon" size={16} className="text-violet-400 shrink-0" />
           <span>Vous êtes recruteur ?</span>
           <Link
-            href="/login"
+            href="/recruiter-dashboard"
             className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
             Accéder à l&apos;Espace Recruteur
             <Icon name="ArrowRightIcon" size={14} />
