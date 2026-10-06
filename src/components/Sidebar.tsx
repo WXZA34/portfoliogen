@@ -17,8 +17,10 @@ interface NavItem {
   groupKey: string;
 }
 
-const navItems: NavItem[] = [
+// Job seeker nav items
+const jobSeekerNavItems: NavItem[] = [
   { labelKey: 'dashboard', href: '/', icon: 'LayoutDashboardIcon', groupKey: 'overview' },
+  { labelKey: 'setupWizard', href: '/setup-wizard', icon: 'MapIcon', groupKey: 'overview' },
   { labelKey: 'cvtheque', href: '/c-vth-que-master', icon: 'DatabaseIcon', groupKey: 'content' },
   { labelKey: 'studio', href: '/portfolio-studio', icon: 'PaletteIcon', groupKey: 'content' },
   { labelKey: 'templates', href: '/templates', icon: 'LayoutTemplateIcon', groupKey: 'content' },
@@ -27,17 +29,22 @@ const navItems: NavItem[] = [
   { labelKey: 'analytics', href: '/analytics', icon: 'FlameIcon', groupKey: 'optimize' },
   { labelKey: 'aiAnalysis', href: '/ai-analysis', icon: 'BrainCircuitIcon', groupKey: 'ai' },
   { labelKey: 'crm', href: '/crm', icon: 'BriefcaseIcon', groupKey: 'ai' },
-  { labelKey: 'setupWizard', href: '/setup-wizard', icon: 'MapIcon', groupKey: 'overview' },
   { labelKey: 'coachDashboard', href: '/coach-dashboard', icon: 'UsersIcon', groupKey: 'tools' },
   { labelKey: 'exportTools', href: '/export-tools', icon: 'DownloadIcon', groupKey: 'tools' },
   { labelKey: 'integrations', href: '/integrations', icon: 'PlugIcon', groupKey: 'tools' },
   { labelKey: 'publicPortfolio', href: '/public-portfolio-view', icon: 'GlobeIcon', groupKey: 'preview' },
   { labelKey: 'landing', href: '/landing', icon: 'HomeIcon', groupKey: 'preview' },
-  { labelKey: 'recruiterSpace', href: '/recruiter-space', icon: 'SearchIcon', groupKey: 'preview' },
-  { labelKey: 'recruiterDashboard', href: '/recruiter-dashboard', icon: 'BuildingIcon', groupKey: 'recruiter' },
 ];
 
-const groupOrder = ['overview', 'content', 'optimize', 'ai', 'tools', 'preview', 'recruiter'];
+// Recruiter nav items
+const recruiterNavItems: NavItem[] = [
+  { labelKey: 'recruiterDashboard', href: '/recruiter-dashboard', icon: 'LayoutDashboardIcon', groupKey: 'recruiter' },
+  { labelKey: 'recruiterSpace', href: '/recruiter-space', icon: 'SearchIcon', groupKey: 'recruiter' },
+  { labelKey: 'landing', href: '/landing', icon: 'HomeIcon', groupKey: 'preview' },
+];
+
+const jobSeekerGroupOrder = ['overview', 'content', 'optimize', 'ai', 'tools', 'preview'];
+const recruiterGroupOrder = ['recruiter', 'preview'];
 
 interface SidebarProps {
   collapsed: boolean;
@@ -47,8 +54,14 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const { language, setLanguage, t } = useLanguage();
-  const { user, signOut } = useAuth();
+  const { user, signOut, getUserRole } = useAuth();
   const [showLangMenu, setShowLangMenu] = useState(false);
+
+  const role = getUserRole();
+  const isRecruiter = role === 'recruiter';
+
+  const navItems = isRecruiter ? recruiterNavItems : jobSeekerNavItems;
+  const groupOrder = isRecruiter ? recruiterGroupOrder : jobSeekerGroupOrder;
 
   const grouped = groupOrder.map((groupKey) => ({
     groupKey,
@@ -68,9 +81,25 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <div className={`flex items-center border-b border-border ${collapsed ? 'justify-center px-0 py-4' : 'px-4 py-4 gap-3'}`} style={{ minHeight: 'var(--topbar-height)' }}>
         <AppLogo size={32} />
         {!collapsed && (
-          <span className="font-bold text-lg text-foreground tracking-tight">PortfolioGen</span>
+          <span className="font-bold text-lg text-foreground tracking-tight">TalentHub</span>
         )}
       </div>
+
+      {/* Role badge */}
+      {!collapsed && (
+        <div className={`mx-3 mt-3 mb-1 px-3 py-2 rounded-xl flex items-center gap-2 ${
+          isRecruiter ? 'bg-purple-500/10' : 'bg-blue-500/10'
+        }`}>
+          <Icon
+            name={isRecruiter ? 'BuildingIcon' : 'UserIcon'}
+            size={14}
+            className={isRecruiter ? 'text-purple-500' : 'text-blue-500'}
+          />
+          <span className={`text-xs font-600 ${isRecruiter ? 'text-purple-500' : 'text-blue-500'}`}>
+            {isRecruiter ? 'Espace Recruteur' : 'Espace Candidat'}
+          </span>
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-2">
@@ -158,7 +187,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
         {!collapsed && (
           <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted cursor-pointer mb-2">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-700 flex-shrink-0">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-700 flex-shrink-0 ${isRecruiter ? 'bg-purple-500' : 'bg-primary'}`}>
               {user?.user_metadata?.full_name
                 ? user.user_metadata.full_name.charAt(0).toUpperCase()
                 : user?.email?.charAt(0).toUpperCase() ?? 'U'}

@@ -1,8 +1,9 @@
-
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+
+export type UserRole = 'recruiter' | 'job_seeker' | null;
 
 const AuthContext = createContext<any>({});
 
@@ -21,14 +22,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const supabase = createClient();
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    // Listen for auth changes
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -40,15 +39,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Get the user's role from metadata
+  const getUserRole = (): UserRole => {
+    return user?.user_metadata?.role ?? null;
+  };
+
+  // Get the home route based on role
+  const getRoleHome = (): string => {
+    const role = getUserRole();
+    if (role === 'recruiter') return '/recruiter-dashboard';
+    return '/';
+  };
+
   // Email/Password Sign Up
-  const signUp = async (email: string, password: string, metadata = {}) => {
+  const signUp = async (email: string, password: string, metadata: any = {}) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: metadata?.fullName || '',
-          avatar_url: metadata?.avatarUrl || ''
+          avatar_url: metadata?.avatarUrl || '',
+          role: metadata?.role || 'job_seeker',
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`
       }
@@ -106,7 +118,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signOut,
     getCurrentUser,
     isEmailVerified,
-    getUserProfile
+    getUserProfile,
+    getUserRole,
+    getRoleHome,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

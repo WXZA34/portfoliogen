@@ -14,6 +14,29 @@ function injectTokenFromHeader(request: NextRequest): void {
   request.cookies.set(`sb-${getProjectRef()}-auth-token`, token);
 }
 
+// Routes only accessible by job seekers (role: job_seeker or no role)
+const JOB_SEEKER_ROUTES = [
+  '/',
+  '/c-vth-que-master',
+  '/portfolio-studio',
+  '/templates',
+  '/portfolio-audit',
+  '/campaigns-tracking',
+  '/analytics',
+  '/ai-analysis',
+  '/crm',
+  '/setup-wizard',
+  '/coach-dashboard',
+  '/export-tools',
+  '/integrations',
+];
+
+// Routes only accessible by recruiters
+const RECRUITER_ROUTES = [
+  '/recruiter-dashboard',
+  '/recruiter-space',
+];
+
 export async function middleware(request: NextRequest) {
   injectTokenFromHeader(request);
   let supabaseResponse = NextResponse.next({ request });
@@ -46,18 +69,49 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/public-portfolio-view') ||
     pathname.startsWith('/auth/') ||
     pathname === '/login' ||
-    pathname === '/register';
+    pathname === '/register' ||
+    pathname === '/landing';
 
+  // Not logged in → redirect to login
   if (!user && !isPublicPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/';
-    return NextResponse.redirect(url);
+  if (user) {
+    const role = user.user_metadata?.role as string | undefined;
+
+    // Logged in user on auth page → redirect to their home
+    if (isAuthPage) {
+      const url = request.nextUrl.clone();
+      url.pathname = role === 'recruiter' ? '/recruiter-dashboard' : '/';
+      return NextResponse.redirect(url);
+    }
+
+    // Recruiter trying to access job seeker routes → redirect to recruiter dashboard
+    if (role === 'recruiter') {
+      const isJobSeekerRoute = JOB_SEEKER_ROUTES.some(
+        (route) => pathname === route || (route !== '/' && pathname.startsWith(route))
+      );
+      if (isJobSeekerRoute) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/recruiter-dashboard';
+        return NextResponse.redirect(url);
+      }
+    }
+
+    // Job seeker trying to access recruiter routes → redirect to job seeker home
+    if (role === 'job_seeker' || !role) {
+      const isRecruiterRoute = RECRUITER_ROUTES.some(
+        (route) => pathname === route || pathname.startsWith(route)
+      );
+      if (isRecruiterRoute) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/';
+        return NextResponse.redirect(url);
+      }
+    }
   }
 
   return supabaseResponse;
