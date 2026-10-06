@@ -45,8 +45,10 @@ const recruiterNavItems: NavItem[] = [
   { labelKey: 'landing', href: '/landing', icon: 'HomeIcon', groupKey: 'preview' },
 ];
 
-const jobSeekerGroupOrder = ['overview', 'content', 'optimize', 'ai', 'tools', 'preview'];
-const recruiterGroupOrder = ['recruiter', 'preview'];
+const adminNavItem: NavItem = { labelKey: 'adminDashboard', href: '/admin-dashboard', icon: 'ShieldIcon', groupKey: 'admin' };
+
+const jobSeekerGroupOrder = ['overview', 'content', 'optimize', 'ai', 'tools', 'preview', 'admin'];
+const recruiterGroupOrder = ['recruiter', 'preview', 'admin'];
 
 interface SidebarProps {
   collapsed: boolean;
@@ -65,10 +67,12 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const navItems = isRecruiter ? recruiterNavItems : jobSeekerNavItems;
   const groupOrder = isRecruiter ? recruiterGroupOrder : jobSeekerGroupOrder;
 
+  const allNavItems = [...navItems, adminNavItem];
+
   const grouped = groupOrder.map((groupKey) => ({
     groupKey,
-    label: t.nav[groupKey as keyof typeof t.nav] as string,
-    items: navItems.filter((item) => item.groupKey === groupKey),
+    label: groupKey === 'admin' ? 'Administration' : (t.nav[groupKey as keyof typeof t.nav] as string),
+    items: allNavItems.filter((item) => item.groupKey === groupKey),
   }));
 
   const currentLang = SUPPORTED_LANGUAGES.find((l) => l.code === language);

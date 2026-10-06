@@ -14,7 +14,7 @@ export default function RecruiterLayout({ children, pageTitle, pageSubtitle }: R
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" suppressHydrationWarning>
       <RecruiterSidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
       <RecruiterTopbar sidebarCollapsed={collapsed} pageTitle={pageTitle} pageSubtitle={pageSubtitle} />
       <main

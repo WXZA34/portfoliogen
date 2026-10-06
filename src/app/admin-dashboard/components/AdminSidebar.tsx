@@ -16,51 +16,57 @@ interface NavItem {
 
 const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
   {
-    title: 'Découverte',
+    title: 'Vue Globale',
     items: [
-      { label: 'Vue d\'ensemble', href: '/recruiter-dashboard', icon: 'LayoutDashboardIcon', description: 'KPIs & activité recrutement' },
-      { label: 'Recherche de talents', href: '/recruiter-dashboard/talents', icon: 'SearchIcon', description: 'Explorer les portfolios' },
+      { label: 'Tableau de bord', href: '/admin-dashboard', icon: 'LayoutDashboardIcon', description: 'KPIs & métriques plateforme' },
+      { label: 'Analytics', href: '/admin-dashboard/analytics', icon: 'BarChart2Icon', description: 'Statistiques globales' },
     ],
   },
   {
-    title: 'Recrutement',
+    title: 'Utilisateurs',
     items: [
-      { label: 'Offres d\'emploi', href: '/recruiter-dashboard/jobs', icon: 'BriefcaseIcon', description: 'Gérer vos offres' },
-      { label: 'Pipeline', href: '/recruiter-dashboard/pipeline', icon: 'KanbanSquareIcon', badge: 4, description: 'Suivi des candidatures' },
+      { label: 'Gestion utilisateurs', href: '/admin-dashboard/users', icon: 'UsersIcon', description: 'Candidats & recruteurs' },
+      { label: 'Vérification credentials', href: '/admin-dashboard/credentials', icon: 'ShieldCheckIcon', description: 'Valider les certifications' },
     ],
   },
   {
-    title: 'Communication',
+    title: 'Contenu',
     items: [
-      { label: 'Messagerie', href: '/recruiter-dashboard/messages', icon: 'MessageSquareIcon', badge: 2, description: 'Conversations avec les talents' },
-      { label: 'Entretiens', href: '/recruiter-dashboard/interviews', icon: 'CalendarCheckIcon', description: 'Planifier & gérer les RDV' },
+      { label: 'Portfolios', href: '/admin-dashboard/portfolios', icon: 'LayoutTemplateIcon', description: 'Modération des portfolios' },
+      { label: 'Offres d\'emploi', href: '/admin-dashboard/jobs', icon: 'BriefcaseIcon', description: 'Modération des offres' },
+      { label: 'Marketplace templates', href: '/admin-dashboard/templates', icon: 'Layers2Icon', description: 'Valider les templates' },
     ],
   },
   {
-    title: 'Intelligence',
+    title: 'Modération',
     items: [
-      { label: 'Analytics', href: '/recruiter-dashboard/analytics', icon: 'BarChart2Icon', description: 'Performances & insights' },
+      { label: 'Signalements', href: '/admin-dashboard/reports', icon: 'FlagIcon', badge: 5, description: 'Traiter les signalements' },
+    ],
+  },
+  {
+    title: 'Configuration',
+    items: [
+      { label: 'Paramètres du site', href: '/admin-dashboard/settings', icon: 'SettingsIcon', description: 'Configuration globale' },
     ],
   },
 ];
 
-interface RecruiterSidebarProps {
+interface AdminSidebarProps {
   collapsed: boolean;
   onToggle: () => void;
 }
 
-export default function RecruiterSidebar({ collapsed, onToggle }: RecruiterSidebarProps) {
+export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
 
   const isActive = (href: string) => {
-    if (href === '/recruiter-dashboard') return pathname === '/recruiter-dashboard';
+    if (href === '/admin-dashboard') return pathname === '/admin-dashboard';
     return pathname.startsWith(href);
   };
 
   return (
     <aside
-      suppressHydrationWarning
       className={`fixed left-0 top-0 h-full z-40 flex flex-col sidebar-transition ${
         collapsed ? 'w-16' : 'w-64'
       }`}
@@ -73,34 +79,33 @@ export default function RecruiterSidebar({ collapsed, onToggle }: RecruiterSideb
         }`}
         style={{ minHeight: 'var(--topbar-height)' }}
       >
-        <div className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center flex-shrink-0">
-          <Icon name="BuildingIcon" size={16} className="text-white" />
+        <div className="w-8 h-8 rounded-xl bg-rose-600 flex items-center justify-center flex-shrink-0">
+          <Icon name="ShieldIcon" size={16} className="text-white" />
         </div>
         {!collapsed && (
           <div>
             <p className="font-800 text-sm text-foreground leading-none">TalentHub</p>
-            <p className="text-[10px] text-violet-500 font-600 mt-0.5 uppercase tracking-widest">Recruteur</p>
+            <p className="text-[10px] text-rose-500 font-600 mt-0.5 uppercase tracking-widest">Admin</p>
           </div>
         )}
       </div>
 
-      {/* Recruiter identity badge */}
+      {/* Admin identity badge */}
       {!collapsed && (
         <div className="mx-3 mt-3 mb-1 space-y-1">
-          <div className="px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center flex-shrink-0">
+          <div className="px-3 py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-rose-600 flex items-center justify-center flex-shrink-0">
               <span className="text-white text-xs font-800">
-                {user?.user_metadata?.full_name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? 'R'}
+                {user?.user_metadata?.full_name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? 'A'}
               </span>
             </div>
             <div className="min-w-0">
               <p className="text-xs font-700 text-foreground truncate">
-                {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Recruteur'}
+                {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Admin'}
               </p>
-              <p className="text-[10px] text-violet-500 font-600">Espace Recruteur</p>
+              <p className="text-[10px] text-rose-500 font-600">Super Administrateur</p>
             </div>
           </div>
-          {/* Switch to candidat space */}
           <Link
             href="/"
             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-500 transition-all duration-150 border border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300"
@@ -113,7 +118,7 @@ export default function RecruiterSidebar({ collapsed, onToggle }: RecruiterSideb
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-5">
+      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-4">
         {NAV_SECTIONS.map((section) => (
           <div key={section.title}>
             {!collapsed && (
@@ -131,14 +136,13 @@ export default function RecruiterSidebar({ collapsed, onToggle }: RecruiterSideb
                     title={collapsed ? item.label : undefined}
                     className={`flex items-center gap-3 px-2.5 py-2.5 rounded-xl transition-all duration-150 group relative ${
                       active
-                        ? 'bg-violet-500/10 text-violet-600 border border-violet-500/20'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent'
+                        ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' :'text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent'
                     } ${collapsed ? 'justify-center' : ''}`}
                   >
                     <Icon
                       name={item.icon as any}
                       size={17}
-                      className={active ? 'text-violet-600' : 'text-muted-foreground group-hover:text-foreground'}
+                      className={active ? 'text-rose-600' : 'text-muted-foreground group-hover:text-foreground'}
                     />
                     {!collapsed && (
                       <div className="flex-1 min-w-0">
@@ -149,12 +153,12 @@ export default function RecruiterSidebar({ collapsed, onToggle }: RecruiterSideb
                       </div>
                     )}
                     {!collapsed && item.badge && item.badge > 0 && (
-                      <span className="bg-violet-600 text-white text-[10px] font-700 rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none flex-shrink-0">
+                      <span className="bg-rose-600 text-white text-[10px] font-700 rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none flex-shrink-0">
                         {item.badge}
                       </span>
                     )}
                     {collapsed && item.badge && item.badge > 0 && (
-                      <span className="absolute top-1 right-1 w-2 h-2 bg-violet-600 rounded-full" />
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-rose-600 rounded-full" />
                     )}
                     {collapsed && (
                       <span className="absolute left-full ml-2 px-2.5 py-1.5 bg-foreground text-background text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
@@ -173,12 +177,12 @@ export default function RecruiterSidebar({ collapsed, onToggle }: RecruiterSideb
       <div className="border-t border-border p-3 space-y-1">
         {!collapsed && (
           <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-muted cursor-pointer group">
-            <div className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center text-white text-sm font-700 flex-shrink-0">
-              {user?.user_metadata?.full_name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? 'R'}
+            <div className="w-8 h-8 rounded-xl bg-rose-600 flex items-center justify-center text-white text-sm font-700 flex-shrink-0">
+              {user?.user_metadata?.full_name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? 'A'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-600 text-foreground truncate">
-                {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Recruteur'}
+                {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Admin'}
               </p>
               <p className="text-xs text-muted-foreground truncate">{user?.email || ''}</p>
             </div>
