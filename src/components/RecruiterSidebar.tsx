@@ -36,6 +36,12 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
       { label: 'Entretiens', href: '/recruiter-dashboard/interviews', icon: 'CalendarCheckIcon', description: 'Planifier & gérer les RDV' },
     ],
   },
+  {
+    title: 'Intelligence',
+    items: [
+      { label: 'Analytics', href: '/recruiter-dashboard/analytics', icon: 'BarChart2Icon', description: 'Performances & insights' },
+    ],
+  },
 ];
 
 interface RecruiterSidebarProps {
@@ -79,18 +85,29 @@ export default function RecruiterSidebar({ collapsed, onToggle }: RecruiterSideb
 
       {/* Recruiter identity badge */}
       {!collapsed && (
-        <div className="mx-3 mt-3 mb-1 px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-800">
-              {user?.user_metadata?.full_name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? 'R'}
-            </span>
+        <div className="mx-3 mt-3 mb-1 space-y-1">
+          <div className="px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-xs font-800">
+                {user?.user_metadata?.full_name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? 'R'}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-700 text-foreground truncate">
+                {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Recruteur'}
+              </p>
+              <p className="text-[10px] text-violet-500 font-600">Espace Recruteur</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-xs font-700 text-foreground truncate">
-              {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Recruteur'}
-            </p>
-            <p className="text-[10px] text-violet-500 font-600">Espace Recruteur</p>
-          </div>
+          {/* Switch to candidat space */}
+          <Link
+            href="/"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-500 transition-all duration-150 border border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300"
+          >
+            <Icon name="UserIcon" size={13} className="text-blue-500" />
+            <span>Espace Candidat</span>
+            <Icon name="ArrowRightIcon" size={12} className="ml-auto opacity-60" />
+          </Link>
         </div>
       )}
 

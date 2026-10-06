@@ -21,9 +21,11 @@ interface NavItem {
 const jobSeekerNavItems: NavItem[] = [
   { labelKey: 'dashboard', href: '/', icon: 'LayoutDashboardIcon', groupKey: 'overview' },
   { labelKey: 'setupWizard', href: '/setup-wizard', icon: 'MapIcon', groupKey: 'overview' },
+  { labelKey: 'jobs', href: '/jobs', icon: 'BriefcaseIcon', groupKey: 'overview' },
   { labelKey: 'cvtheque', href: '/c-vth-que-master', icon: 'DatabaseIcon', groupKey: 'content' },
   { labelKey: 'studio', href: '/portfolio-studio', icon: 'PaletteIcon', groupKey: 'content' },
-  { labelKey: 'templates', href: '/templates', icon: 'LayoutTemplateIcon', groupKey: 'content' },
+  { labelKey: 'portfolioEditor', href: '/portfolio-editor', icon: 'LayoutTemplateIcon', groupKey: 'content' },
+  { labelKey: 'templates', href: '/templates', icon: 'Layers2Icon', groupKey: 'content' },
   { labelKey: 'audit', href: '/portfolio-audit', icon: 'ShieldCheckIcon', badge: 3, groupKey: 'optimize' },
   { labelKey: 'campaigns', href: '/campaigns-tracking', icon: 'BarChart2Icon', groupKey: 'optimize' },
   { labelKey: 'analytics', href: '/analytics', icon: 'FlameIcon', groupKey: 'optimize' },
@@ -87,17 +89,36 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Role badge */}
       {!collapsed && (
-        <div className={`mx-3 mt-3 mb-1 px-3 py-2 rounded-xl flex items-center gap-2 ${
-          isRecruiter ? 'bg-purple-500/10' : 'bg-blue-500/10'
-        }`}>
-          <Icon
-            name={isRecruiter ? 'BuildingIcon' : 'UserIcon'}
-            size={14}
-            className={isRecruiter ? 'text-purple-500' : 'text-blue-500'}
-          />
-          <span className={`text-xs font-600 ${isRecruiter ? 'text-purple-500' : 'text-blue-500'}`}>
-            {isRecruiter ? 'Espace Recruteur' : 'Espace Candidat'}
-          </span>
+        <div className="mx-3 mt-3 mb-1">
+          {/* Current space indicator */}
+          <div className={`px-3 py-2 rounded-xl flex items-center gap-2 mb-1 ${
+            isRecruiter ? 'bg-purple-500/10' : 'bg-blue-500/10'
+          }`}>
+            <Icon
+              name={isRecruiter ? 'BuildingIcon' : 'UserIcon'}
+              size={14}
+              className={isRecruiter ? 'text-purple-500' : 'text-blue-500'}
+            />
+            <span className={`text-xs font-600 ${isRecruiter ? 'text-purple-500' : 'text-blue-500'}`}>
+              {isRecruiter ? 'Espace Recruteur' : 'Espace Candidat'}
+            </span>
+          </div>
+          {/* Switch space button */}
+          <Link
+            href={isRecruiter ? '/' : '/recruiter-dashboard'}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-500 transition-all duration-150 border ${
+              isRecruiter
+                ? 'border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300' :'border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300'
+            }`}
+          >
+            <Icon
+              name={isRecruiter ? 'UserIcon' : 'BuildingIcon'}
+              size={13}
+              className={isRecruiter ? 'text-blue-500' : 'text-purple-500'}
+            />
+            <span>{isRecruiter ? 'Espace Candidat' : 'Espace Recruteur'}</span>
+            <Icon name="ArrowRightIcon" size={12} className="ml-auto opacity-60" />
+          </Link>
         </div>
       )}
 

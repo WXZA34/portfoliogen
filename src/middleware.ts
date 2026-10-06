@@ -89,29 +89,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // Recruiter trying to access job seeker routes → redirect to recruiter dashboard
-    if (role === 'recruiter') {
-      const isJobSeekerRoute = JOB_SEEKER_ROUTES.some(
-        (route) => pathname === route || (route !== '/' && pathname.startsWith(route))
-      );
-      if (isJobSeekerRoute) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/recruiter-dashboard';
-        return NextResponse.redirect(url);
-      }
-    }
-
-    // Job seeker trying to access recruiter routes → redirect to job seeker home
-    if (role === 'job_seeker' || !role) {
-      const isRecruiterRoute = RECRUITER_ROUTES.some(
-        (route) => pathname === route || pathname.startsWith(route)
-      );
-      if (isRecruiterRoute) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/';
-        return NextResponse.redirect(url);
-      }
-    }
+    // Role-based route blocking removed — users can freely switch between spaces
   }
 
   return supabaseResponse;

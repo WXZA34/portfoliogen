@@ -12,6 +12,7 @@ const translations = {
       dashboard: 'Tableau de bord',
       cvtheque: 'CVthèque Master',
       studio: 'Studio Portfolio',
+      portfolioEditor: 'Éditeur Canva',
       templates: 'Templates',
       audit: 'Audit Portfolio',
       campaigns: 'Campagnes & Suivi',
@@ -24,6 +25,7 @@ const translations = {
       integrations: 'Intégrations',
       publicPortfolio: 'Portfolio Public',
       landing: 'Landing Page',
+      jobs: 'Offres d\'emploi',
       overview: 'Vue d\'ensemble',
       content: 'Contenu',
       optimize: 'Optimiser',
@@ -33,6 +35,7 @@ const translations = {
       collapse: 'Réduire',
       recruiter: 'Recruteur',
       recruiterDashboard: 'Dashboard Recruteur',
+      recruiterSpace: 'Espace Recruteur',
     },
     // Topbar
     topbar: {
@@ -352,6 +355,7 @@ const translations = {
       dashboard: 'Dashboard',
       cvtheque: 'Master CV Library',
       studio: 'Portfolio Studio',
+      portfolioEditor: 'Canva Editor',
       templates: 'Templates',
       audit: 'Portfolio Audit',
       campaigns: 'Campaigns & Tracking',
@@ -364,6 +368,7 @@ const translations = {
       integrations: 'Integrations',
       publicPortfolio: 'Public Portfolio',
       landing: 'Landing Page',
+      jobs: 'Job Board',
       recruiterSpace: 'Recruiter Space',
       overview: 'Overview',
       content: 'Content',
@@ -477,7 +482,7 @@ const translations = {
         personas: 'Personas',
       },
       projects: {
-        all: 'All',
+        all: 'Projects',
         published: 'Published',
         draft: 'Drafts',
         addProject: 'Add Project',

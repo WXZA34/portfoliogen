@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import Link from 'next/link';
+import AIRecommendationPanel from '../components/AIRecommendationPanel';
 
 interface Candidate {
   id: string;
@@ -126,6 +127,7 @@ const INITIAL_PIPELINE: Pipeline = {
 export default function PipelineContent() {
   const [pipeline, setPipeline] = useState<Pipeline>(INITIAL_PIPELINE);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [aiCandidate, setAiCandidate] = useState<Candidate | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragFromStage, setDragFromStage] = useState<Stage | null>(null);
   const [filterJob, setFilterJob] = useState('all');
@@ -254,7 +256,14 @@ export default function PipelineContent() {
 
                     {/* Quick move buttons */}
                     <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {STAGES.filter((s) => s.id !== stage.id).slice(0, 2).map((targetStage) =>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setAiCandidate(candidate); }}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-violet-500/10 text-violet-600 border border-violet-500/20 text-[9px] font-700 hover:bg-violet-500/20 transition-all"
+                      >
+                        <Icon name="SparklesIcon" size={9} />
+                        IA
+                      </button>
+                      {STAGES.filter((s) => s.id !== stage.id).slice(0, 1).map((targetStage) =>
                     <button
                       key={targetStage.id}
                       onClick={(e) => {e.stopPropagation();moveCandidate(candidate.id, stage.id, targetStage.id);}}
@@ -341,13 +350,13 @@ export default function PipelineContent() {
               </div>
 
               <div className="flex gap-3">
-                <Link
-                href="/public-portfolio-view"
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-border text-sm font-600 text-foreground hover:bg-muted transition-all">
-                
-                  <Icon name="FolderOpenIcon" size={14} />
-                  Portfolio
-                </Link>
+                <button
+                  onClick={() => { setSelectedCandidate(null); setAiCandidate(selectedCandidate); }}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-violet-500/20 bg-violet-500/5 text-sm font-600 text-violet-600 hover:bg-violet-500/10 transition-all"
+                >
+                  <Icon name="SparklesIcon" size={14} />
+                  Analyse IA
+                </button>
                 <Link
                 href="/recruiter-dashboard/messages"
                 className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-violet-600 text-white text-sm font-600 hover:bg-violet-700 transition-all">
@@ -360,6 +369,12 @@ export default function PipelineContent() {
           </div>
         </div>
       }
+      {aiCandidate && (
+        <AIRecommendationPanel
+          candidate={aiCandidate}
+          onClose={() => setAiCandidate(null)}
+        />
+      )}
     </div>);
 
 }

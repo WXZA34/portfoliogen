@@ -14,10 +14,11 @@ const mediaItems = [
 { id: 'media-007', type: 'document', title: 'Technical Architecture — Whitepaper', url: '#', alt: '', project: 'NeuralCommerce', size: '0.4 MB' },
 { id: 'media-008', type: 'document', title: 'Research Paper — Graph Neural Networks', url: '#', alt: '', project: 'INRIA', size: '1.1 MB' }];
 
+type MediaItem = (typeof mediaItems)[number];
 
 export default function MediaGallery() {
   const [filter, setFilter] = useState('all');
-  const [selectedMedia, setSelectedMedia] = useState < typeof mediaItems?.[0] | null > null;
+  const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
 
   const filtered = filter === 'all' ? mediaItems : mediaItems?.filter((m) => m?.type === filter);
 
