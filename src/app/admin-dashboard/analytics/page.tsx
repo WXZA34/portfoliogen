@@ -2,7 +2,7 @@
 
 import React from 'react';
 import AdminLayout from '../components/AdminLayout';
-import AdminOverview from '../components/AdminOverview';
+import AdminAnalytics from '../components/AdminAnalytics';
 
 export default function AdminAnalyticsPage() {
   return (
@@ -10,7 +10,7 @@ export default function AdminAnalyticsPage() {
       pageTitle="Analytics globaux"
       pageSubtitle="Statistiques et métriques de la plateforme"
     >
-      <AdminOverview />
+      <AdminAnalytics />
     </AdminLayout>
   );
 }

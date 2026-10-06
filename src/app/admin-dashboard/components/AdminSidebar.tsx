@@ -26,15 +26,15 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
     title: 'Utilisateurs',
     items: [
       { label: 'Gestion utilisateurs', href: '/admin-dashboard/users', icon: 'UsersIcon', description: 'Candidats & recruteurs' },
-      { label: 'Vérification credentials', href: '/admin-dashboard/credentials', icon: 'ShieldCheckIcon', description: 'Valider les certifications' },
+      { label: 'Vérification credentials', href: '/admin-dashboard/credentials', icon: 'ShieldCheckIcon', description: 'Valider les certifications', badge: 3 },
     ],
   },
   {
     title: 'Contenu',
     items: [
-      { label: 'Portfolios', href: '/admin-dashboard/portfolios', icon: 'LayoutTemplateIcon', description: 'Modération des portfolios' },
-      { label: 'Offres d\'emploi', href: '/admin-dashboard/jobs', icon: 'BriefcaseIcon', description: 'Modération des offres' },
-      { label: 'Marketplace templates', href: '/admin-dashboard/templates', icon: 'Layers2Icon', description: 'Valider les templates' },
+      { label: 'Portfolios', href: '/admin-dashboard/portfolios', icon: 'LayoutTemplateIcon', description: 'Modération des portfolios', badge: 2 },
+      { label: 'Offres d\'emploi', href: '/admin-dashboard/jobs', icon: 'BriefcaseIcon', description: 'Modération des offres', badge: 2 },
+      { label: 'Marketplace templates', href: '/admin-dashboard/templates', icon: 'Layers2Icon', description: 'Valider les templates', badge: 4 },
     ],
   },
   {
@@ -65,6 +65,8 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
     return pathname.startsWith(href);
   };
 
+  const totalBadges = NAV_SECTIONS.flatMap((s) => s.items).reduce((acc, item) => acc + (item.badge ?? 0), 0);
+
   return (
     <aside
       className={`fixed left-0 top-0 h-full z-40 flex flex-col sidebar-transition ${
@@ -79,11 +81,16 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
         }`}
         style={{ minHeight: 'var(--topbar-height)' }}
       >
-        <div className="w-8 h-8 rounded-xl bg-rose-600 flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-xl bg-rose-600 flex items-center justify-center flex-shrink-0 relative">
           <Icon name="ShieldIcon" size={16} className="text-white" />
+          {collapsed && totalBadges > 0 && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full text-[9px] font-800 text-white flex items-center justify-center">
+              {totalBadges > 9 ? '9+' : totalBadges}
+            </span>
+          )}
         </div>
         {!collapsed && (
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="font-800 text-sm text-foreground leading-none">TalentHub</p>
             <p className="text-[10px] text-rose-500 font-600 mt-0.5 uppercase tracking-widest">Admin</p>
           </div>
@@ -163,6 +170,7 @@ export default function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps)
                     {collapsed && (
                       <span className="absolute left-full ml-2 px-2.5 py-1.5 bg-foreground text-background text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
                         {item.label}
+                        {item.badge ? ` (${item.badge})` : ''}
                       </span>
                     )}
                   </Link>

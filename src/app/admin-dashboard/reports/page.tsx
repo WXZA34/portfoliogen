@@ -2,15 +2,15 @@
 
 import React from 'react';
 import AdminLayout from '../components/AdminLayout';
-import ContentModeration from '../components/ContentModeration';
+import AdminReports from '../components/AdminReports';
 
 export default function AdminReportsPage() {
   return (
     <AdminLayout
       pageTitle="Signalements"
-      pageSubtitle="Traiter les signalements des utilisateurs"
+      pageSubtitle="Traiter et gérer les signalements des utilisateurs"
     >
-      <ContentModeration />
+      <AdminReports />
     </AdminLayout>
   );
 }

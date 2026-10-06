@@ -2,7 +2,7 @@
 
 import React from 'react';
 import AdminLayout from '../components/AdminLayout';
-import ContentModeration from '../components/ContentModeration';
+import AdminReports from '../components/AdminReports';
 
 export default function AdminModerationPage() {
   return (
@@ -10,7 +10,7 @@ export default function AdminModerationPage() {
       pageTitle="Modération du contenu"
       pageSubtitle="Portfolios, offres d'emploi, templates et signalements"
     >
-      <ContentModeration />
+      <AdminReports />
     </AdminLayout>
   );
 }
