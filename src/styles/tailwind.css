@@ -1,0 +1,210 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #F8F7FF;
+  --foreground: #1A1A2E;
+  --primary: #6C5CE7;
+  --primary-foreground: #FFFFFF;
+  --secondary: #EDE9FE;
+  --secondary-foreground: #4C1D95;
+  --accent: #00B894;
+  --accent-foreground: #FFFFFF;
+  --muted: #F1F0F8;
+  --muted-foreground: #6B7280;
+  --card: #FFFFFF;
+  --card-foreground: #1A1A2E;
+  --border: #E5E3F3;
+  --input: #EDE9FE;
+  --ring: #6C5CE7;
+  --radius: 12px;
+  --font-sans: var(--font-plus-jakarta-sans), sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), monospace;
+
+  --positive: #00B894;
+  --positive-bg: #ECFDF5;
+  --negative: #EF4444;
+  --negative-bg: #FEF2F2;
+  --warning: #F59E0B;
+  --warning-bg: #FFFBEB;
+  --info: #3B82F6;
+  --info-bg: #EFF6FF;
+
+  --sidebar-width: 240px;
+  --sidebar-collapsed: 64px;
+  --topbar-height: 64px;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  h1, h2, h3, h4, h5, h6, p {
+    margin: 0;
+  }
+}
+
+@layer utilities {
+  .font-mono-data {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sidebar-transition {
+    transition: width 300ms ease, transform 300ms ease;
+  }
+
+  .content-transition {
+    transition: margin-left 300ms ease;
+  }
+
+  .card-hover {
+    transition: box-shadow 150ms ease, transform 150ms ease;
+  }
+
+  .card-hover:hover {
+    box-shadow: 0 8px 24px rgba(108, 92, 231, 0.12);
+    transform: translateY(-1px);
+  }
+
+  .btn-press {
+    transition: transform 150ms ease, opacity 150ms ease;
+  }
+
+  .btn-press:active {
+    transform: scale(0.97);
+  }
+
+  .row-hover:hover {
+    background-color: var(--muted);
+  }
+
+  .audit-critical {
+    background-color: var(--negative-bg);
+    border-left: 3px solid var(--negative);
+  }
+
+  .audit-warning {
+    background-color: var(--warning-bg);
+    border-left: 3px solid var(--warning);
+  }
+
+  .audit-suggestion {
+    background-color: var(--info-bg);
+    border-left: 3px solid var(--info);
+  }
+
+  .skeleton-pulse {
+    background: linear-gradient(90deg, var(--muted) 25%, var(--border) 50%, var(--muted) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  .gradient-area-fill {
+    fill: url(#areaGradient);
+  }
+
+  .template-card-active {
+    border: 2px solid var(--primary);
+    box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.12);
+  }
+
+  .sync-live {
+    background-color: var(--positive-bg);
+    color: var(--positive);
+  }
+
+  .sync-frozen {
+    background-color: var(--muted);
+    color: var(--muted-foreground);
+  }
+
+  .score-ring-track {
+    stroke: var(--border);
+    stroke-width: 8;
+    fill: none;
+  }
+
+  .score-ring-fill {
+    stroke: var(--primary);
+    stroke-width: 8;
+    fill: none;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease;
+  }
+
+  .portfolio-classic {
+    font-family: 'Georgia', serif;
+  }
+
+  .chat-bubble-recruiter {
+    background-color: var(--muted);
+    border-radius: 4px 12px 12px 12px;
+  }
+
+  .chat-bubble-owner {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: 12px 4px 12px 12px;
+  }
+
+  .deep-link-btn {
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+
+  .deep-link-btn:hover {
+    background-color: var(--secondary);
+    color: var(--primary);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 250ms ease forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 300ms ease forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 200ms ease forwards;
+}
