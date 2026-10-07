@@ -9,7 +9,7 @@ import Icon from '@/components/ui/AppIcon';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { signIn, getRoleHome } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,8 +21,14 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await signIn(email, password);
-      router.push('/');
+      const data = await signIn(email, password);
+      // Redirect based on role stored in user metadata
+      const role = data?.user?.user_metadata?.role;
+      if (role === 'recruiter') {
+        router.push('/recruiter-dashboard');
+      } else {
+        router.push('/');
+      }
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'Identifiants incorrects. Veuillez réessayer.');
@@ -31,33 +37,20 @@ export default function LoginPage() {
     }
   };
 
-  const fillDemo = () => {
-    setEmail('demo@portfoliogen.io');
-    setPassword('demo1234');
-  };
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
           <AppLogo size={40} />
-          <span className="font-bold text-2xl text-foreground tracking-tight">PortfolioGen</span>
+          <span className="font-bold text-2xl text-foreground tracking-tight">TalentHub</span>
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-8 shadow-card">
           <h1 className="text-xl font-700 text-foreground mb-1">Connexion</h1>
-          <p className="text-sm text-muted-foreground mb-6">Accédez à votre espace portfolio</p>
-
-          {/* Demo credentials */}
-          <button
-            type="button"
-            onClick={fillDemo}
-            className="w-full flex items-center gap-2 px-4 py-3 bg-secondary border border-border rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-all mb-6"
-          >
-            <Icon name="ZapIcon" size={14} className="text-primary" />
-            <span>Compte démo : <span className="font-mono-data text-foreground">demo@portfoliogen.io</span> / <span className="font-mono-data text-foreground">demo1234</span></span>
-          </button>
+          <p className="text-sm text-muted-foreground mb-6">
+            Accédez à votre espace — recruteur ou chercheur d'emploi
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -113,6 +106,23 @@ export default function LoginPage() {
               {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
+
+          {/* Role info */}
+          <div className="mt-5 p-4 bg-secondary rounded-xl border border-border">
+            <p className="text-xs font-600 text-foreground mb-2">Deux espaces distincts :</p>
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center">
+                <Icon name="UserIcon" size={11} className="text-blue-500" />
+              </div>
+              <span className="text-xs text-muted-foreground">Chercheur d'emploi → Portfolio & candidatures</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-purple-500/10 flex items-center justify-center">
+                <Icon name="BuildingIcon" size={11} className="text-purple-500" />
+              </div>
+              <span className="text-xs text-muted-foreground">Recruteur → Offres & gestion des talents</span>
+            </div>
+          </div>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             Pas encore de compte ?{' '}

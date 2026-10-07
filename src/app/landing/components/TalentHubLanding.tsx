@@ -120,6 +120,12 @@ export default function TalentHubLanding() {
             )}
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              href="/recruiter-dashboard"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm text-violet-700 hover:text-violet-900 font-semibold border border-violet-200 rounded-xl hover:bg-violet-50 transition-colors">
+              <Icon name="BriefcaseIcon" size={14} />
+              Espace Recruteur
+            </Link>
             <Link href="/login" className="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">
               Connexion
             </Link>
@@ -165,6 +171,18 @@ export default function TalentHubLanding() {
           </Link>
         </div>
         <p className="text-sm text-slate-400 mt-4">Gratuit · Aucune carte bancaire requise · Publié en 5 min</p>
+
+        {/* Recruiter CTA Banner */}
+        <div className="mt-10 inline-flex items-center gap-3 px-6 py-3 bg-slate-900 rounded-2xl text-sm text-slate-300 shadow-lg">
+          <Icon name="BriefcaseIcon" size={16} className="text-violet-400 shrink-0" />
+          <span>Vous êtes recruteur ?</span>
+          <Link
+            href="/recruiter-dashboard"
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
+            Accéder à l&apos;Espace Recruteur
+            <Icon name="ArrowRightIcon" size={14} />
+          </Link>
+        </div>
       </section>
 
       {/* Stats */}
@@ -176,6 +194,57 @@ export default function TalentHubLanding() {
               <p className="text-sm text-violet-200 font-medium">{stat.label}</p>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Job Board CTA — new section */}
+      <section className="max-w-6xl mx-auto px-6 py-16">
+        <div className="bg-gradient-to-br from-slate-900 via-violet-950 to-indigo-950 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center gap-8 overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/10 rounded-full -translate-y-16 translate-x-16 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/10 rounded-full translate-y-12 -translate-x-12 pointer-events-none" />
+          <div className="flex-1 relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-500/20 border border-violet-500/30 rounded-full text-xs text-violet-300 font-semibold mb-4">
+              <Icon name="SparklesIcon" size={12} />
+              Nouveau — Marketplace de recrutement
+            </div>
+            <h2 className="text-3xl font-black text-white mb-3 leading-tight">
+              Postulez avec votre portfolio.<br />
+              <span className="text-violet-400">Pas de CV. Pas de lettre.</span>
+            </h2>
+            <p className="text-slate-400 mb-6 leading-relaxed max-w-lg">
+              Découvrez des offres d&apos;emploi qui correspondent à votre profil. Notre IA calcule votre score de matching et vous recommande les meilleures opportunités.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/jobs"
+                className="flex items-center gap-2 px-6 py-3 bg-violet-600 text-white rounded-2xl text-sm font-bold hover:bg-violet-500 transition-colors shadow-lg shadow-violet-900/50"
+              >
+                <Icon name="SearchIcon" size={16} />
+                Explorer les offres
+              </Link>
+              <Link
+                href="/recruiter-dashboard/jobs"
+                className="flex items-center gap-2 px-6 py-3 bg-white/10 text-white rounded-2xl text-sm font-bold hover:bg-white/20 transition-colors border border-white/20"
+              >
+                <Icon name="PlusCircleIcon" size={16} />
+                Publier une offre
+              </Link>
+            </div>
+          </div>
+          <div className="flex-shrink-0 relative z-10 grid grid-cols-2 gap-3 w-full md:w-auto">
+            {[
+              { label: 'Offres actives', value: '48', icon: 'BriefcaseIcon', color: 'text-violet-400' },
+              { label: 'Match IA moyen', value: '82%', icon: 'SparklesIcon', color: 'text-emerald-400' },
+              { label: 'Taux de réponse', value: '73%', icon: 'MessageSquareIcon', color: 'text-sky-400' },
+              { label: 'Recrutements', value: '1.2K', icon: 'CheckCircleIcon', color: 'text-amber-400' },
+            ].map((s) => (
+              <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                <Icon name={s.icon as any} size={20} className={`${s.color} mx-auto mb-2`} />
+                <p className="text-xl font-black text-white">{s.value}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
