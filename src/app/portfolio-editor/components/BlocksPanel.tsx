@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Icon from '@/components/ui/AppIcon';
-import type { BlockType } from './PortfolioEditorContent';
+import type { BlockType, Block, PortfolioDesign } from './PortfolioEditorContent';
 
 interface BlockCategory {
   label: string;
@@ -16,34 +16,37 @@ const BLOCK_CATEGORIES: BlockCategory[] = [
     icon: 'StarIcon',
     blocks: [
       { type: 'hero', label: 'Hero / Bannière', description: 'Nom, titre et accroche principale', icon: 'UserCircleIcon' },
-      { type: 'about', label: 'À propos', description: 'Présentation personnelle', icon: 'FileTextIcon' },
-      { type: 'contact', label: 'Contact', description: 'Email, réseaux et CTA', icon: 'MailIcon' },
+      { type: 'about', label: 'À propos', description: 'Présentation personnelle', icon: 'DocumentTextIcon' },
+      { type: 'contact', label: 'Contact', description: 'Email, réseaux et CTA', icon: 'EnvelopeIcon' },
     ],
   },
   {
     label: 'Contenu',
-    icon: 'LayoutIcon',
+    icon: 'QueueListIcon',
     blocks: [
       { type: 'projects', label: 'Projets', description: 'Showcase de vos réalisations', icon: 'FolderIcon' },
       { type: 'experience', label: 'Expérience', description: 'Parcours professionnel', icon: 'BriefcaseIcon' },
-      { type: 'education', label: 'Formation', description: 'Diplômes et certifications', icon: 'GraduationCapIcon' },
-      { type: 'skills', label: 'Compétences', description: 'Stack technique et soft skills', icon: 'ZapIcon' },
-      { type: 'gallery', label: 'Galerie', description: 'Visuels et captures d\'écran', icon: 'ImageIcon' },
+      { type: 'education', label: 'Formation', description: 'Diplômes et certifications', icon: 'AcademicCapIcon' },
+      { type: 'skills', label: 'Compétences', description: 'Stack technique et soft skills', icon: 'BoltIcon' },
+      { type: 'languages', label: 'Langues', description: 'Langues parlées', icon: 'GlobeAltIcon' },
+      { type: 'gallery', label: 'Galerie', description: 'Visuels et captures d\'écran', icon: 'PhotoIcon' },
+      { type: 'video', label: 'Vidéo Pitch', description: 'Présentation vidéo', icon: 'VideoCameraIcon' },
+      { type: 'faq', label: 'FAQ', description: 'Questions fréquentes', icon: 'QuestionMarkCircleIcon' },
     ],
   },
   {
     label: 'Social Proof',
-    icon: 'ThumbsUpIcon',
+    icon: 'HandThumbUpIcon',
     blocks: [
-      { type: 'testimonials', label: 'Témoignages', description: 'Avis et recommandations', icon: 'MessageSquareIcon' },
-      { type: 'stats', label: 'Statistiques', description: 'Chiffres clés et métriques', icon: 'BarChart2Icon' },
+      { type: 'testimonials', label: 'Témoignages', description: 'Avis et recommandations', icon: 'ChatBubbleLeftIcon' },
+      { type: 'stats', label: 'Statistiques', description: 'Chiffres clés et métriques', icon: 'ChartBarIcon' },
     ],
   },
   {
     label: 'Mise en page',
-    icon: 'SlidersIcon',
+    icon: 'AdjustmentsHorizontalIcon',
     blocks: [
-      { type: 'cta', label: 'Appel à l\'action', description: 'Bouton et message d\'incitation', icon: 'MousePointerIcon' },
+      { type: 'cta', label: 'Appel à l\'action', description: 'Bouton et message d\'incitation', icon: 'CursorArrowRaysIcon' },
       { type: 'divider', label: 'Séparateur', description: 'Ligne ou vague de séparation', icon: 'MinusIcon' },
     ],
   },
@@ -51,13 +54,52 @@ const BLOCK_CATEGORIES: BlockCategory[] = [
 
 interface BlocksPanelProps {
   onAddBlock: (type: BlockType) => void;
+  selectedBlock?: Block;
+  onUpdateBlock?: (block: Block) => void;
 }
 
-export default function BlocksPanel({ onAddBlock }: BlocksPanelProps) {
+export default function BlocksPanel({ onAddBlock, selectedBlock, onUpdateBlock }: BlocksPanelProps) {
+  const isFreeform = selectedBlock?.layout?.type === 'freeform' && selectedBlock?.layout?.elements;
+
   return (
     <div className="p-3 space-y-4">
-      <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider px-1">Ajouter un bloc</p>
-      <p className="text-xs text-muted-foreground px-1 -mt-2">Cliquez pour ajouter à la fin du portfolio</p>
+      {isFreeform && onUpdateBlock && (
+        <div className="mb-6">
+          <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider px-1">Ajouter un élément</p>
+          <p className="text-xs text-muted-foreground px-1 mb-2">Sur la page / diapositive actuelle</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => {
+              const newEl = { id: `el-${Date.now()}`, type: 'text' as const, content: 'Nouveau texte', x: '50', y: '50', width: '300', height: '50', style: { color: '#000000', fontSize: '18px' } };
+              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: [...selectedBlock.layout!.elements!, newEl] } });
+            }} className="flex items-center justify-center gap-2 p-2 bg-muted hover:bg-primary/20 hover:text-primary rounded-xl text-xs font-600 transition-colors">
+              <Icon name="DocumentTextIcon" size={14} /> Texte
+            </button>
+            <button onClick={() => {
+              const newEl = { id: `el-${Date.now()}`, type: 'image' as const, url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400', x: '100', y: '50', width: '300', height: '200', style: { borderRadius: '8px' } };
+              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: [...selectedBlock.layout!.elements!, newEl] } });
+            }} className="flex items-center justify-center gap-2 p-2 bg-muted hover:bg-primary/20 hover:text-primary rounded-xl text-xs font-600 transition-colors">
+              <Icon name="PhotoIcon" size={14} /> Image
+            </button>
+            <button onClick={() => {
+              const newEl = { id: `el-${Date.now()}`, type: 'shape' as const, x: '50', y: '150', width: '200', height: '100', style: { backgroundColor: '#e2e8f0', borderRadius: '16px' } };
+              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: [...selectedBlock.layout!.elements!, newEl] } });
+            }} className="flex items-center justify-center gap-2 p-2 bg-muted hover:bg-primary/20 hover:text-primary rounded-xl text-xs font-600 transition-colors">
+              <Icon name="StopIcon" size={14} /> Forme
+            </button>
+            <button onClick={() => {
+              const newEl = { id: `el-${Date.now()}`, type: 'shape' as const, x: '50', y: '300', width: '150', height: '4', style: { backgroundColor: '#000000', borderRadius: '0' } };
+              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: [...selectedBlock.layout!.elements!, newEl] } });
+            }} className="flex items-center justify-center gap-2 p-2 bg-muted hover:bg-primary/20 hover:text-primary rounded-xl text-xs font-600 transition-colors">
+              <Icon name="MinusIcon" size={14} /> Ligne
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="pt-2 border-t border-border/50">
+        <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider px-1">Ajouter une page / bloc</p>
+        <p className="text-xs text-muted-foreground px-1 -mt-2">Cliquez pour ajouter à la fin</p>
+      </div>
 
       {BLOCK_CATEGORIES.map((cat) => (
         <div key={cat.label}>

@@ -23,6 +23,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#6366f1',
 };
 
 export const metadata: Metadata = {
@@ -31,6 +32,13 @@ export const metadata: Metadata = {
     'Construisez une CVthèque Master centralisée et générez des portfolios ciblés pour chaque recruteur. Suivez l\'engagement analytique pour optimiser votre recherche d\'emploi.',
   icons: {
     icon: [{ url: '/favicon.ico', type: 'image/x-icon' }],
+    apple: [{ url: '/favicon.ico' }],
+  },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    title: 'PortfolioGen',
+    statusBarStyle: 'default',
   },
 };
 
@@ -48,7 +56,20 @@ export default function RootLayout({
             <Toaster position="bottom-right" richColors />
           </AuthProvider>
         </LanguageProvider>
-</body>
+
+        {/* Script to register Service Worker for PWA */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js');
+                });
+              }
+            `,
+          }}
+        />
+      </body>
     </html>
   );
 }

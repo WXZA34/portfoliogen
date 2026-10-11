@@ -19,33 +19,33 @@ interface NavItem {
 
 // Job seeker nav items
 const jobSeekerNavItems: NavItem[] = [
-  { labelKey: 'dashboard', href: '/', icon: 'LayoutDashboardIcon', groupKey: 'overview' },
+  { labelKey: 'dashboard', href: '/', icon: 'Squares2X2Icon', groupKey: 'overview' },
   { labelKey: 'setupWizard', href: '/setup-wizard', icon: 'MapIcon', groupKey: 'overview' },
   { labelKey: 'jobs', href: '/jobs', icon: 'BriefcaseIcon', groupKey: 'overview' },
-  { labelKey: 'cvtheque', href: '/c-vth-que-master', icon: 'DatabaseIcon', groupKey: 'content' },
-  { labelKey: 'studio', href: '/portfolio-studio', icon: 'PaletteIcon', groupKey: 'content' },
-  { labelKey: 'portfolioEditor', href: '/portfolio-editor', icon: 'LayoutTemplateIcon', groupKey: 'content' },
-  { labelKey: 'templates', href: '/templates', icon: 'Layers2Icon', groupKey: 'content' },
+  { labelKey: 'cvtheque', href: '/c-vth-que-master', icon: 'CircleStackIcon', groupKey: 'content' },
+  { labelKey: 'studio', href: '/portfolio-studio', icon: 'SwatchIcon', groupKey: 'content' },
+  { labelKey: 'portfolioEditor', href: '/portfolio-editor', icon: 'RectangleGroupIcon', groupKey: 'content' },
+  { labelKey: 'templates', href: '/templates', icon: 'Square3Stack3DIcon', groupKey: 'content' },
   { labelKey: 'audit', href: '/portfolio-audit', icon: 'ShieldCheckIcon', badge: 3, groupKey: 'optimize' },
-  { labelKey: 'campaigns', href: '/campaigns-tracking', icon: 'BarChart2Icon', groupKey: 'optimize' },
-  { labelKey: 'analytics', href: '/analytics', icon: 'FlameIcon', groupKey: 'optimize' },
-  { labelKey: 'aiAnalysis', href: '/ai-analysis', icon: 'BrainCircuitIcon', groupKey: 'ai' },
+  { labelKey: 'campaigns', href: '/campaigns-tracking', icon: 'ChartBarIcon', groupKey: 'optimize' },
+  { labelKey: 'analytics', href: '/analytics', icon: 'FireIcon', groupKey: 'optimize' },
+  { labelKey: 'aiAnalysis', href: '/ai-analysis', icon: 'SparklesIcon', groupKey: 'ai' },
   { labelKey: 'crm', href: '/crm', icon: 'BriefcaseIcon', groupKey: 'ai' },
   { labelKey: 'coachDashboard', href: '/coach-dashboard', icon: 'UsersIcon', groupKey: 'tools' },
-  { labelKey: 'exportTools', href: '/export-tools', icon: 'DownloadIcon', groupKey: 'tools' },
-  { labelKey: 'integrations', href: '/integrations', icon: 'PlugIcon', groupKey: 'tools' },
-  { labelKey: 'publicPortfolio', href: '/public-portfolio-view', icon: 'GlobeIcon', groupKey: 'preview' },
+  { labelKey: 'exportTools', href: '/export-tools', icon: 'ArrowDownTrayIcon', groupKey: 'tools' },
+  { labelKey: 'integrations', href: '/integrations', icon: 'LinkIcon', groupKey: 'tools' },
+  { labelKey: 'publicPortfolio', href: '/public-portfolio-view', icon: 'GlobeAltIcon', groupKey: 'preview' },
   { labelKey: 'landing', href: '/landing', icon: 'HomeIcon', groupKey: 'preview' },
 ];
 
 // Recruiter nav items
 const recruiterNavItems: NavItem[] = [
-  { labelKey: 'recruiterDashboard', href: '/recruiter-dashboard', icon: 'LayoutDashboardIcon', groupKey: 'recruiter' },
-  { labelKey: 'recruiterSpace', href: '/recruiter-space', icon: 'SearchIcon', groupKey: 'recruiter' },
+  { labelKey: 'recruiterDashboard', href: '/recruiter-dashboard', icon: 'Squares2X2Icon', groupKey: 'recruiter' },
+  { labelKey: 'recruiterSpace', href: '/recruiter-space', icon: 'MagnifyingGlassIcon', groupKey: 'recruiter' },
   { labelKey: 'landing', href: '/landing', icon: 'HomeIcon', groupKey: 'preview' },
 ];
 
-const adminNavItem: NavItem = { labelKey: 'adminDashboard', href: '/admin-dashboard', icon: 'ShieldIcon', groupKey: 'admin' };
+const adminNavItem: NavItem = { labelKey: 'adminDashboard', href: '/admin-dashboard', icon: 'ShieldExclamationIcon', groupKey: 'admin' };
 
 const jobSeekerGroupOrder = ['overview', 'content', 'optimize', 'ai', 'tools', 'preview', 'admin'];
 const recruiterGroupOrder = ['recruiter', 'preview', 'admin'];
@@ -99,7 +99,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             isRecruiter ? 'bg-purple-500/10' : 'bg-blue-500/10'
           }`}>
             <Icon
-              name={isRecruiter ? 'BuildingIcon' : 'UserIcon'}
+              name={isRecruiter ? 'BuildingOfficeIcon' : 'UserIcon'}
               size={14}
               className={isRecruiter ? 'text-purple-500' : 'text-blue-500'}
             />
@@ -116,7 +116,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             }`}
           >
             <Icon
-              name={isRecruiter ? 'UserIcon' : 'BuildingIcon'}
+              name={isRecruiter ? 'UserIcon' : 'BuildingOfficeIcon'}
               size={13}
               className={isRecruiter ? 'text-blue-500' : 'text-purple-500'}
             />
@@ -228,7 +228,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               title="Se déconnecter"
               className="p-1 rounded-lg text-muted-foreground hover:text-negative hover:bg-negative/10 transition-all"
             >
-              <Icon name="LogOutIcon" size={14} />
+              <Icon name="ArrowRightOnRectangleIcon" size={14} />
             </button>
           </div>
         )}

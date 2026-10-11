@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import type { Block, PortfolioDesign } from './PortfolioEditorContent';
+import { createClient } from '@/lib/supabase/client';
 
 const COLORS = [
   '#7c3aed', '#2563eb', '#059669', '#dc2626', '#d97706', '#0891b2',
@@ -36,6 +37,7 @@ type Tab = 'global' | 'block';
 
 export default function CustomizationPanel({ design, selectedBlock, onUpdateDesign, onUpdateBlock }: CustomizationPanelProps) {
   const [tab, setTab] = useState<Tab>(selectedBlock ? 'block' : 'global');
+  const [openGalleryId, setOpenGalleryId] = useState<string | null>(null);
 
   const updateGlobal = (key: keyof PortfolioDesign['globalStyle'], value: string | boolean) => {
     onUpdateDesign((prev) => ({ ...prev, globalStyle: { ...prev.globalStyle, [key]: value } }));
@@ -73,6 +75,36 @@ export default function CustomizationPanel({ design, selectedBlock, onUpdateDesi
       <div className="flex-1 overflow-y-auto p-3 space-y-5">
         {tab === 'global' && (
           <>
+            {/* Theme Presets */}
+            <div className="mb-4">
+              <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider mb-2">Thèmes Prédéfinis</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'cyberpunk', label: 'Cyberpunk', bg: '#0f172a', primary: '#10b981', dark: true, fontHead: 'JetBrains Mono' },
+                  { id: 'minimalist', label: 'Minimaliste', bg: '#ffffff', primary: '#111827', dark: false, fontHead: 'DM Sans' },
+                  { id: 'elegant', label: 'Élégant', bg: '#fdfbf7', primary: '#9d174d', dark: false, fontHead: 'Fraunces' },
+                  { id: 'corporate', label: 'Corporate', bg: '#f8fafc', primary: '#2563eb', dark: false, fontHead: 'Plus Jakarta Sans' },
+                ].map((preset) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => {
+                      updateGlobal('bgColor', preset.bg);
+                      updateGlobal('primaryColor', preset.primary);
+                      updateGlobal('darkMode', preset.dark);
+                      updateGlobal('fontHeading', preset.fontHead);
+                    }}
+                    className="flex flex-col items-center justify-center p-3 rounded-xl border border-border hover:border-primary/50 hover:bg-secondary/30 transition-all group"
+                  >
+                    <div className="w-full h-8 rounded-md mb-2 flex overflow-hidden shadow-sm border border-border/50">
+                      <div className="flex-1" style={{ backgroundColor: preset.bg }}></div>
+                      <div className="w-1/3" style={{ backgroundColor: preset.primary }}></div>
+                    </div>
+                    <span className="text-xs font-700 text-foreground group-hover:text-primary transition-colors">{preset.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Primary Color */}
             <div>
               <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider mb-2">Couleur Principale</p>
@@ -198,7 +230,7 @@ export default function CustomizationPanel({ design, selectedBlock, onUpdateDesi
         {tab === 'block' && selectedBlock && (
           <>
             <div className="flex items-center gap-2 p-2.5 bg-secondary/30 rounded-xl border border-border">
-              <Icon name="LayoutIcon" size={14} className="text-primary" />
+              <Icon name="QueueListIcon" size={14} className="text-primary" />
               <p className="text-xs font-700 text-foreground capitalize">{selectedBlock.type}</p>
               <span className="text-xs text-muted-foreground ml-auto">#{selectedBlock.id.slice(-4)}</span>
             </div>
@@ -236,6 +268,301 @@ export default function CustomizationPanel({ design, selectedBlock, onUpdateDesi
                 })}
               </div>
             </div>
+
+            {selectedBlock.layout?.type === 'freeform' && selectedBlock.layout.elements && (
+              <div className="mt-4 border-t border-border pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider">Éléments Libres</p>
+                  <div className="flex gap-1">
+                    <button onClick={() => {
+                      const newEl = { id: `el-${Date.now()}`, type: 'text' as const, content: 'Nouveau texte', x: '50', y: '50', width: '300', height: '50', style: { color: '#000000', fontSize: '18px' } };
+                      onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: [...selectedBlock.layout!.elements!, newEl] } });
+                    }} className="p-1 bg-muted hover:bg-primary/20 hover:text-primary rounded" title="Ajouter Texte"><Icon name="DocumentTextIcon" size={12} /></button>
+                    <button onClick={() => {
+                      const newEl = { id: `el-${Date.now()}`, type: 'image' as const, url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400', x: '100', y: '50', width: '300', height: '200', style: { borderRadius: '8px' } };
+                      onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: [...selectedBlock.layout!.elements!, newEl] } });
+                    }} className="p-1 bg-muted hover:bg-primary/20 hover:text-primary rounded" title="Ajouter Image"><Icon name="PhotoIcon" size={12} /></button>
+                    <button onClick={() => {
+                      const newEl = { id: `el-${Date.now()}`, type: 'shape' as const, x: '50', y: '150', width: '200', height: '100', style: { backgroundColor: '#e2e8f0', borderRadius: '16px' } };
+                      onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: [...selectedBlock.layout!.elements!, newEl] } });
+                    }} className="p-1 bg-muted hover:bg-primary/20 hover:text-primary rounded" title="Ajouter Forme/Cadre"><Icon name="StopIcon" size={12} /></button>
+                    <button onClick={() => {
+                      const newEl = { id: `el-${Date.now()}`, type: 'shape' as const, x: '50', y: '300', width: '150', height: '4', style: { backgroundColor: '#000000', borderRadius: '0' } };
+                      onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: [...selectedBlock.layout!.elements!, newEl] } });
+                    }} className="p-1 bg-muted hover:bg-primary/20 hover:text-primary rounded" title="Ajouter Ligne/Flèche"><Icon name="ArrowRightIcon" size={12} /></button>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {selectedBlock.layout.elements.map(el => (
+                    <div key={el.id} className="p-2 border border-border rounded-lg bg-card space-y-2">
+                        <div className="flex items-center gap-1 mb-1">
+                          <span className="text-xs font-700 uppercase bg-muted px-1.5 py-0.5 rounded text-muted-foreground flex-1">{el.type}</span>
+                          <button onClick={() => {
+                            const currentZ = el.zIndex || 1;
+                            const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, zIndex: currentZ + 1 } : e2);
+                            onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                          }} className="text-muted-foreground hover:bg-muted p-1 rounded transition-colors" title="Mettre en avant (+Z)">
+                            <Icon name="ArrowUpIcon" size={12} />
+                          </button>
+                          <button onClick={() => {
+                            const currentZ = el.zIndex || 1;
+                            const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, zIndex: Math.max(0, currentZ - 1) } : e2);
+                            onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                          }} className="text-muted-foreground hover:bg-muted p-1 rounded transition-colors" title="Mettre en arrière (-Z)">
+                            <Icon name="ArrowDownIcon" size={12} />
+                          </button>
+                          <button onClick={() => {
+                            const newElements = selectedBlock.layout!.elements!.filter(e2 => e2.id !== el.id);
+                            onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                          }} className="text-red-500 hover:bg-red-50 p-1 rounded transition-colors" title="Supprimer cet élément">
+                            <Icon name="TrashIcon" size={12} />
+                          </button>
+                        </div>
+                        
+                        {/* Position et Taille */}
+                        <div className="grid grid-cols-2 gap-2 pb-2 border-b border-border">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground w-3">X:</span>
+                            <input type="text" value={el.x || ''} onChange={e => {
+                              const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, x: e.target.value } : e2);
+                              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                            }} className="w-full text-xs bg-muted border border-border rounded px-1.5 py-1" />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground w-3">Y:</span>
+                            <input type="text" value={el.y || ''} onChange={e => {
+                              const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, y: e.target.value } : e2);
+                              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                            }} className="w-full text-xs bg-muted border border-border rounded px-1.5 py-1" />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground w-3">W:</span>
+                            <input type="text" value={el.width || ''} onChange={e => {
+                              const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, width: e.target.value } : e2);
+                              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                            }} className="w-full text-xs bg-muted border border-border rounded px-1.5 py-1" />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground w-3">H:</span>
+                            <input type="text" value={el.height || ''} onChange={e => {
+                              const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, height: e.target.value } : e2);
+                              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                            }} className="w-full text-xs bg-muted border border-border rounded px-1.5 py-1" />
+                          </div>
+                        </div>
+
+                        {/* Content / URL */}
+                        {el.type === 'text' || el.type === 'button' ? (
+                        <textarea
+                          value={el.content || ''}
+                          onChange={(e) => {
+                            const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, content: e.target.value } : e2);
+                            onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                          }}
+                          className="w-full text-xs bg-muted border border-border rounded-lg px-2 py-1.5 text-foreground resize-none"
+                          rows={2}
+                        />
+                        ) : el.type === 'image' ? (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={el.url || ''}
+                              onChange={(e) => {
+                                const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, url: e.target.value } : e2);
+                                onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                              }}
+                              placeholder="URL de l'image"
+                              className="w-full text-xs bg-muted border border-border rounded-lg px-2 py-1.5 text-foreground"
+                            />
+                            <div className="flex gap-2">
+                              <label className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-primary/10 text-primary border border-primary/30 rounded-lg text-[10px] font-700 cursor-pointer hover:bg-primary/20 transition-colors">
+                                <Icon name="ArrowUpTrayIcon" size={10} /> Importer du PC
+                                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  
+                                  const supabase = createClient();
+                                  const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                                  
+                                  // Alert user of upload start
+                                  const btnLabel = e.target.parentElement;
+                                  if (btnLabel) btnLabel.style.opacity = '0.5';
+
+                                  const { data, error } = await supabase.storage.from('portfolios').upload(fileName, file);
+                                  
+                                  if (btnLabel) btnLabel.style.opacity = '1';
+
+                                  if (error) {
+                                    alert("Erreur d'importation Supabase : " + error.message + "\nAssurez-vous d'avoir créé un bucket 'portfolios' public dans votre projet Supabase.");
+                                    console.error(error);
+                                    return;
+                                  }
+
+                                  const { data: publicData } = supabase.storage.from('portfolios').getPublicUrl(fileName);
+                                  const publicUrl = publicData.publicUrl;
+
+                                  // Save to local library (just the URL)
+                                  const lib = JSON.parse(localStorage.getItem('portfolio_images_lib') || '[]');
+                                  localStorage.setItem('portfolio_images_lib', JSON.stringify([publicUrl, ...lib].slice(0, 10)));
+                                  
+                                  // Update element
+                                  const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, url: publicUrl } : e2);
+                                  onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                                }} />
+                              </label>
+                              <button onClick={() => {
+                                setOpenGalleryId(openGalleryId === el.id ? null : el.id);
+                              }} className="px-2 py-1.5 bg-muted text-muted-foreground border border-border rounded-lg text-[10px] font-700 hover:bg-muted/80 transition-colors" title="Ouvrir la galerie">
+                                <Icon name="PhotoIcon" size={10} /> Galerie
+                              </button>
+                            </div>
+                            
+                            {openGalleryId === el.id && (
+                              <div className="mt-2 p-2 border border-border rounded bg-muted/30 grid grid-cols-3 gap-2">
+                                {JSON.parse(localStorage.getItem('portfolio_images_lib') || '[]').map((imgUrl: string, idx: number) => (
+                                  <img 
+                                    key={idx} 
+                                    src={imgUrl} 
+                                    alt="Gallery item" 
+                                    className="w-full aspect-square object-cover rounded cursor-pointer hover:opacity-80 border border-transparent hover:border-primary"
+                                    onClick={() => {
+                                      const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, url: imgUrl } : e2);
+                                      onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                                      setOpenGalleryId(null);
+                                    }}
+                                  />
+                                ))}
+                                {JSON.parse(localStorage.getItem('portfolio_images_lib') || '[]').length === 0 && (
+                                  <div className="col-span-3 text-[10px] text-muted-foreground text-center py-2">La galerie est vide.</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
+
+                      {/* Color (for text/button) */}
+                      {(el.type === 'text' || el.type === 'button' || el.type === 'shape') && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Couleur:</span>
+                          <input
+                            type="color"
+                            value={el.style?.color || el.style?.backgroundColor || '#000000'}
+                            onChange={(e) => {
+                              const prop = el.type === 'text' ? 'color' : 'backgroundColor';
+                              const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, style: { ...e2.style, [prop]: e.target.value } } : e2);
+                              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                            }}
+                            className="w-6 h-6 rounded border border-border cursor-pointer"
+                          />
+                        </div>
+                      )}
+
+                      {/* Font Size (for text) */}
+                      {el.type === 'text' && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Taille:</span>
+                          <input
+                            type="text"
+                            value={el.style?.fontSize || '16px'}
+                            onChange={(e) => {
+                              const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, style: { ...e2.style, fontSize: e.target.value } } : e2);
+                              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                            }}
+                            className="flex-1 text-xs bg-muted border border-border rounded px-2 py-1 text-foreground"
+                          />
+                        </div>
+                      )}
+
+                      {/* Font Family (for text) */}
+                      {el.type === 'text' && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Police:</span>
+                          <select
+                            value={el.style?.fontFamily || ''}
+                            onChange={(e) => {
+                              const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, style: { ...e2.style, fontFamily: e.target.value } } : e2);
+                              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                            }}
+                            className="flex-1 text-xs bg-muted border border-border rounded px-2 py-1 text-foreground"
+                          >
+                            <option value="">Par défaut</option>
+                            {FONTS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Text Decoration (underline) and Bold */}
+                      {el.type === 'text' && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Style:</span>
+                          <button
+                            onClick={() => {
+                              const isBold = el.style?.fontWeight === 'bold';
+                              const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, style: { ...e2.style, fontWeight: isBold ? 'normal' : 'bold' } } : e2);
+                              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                            }}
+                            className={`p-1.5 rounded border transition-colors ${el.style?.fontWeight === 'bold' ? 'bg-primary/20 border-primary text-primary' : 'bg-muted border-border text-muted-foreground hover:bg-border'}`}
+                            title="Gras"
+                          >
+                            <Icon name="BoldIcon" size={12} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const isUnderline = el.style?.textDecoration === 'underline';
+                              const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, style: { ...e2.style, textDecoration: isUnderline ? 'none' : 'underline' } } : e2);
+                              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                            }}
+                            className={`p-1.5 rounded border transition-colors ${el.style?.textDecoration === 'underline' ? 'bg-primary/20 border-primary text-primary' : 'bg-muted border-border text-muted-foreground hover:bg-border'}`}
+                            title="Souligner"
+                          >
+                            <Icon name="UnderlineIcon" size={12} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const aligns = ['left', 'center', 'right'];
+                              const currentAlign = el.style?.textAlign || 'left';
+                              const nextAlign = aligns[(aligns.indexOf(currentAlign) + 1) % aligns.length];
+                              const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, style: { ...e2.style, textAlign: nextAlign } } : e2);
+                              onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                            }}
+                            className={`p-1.5 rounded border transition-colors bg-muted border-border text-muted-foreground hover:bg-border`}
+                            title="Alignement"
+                          >
+                            <Icon name={el.style?.textAlign === 'center' ? 'Bars3Icon' : el.style?.textAlign === 'right' ? 'Bars3BottomRightIcon' : 'Bars3BottomLeftIcon'} size={12} />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Shape properties */}
+                      {el.type === 'shape' && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Forme:</span>
+                          <button onClick={() => {
+                            const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, style: { ...e2.style, borderRadius: '0', clipPath: 'none' } } : e2);
+                            onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                          }} className={`p-1.5 rounded border transition-colors ${!el.style?.borderRadius || el.style?.borderRadius === '0' ? 'bg-primary/20 border-primary text-primary' : 'bg-muted border-border text-muted-foreground'}`} title="Rectangle">
+                            <Icon name="StopIcon" size={12} />
+                          </button>
+                          <button onClick={() => {
+                            const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, style: { ...e2.style, borderRadius: '9999px', clipPath: 'none' } } : e2);
+                            onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                          }} className={`p-1.5 rounded border transition-colors ${el.style?.borderRadius === '9999px' ? 'bg-primary/20 border-primary text-primary' : 'bg-muted border-border text-muted-foreground'}`} title="Rond">
+                            <Icon name="GlobeAltIcon" size={12} />
+                          </button>
+                          <button onClick={() => {
+                            // Triangle
+                            const newElements = selectedBlock.layout!.elements!.map(e2 => e2.id === el.id ? { ...e2, style: { ...e2.style, borderRadius: '0', clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' } } : e2);
+                            onUpdateBlock({ ...selectedBlock, layout: { ...selectedBlock.layout!, elements: newElements } });
+                          }} className={`p-1.5 rounded border transition-colors ${el.style?.clipPath?.includes('polygon') ? 'bg-primary/20 border-primary text-primary' : 'bg-muted border-border text-muted-foreground'}`} title="Triangle">
+                            <Icon name="PlayIcon" size={12} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Block Style */}
             <div>
@@ -318,7 +645,7 @@ export default function CustomizationPanel({ design, selectedBlock, onUpdateDesi
                     onClick={() => updateBlockStyle('align', a)}
                     className={`py-1.5 text-xs font-600 rounded-lg transition-all flex items-center justify-center gap-1 ${selectedBlock.style.align === a ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
                   >
-                    <Icon name={a === 'left' ? 'AlignLeftIcon' : a === 'center' ? 'AlignCenterIcon' : 'AlignRightIcon'} size={12} />
+                    <Icon name={a === 'left' ? 'Bars3BottomLeftIcon' : a === 'center' ? 'Bars3Icon' : 'Bars3BottomRightIcon'} size={12} />
                   </button>
                 ))}
               </div>
@@ -340,7 +667,7 @@ export default function CustomizationPanel({ design, selectedBlock, onUpdateDesi
 
         {tab === 'block' && !selectedBlock && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Icon name="MousePointerIcon" size={32} className="text-muted-foreground mb-3" />
+            <Icon name="CursorArrowRaysIcon" size={32} className="text-muted-foreground mb-3" />
             <p className="text-sm font-600 text-foreground">Aucun bloc sélectionné</p>
             <p className="text-xs text-muted-foreground mt-1">Cliquez sur un bloc dans le canvas pour le personnaliser</p>
           </div>

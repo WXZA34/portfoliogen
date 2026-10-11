@@ -139,6 +139,27 @@ export default function TemplateLibrary({ onApply, currentTemplateId }: Template
         ))}
       </div>
 
+      {/* Start from Scratch */}
+      <div className="flex flex-col gap-2 p-3 bg-muted/50 rounded-xl border border-border mt-4">
+        <p className="text-xs font-700 text-foreground">Démarrer de zéro</p>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => onApply('blank-a4', [{ id: 'blank', type: 'custom', content: {}, style: { bgColor: '#ffffff', textColor: '#000000', accentColor: '#3b82f6', padding: 'none', align: 'left', fontFamily: 'DM Sans' }, layout: { type: 'freeform', elements: [] } }], { primaryColor: '#3b82f6', secondaryColor: '#60a5fa', bgColor: '#ffffff', fontHeading: 'DM Sans', fontBody: 'DM Sans', borderRadius: 'md', darkMode: false, presentationWidth: 794, presentationHeight: 1123 })}
+            className="flex flex-col items-center justify-center p-3 rounded-lg border border-border bg-card hover:border-primary/50 transition-all"
+          >
+            <Icon name="DocumentIcon" size={20} className="text-muted-foreground mb-1" />
+            <span className="text-[10px] font-700 text-center leading-tight">Document A4<br/>(PDF)</span>
+          </button>
+          <button
+            onClick={() => onApply('blank-pptx', [{ id: 'blank', type: 'custom', content: {}, style: { bgColor: '#ffffff', textColor: '#000000', accentColor: '#3b82f6', padding: 'none', align: 'left', fontFamily: 'DM Sans' }, layout: { type: 'freeform', elements: [] } }], { primaryColor: '#3b82f6', secondaryColor: '#60a5fa', bgColor: '#ffffff', fontHeading: 'DM Sans', fontBody: 'DM Sans', borderRadius: 'md', darkMode: false, presentationWidth: 1280, presentationHeight: 720 })}
+            className="flex flex-col items-center justify-center p-3 rounded-lg border border-border bg-card hover:border-primary/50 transition-all"
+          >
+            <Icon name="PresentationChartBarIcon" size={20} className="text-muted-foreground mb-1" />
+            <span className="text-[10px] font-700 text-center leading-tight">Présentation 16:9<br/>(PPTX)</span>
+          </button>
+        </div>
+      </div>
+
       {/* Template grid */}
       <div className="space-y-2">
         {filtered.map((tpl) => (
