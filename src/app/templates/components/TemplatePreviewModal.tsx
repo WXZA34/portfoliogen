@@ -301,17 +301,14 @@ export default function TemplatePreviewModal({
                   className="group cursor-pointer rounded-xl overflow-hidden border border-border bg-card hover:border-primary/50 transition-all hover:shadow-md"
                 >
                   <div className="aspect-[16/9] w-full overflow-hidden bg-neutral-900 relative">
-                    {item.previewThumbnail ? (
-                      <img
-                        src={item.previewThumbnail}
-                        alt={item.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full p-3 flex flex-col justify-end text-white" style={{ backgroundColor: item.previewColor || '#1e293b' }}>
-                        <p className="text-xs font-bold truncate">{item.name}</p>
-                      </div>
-                    )}
+                    <SlideRenderer
+                      block={item.designData?.blocks?.[0] || null}
+                      template={item}
+                      slideIndex={0}
+                      fallbackUrl={item.previewThumbnail}
+                      isThumbnail={true}
+                      className="w-full h-full"
+                    />
                   </div>
                   <div className="p-2.5">
                     <p className="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">{item.name}</p>

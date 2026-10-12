@@ -320,7 +320,7 @@ export function extractTemplateSlides(template: Partial<MarketplaceTemplateItem>
           const subtitle = (block.content?.tagline || block.content?.subtitle || `Section ${block.type || idx + 1}`) as string;
           const blockBg = block.style?.bgColor || globalBg;
           const blockAccent = block.style?.accentColor || globalAccent;
-          slideImg = createSlideSvg(title, subtitle, blockBg, blockAccent, idx + 1, imgEl?.url);
+          slideImg = createSlideSvg(title, subtitle, blockBg, blockAccent, idx + 1);
         }
       }
 
@@ -363,22 +363,25 @@ export function extractTemplateSlides(template: Partial<MarketplaceTemplateItem>
   return [];
 }
 
-function createSlideSvg(title: string, subtitle: string, bgColor: string, accentColor: string, slideNum: number, featuredImgUrl?: string): string {
+function createSlideSvg(title: string, subtitle: string, bgColor: string, accentColor: string, slideNum: number): string {
   const safeTitle = (title || `Slide ${slideNum}`).replace(/[<>&"]/g, '').slice(0, 45);
   const safeSub = (subtitle || '').replace(/[<>&"]/g, '').slice(0, 60);
   const bg = bgColor && bgColor !== 'transparent' ? bgColor : '#0f172a';
   const accent = accentColor || '#7c3aed';
-  
-  const imgTag = featuredImgUrl
-    ? `<image href="${featuredImgUrl}" x="740" y="80" width="460" height="560" preserveAspectRatio="xMidYMid slice" clip-path="inset(0 round 16px)"/>`
-    : `<circle cx="1040" cy="220" r="300" fill="${accent}" fill-opacity="0.14"/>`;
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+    <defs>
+      <linearGradient id="grad-${slideNum}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${accent}" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="${accent}" stop-opacity="0.05"/>
+      </linearGradient>
+    </defs>
     <rect width="1280" height="720" fill="${bg}"/>
-    ${imgTag}
-    <rect x="50" y="50" width="1180" height="620" rx="20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
-    <rect x="80" y="80" width="110" height="34" rx="17" fill="${accent}" fill-opacity="0.25"/>
-    <text x="135" y="102" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="${accent}" text-anchor="middle">SLIDE ${slideNum}</text>
+    <circle cx="1040" cy="240" r="320" fill="url(#grad-${slideNum})"/>
+    <rect x="780" y="140" width="420" height="440" rx="24" fill="${accent}" fill-opacity="0.08" stroke="${accent}" stroke-opacity="0.2" stroke-width="2"/>
+    <rect x="50" y="50" width="1180" height="620" rx="20" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
+    <rect x="80" y="80" width="110" height="34" rx="17" fill="${accent}" fill-opacity="0.3"/>
+    <text x="135" y="102" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">SLIDE ${slideNum}</text>
     <text x="80" y="320" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="42" font-weight="800" fill="#ffffff" letter-spacing="-0.02em">${safeTitle}</text>
     <text x="80" y="380" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="400" fill="rgba(255,255,255,0.7)">${safeSub}</text>
     <line x1="80" y1="430" x2="260" y2="430" stroke="${accent}" stroke-width="4" stroke-linecap="round"/>
