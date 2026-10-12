@@ -398,9 +398,10 @@ export async function getMarketplaceTemplates(): Promise<MarketplaceTemplateItem
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error && data && data.length > 0) {
+    let supabaseTemplates: MarketplaceTemplateItem[] = [];
+    if (!error && Array.isArray(data)) {
       // Map Supabase rows to our interface
-      const supabaseTemplates: MarketplaceTemplateItem[] = data.map((row: any) => {
+      supabaseTemplates = data.map((row: any) => {
         const item: MarketplaceTemplateItem = {
           id: row.id,
           originalTemplateId: row.original_template_id,
@@ -431,22 +432,20 @@ export async function getMarketplaceTemplates(): Promise<MarketplaceTemplateItem
         }
         return item;
       });
-
-      // Combine Supabase templates + default catalog + local additions
-      const local = getLocalTemplates();
-      const combined = [...supabaseTemplates, ...DEFAULT_MARKETPLACE_TEMPLATES, ...local];
-      // Deduplicate by id
-      const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
-      return unique;
     }
+
+    // Combine Supabase templates + default catalog + local additions
+    const local = getLocalTemplates();
+    const combined = [...supabaseTemplates, ...DEFAULT_MARKETPLACE_TEMPLATES, ...local];
+    // Deduplicate by id
+    const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
+    return unique;
   } catch (err) {
     console.warn('Supabase marketplace error or table missing, using localStorage fallback', err);
+    const local = getLocalTemplates();
+    const all = [...local, ...DEFAULT_MARKETPLACE_TEMPLATES];
+    return Array.from(new Map(all.map(item => [item.id, item])).values());
   }
-
-  // Fallback: localStorage + default templates
-  const local = getLocalTemplates();
-  const all = [...local, ...DEFAULT_MARKETPLACE_TEMPLATES];
-  return Array.from(new Map(all.map(item => [item.id, item])).values());
 }
 
 // Get user published templates from localStorage
