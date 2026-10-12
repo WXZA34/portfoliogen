@@ -434,11 +434,18 @@ export async function getMarketplaceTemplates(): Promise<MarketplaceTemplateItem
       });
     }
 
-    // Combine Supabase templates + default catalog + local additions
-    const local = getLocalTemplates();
-    const combined = [...supabaseTemplates, ...DEFAULT_MARKETPLACE_TEMPLATES, ...local];
-    // Deduplicate by id
-    const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
+    // If Supabase responded without error, Supabase is the central source of truth for all users.
+    // We only merge local additions if Supabase is offline or unreachable.
+    const combined = [...supabaseTemplates, ...DEFAULT_MARKETPLACE_TEMPLATES];
+    // Deduplicate by name or id
+    const seenNames = new Set<string>();
+    const unique: MarketplaceTemplateItem[] = [];
+    for (const item of combined) {
+      if (!seenNames.has(item.name.toLowerCase().trim())) {
+        seenNames.add(item.name.toLowerCase().trim());
+        unique.push(item);
+      }
+    }
     return unique;
   } catch (err) {
     console.warn('Supabase marketplace error or table missing, using localStorage fallback', err);
