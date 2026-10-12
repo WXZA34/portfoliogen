@@ -81,7 +81,7 @@ CREATE POLICY "Users can only view their own templates"
   ON public.my_templates 
   FOR SELECT 
   TO authenticated 
-  USING (user_id = auth.uid() OR user_id IS NULL);
+  USING (user_id = auth.uid());
 
 CREATE POLICY "Users can only insert their own templates" 
   ON public.my_templates 

@@ -288,10 +288,13 @@ export default function PortfolioEditorContent() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     
-    // Fetch user templates + historical templates (where user_id is null) so no existing customer work is lost
     let query = supabase.from('my_templates').select('*').order('created_at', { ascending: false });
     if (user?.id) {
-      query = query.or(`user_id.eq.${user.id},user_id.is.null`);
+      query = query.eq('user_id', user.id);
+    } else {
+      // Unauthenticated users see empty list of personal templates
+      setSavedTemplates([]);
+      return;
     }
     const { data } = await query;
     if (data) setSavedTemplates(data);
