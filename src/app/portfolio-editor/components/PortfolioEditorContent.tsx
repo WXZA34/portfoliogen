@@ -632,63 +632,102 @@ export default function PortfolioEditorContent() {
     }
   };
 
+  const handleLoadSavedPortfolio = (templateItem: any, useOriginal = false) => {
+    const rawDesign = (useOriginal ? templateItem.original_design : (templateItem.modified_design || templateItem.original_design)) || initialDesign;
+    const targetBlocks = Array.isArray(rawDesign.blocks) && rawDesign.blocks.length > 0 
+      ? rawDesign.blocks 
+      : defaultBlocks;
+
+    const loadedDesign: PortfolioDesign = {
+      ...initialDesign,
+      ...rawDesign,
+      id: templateItem.id || rawDesign.id || `design-${Date.now()}`,
+      name: templateItem.name || rawDesign.name || 'Mon Portfolio',
+      blocks: targetBlocks,
+      globalStyle: {
+        ...initialDesign.globalStyle,
+        ...(rawDesign.globalStyle || {}),
+      },
+    };
+
+    setDesign(loadedDesign);
+
+    // Auto-select first slide or block
+    if (targetBlocks[0]?.id) {
+      setSelectedBlockId(targetBlocks[0].id);
+    } else {
+      setSelectedBlockId(null);
+    }
+
+    // Auto switch to presentation mode if it has slides / presentation dimensions
+    if (loadedDesign.globalStyle?.presentationWidth || loadedDesign.templateId?.startsWith('blank-')) {
+      setPreviewMode('presentation');
+    } else {
+      setPreviewMode('desktop');
+    }
+
+    // Switch left panel to blocks view so user immediately sees their slides/blocks
+    setPanelView('blocks');
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-120px)] -mx-6 -mt-2">
       {/* Top Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-card border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-muted/40 hover:bg-muted/70 border border-border/60 hover:border-border focus-within:border-primary focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/20 transition-all group">
-            <Icon name="PencilSquareIcon" size={14} className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-card border-b border-border flex-shrink-0 gap-2 overflow-x-auto no-scrollbar">
+        {/* Left: Portfolio Name */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-muted/40 hover:bg-muted/70 border border-border/60 hover:border-border focus-within:border-primary focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/20 transition-all group max-w-[200px] sm:max-w-[240px]">
+            <Icon name="PencilSquareIcon" size={13} className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
             <input
               value={design.name}
               onChange={(e) => setDesign((prev) => ({ ...prev, name: e.target.value }))}
               onBlur={handleAutoSaveName}
               placeholder="Nom de votre portfolio..."
-              className="text-sm font-bold text-foreground bg-transparent border-none outline-none w-44 sm:w-64 truncate"
+              className="text-xs sm:text-sm font-bold text-foreground bg-transparent border-none outline-none w-28 sm:w-44 truncate"
               title="Cliquez pour modifier le nom du portfolio"
             />
           </div>
-          <span className="text-[11px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full hidden sm:inline">
+          <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full hidden md:inline">
             Brouillon
           </span>
         </div>
 
-        {/* Preview device switcher */}
-        <div className="flex items-center gap-1 bg-muted rounded-xl p-1">
+        {/* Center: Device Switcher */}
+        <div className="flex items-center gap-0.5 bg-muted rounded-xl p-1 flex-shrink-0">
           {(['desktop', 'tablet', 'mobile', 'presentation'] as const).map((mode) => (
             <button
               key={mode}
               onClick={() => setPreviewMode(mode)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-600 transition-all ${
-                previewMode === mode ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              title={mode === 'desktop' ? 'Bureau' : mode === 'tablet' ? 'Tablette' : mode === 'mobile' ? 'Mobile' : 'Diapo (16:9)'}
+              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                previewMode === mode ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Icon name={mode === 'desktop' ? 'ComputerDesktopIcon' : mode === 'tablet' ? 'DeviceTabletIcon' : mode === 'mobile' ? 'DevicePhoneMobileIcon' : 'PresentationChartBarIcon'} size={13} />
-              <span className="hidden sm:inline capitalize">{mode === 'desktop' ? 'Bureau' : mode === 'tablet' ? 'Tablette' : mode === 'mobile' ? 'Mobile' : 'Diapo (16:9)'}</span>
+              <span className="hidden xl:inline capitalize">{mode === 'desktop' ? 'Bureau' : mode === 'tablet' ? 'Tablette' : mode === 'mobile' ? 'Mobile' : 'Diapo (16:9)'}</span>
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {/* Undo / Redo */}
-          <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
+          <div className="hidden sm:flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
             <button
               onClick={undo}
               disabled={!canUndo}
               title="Annuler (Ctrl+Z)"
-              className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-600 transition-all disabled:opacity-30 text-muted-foreground hover:text-foreground hover:bg-card"
+              className="p-1 rounded-md text-xs font-semibold transition-all disabled:opacity-30 text-muted-foreground hover:text-foreground hover:bg-card"
             >
               <Icon name="ArrowUturnLeftIcon" size={13} />
-              <span className="hidden lg:inline">Annuler</span>
             </button>
             <button
               onClick={redo}
               disabled={!canRedo}
               title="Rétablir (Ctrl+Y)"
-              className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-600 transition-all disabled:opacity-30 text-muted-foreground hover:text-foreground hover:bg-card"
+              className="p-1 rounded-md text-xs font-semibold transition-all disabled:opacity-30 text-muted-foreground hover:text-foreground hover:bg-card"
             >
               <Icon name="ArrowUturnRightIcon" size={13} />
-              <span className="hidden lg:inline">Rétablir</span>
             </button>
           </div>
 
@@ -699,11 +738,12 @@ export default function PortfolioEditorContent() {
                 setShowImportMenu(!showImportMenu);
                 setShowExportMenu(false);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-600 transition-all border border-border text-muted-foreground hover:text-foreground whitespace-nowrap"
+              className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border border-border text-muted-foreground hover:text-foreground whitespace-nowrap"
+              title="Importer un fichier PDF ou PPTX"
             >
               <Icon name="ArrowUpTrayIcon" size={13} />
-              Importer
-              <Icon name="ChevronDownIcon" size={12} className={`transition-transform ${showImportMenu ? 'rotate-180' : ''}`} />
+              <span className="hidden md:inline">Importer</span>
+              <Icon name="ChevronDownIcon" size={11} className={`transition-transform ${showImportMenu ? 'rotate-180' : ''}`} />
             </button>
             {showImportMenu && (
               <div className="absolute top-full right-0 mt-1 w-40 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50 flex flex-col">
@@ -747,11 +787,12 @@ export default function PortfolioEditorContent() {
                 setShowImportMenu(false);
               }}
               disabled={!!exporting}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-600 transition-all border border-border text-muted-foreground hover:text-foreground disabled:opacity-50 whitespace-nowrap"
+              className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border border-border text-muted-foreground hover:text-foreground disabled:opacity-50 whitespace-nowrap"
+              title="Exporter (PNG, PDF, PPTX)"
             >
               {exporting ? <Icon name="ArrowPathIcon" size={13} className="animate-spin" /> : <Icon name="ArrowDownTrayIcon" size={13} />}
-              Exporter
-              <Icon name="ChevronDownIcon" size={12} className={`transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+              <span className="hidden md:inline">Exporter</span>
+              <Icon name="ChevronDownIcon" size={11} className={`transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
             </button>
             {showExportMenu && !exporting && (
               <div className="absolute top-full right-0 mt-1 w-40 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50 flex flex-col">
@@ -791,21 +832,23 @@ export default function PortfolioEditorContent() {
 
           <button
             onClick={() => setShowPreview(!showPreview)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-600 transition-all border whitespace-nowrap ${
+            className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border whitespace-nowrap ${
               showPreview ? 'bg-primary/10 text-primary border-primary/30' : 'border-border text-muted-foreground hover:text-foreground'
             }`}
+            title="Aperçu plein écran"
           >
             <Icon name="EyeIcon" size={13} />
-            Aperçu
+            <span className="hidden lg:inline">Aperçu</span>
           </button>
+
           {/* Nouveau Portfolio */}
           <button
             onClick={handleCreateNewPortfolio}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted border border-border transition-all cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted border border-border transition-all cursor-pointer whitespace-nowrap"
             title="Créer un tout nouveau portfolio vierge sans écraser le portfolio actuel"
           >
             <Icon name="PlusIcon" size={13} />
-            <span className="hidden sm:inline">Nouveau</span>
+            <span className="hidden md:inline">Nouveau</span>
           </button>
 
           {/* Enregistrer sous / Nouveau Portfolio */}
@@ -815,32 +858,32 @@ export default function PortfolioEditorContent() {
               setShowSaveOptionsModal(true);
             }}
             disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-muted text-foreground hover:bg-muted/80 border border-border transition-all whitespace-nowrap cursor-pointer"
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-muted text-foreground hover:bg-muted/80 border border-border transition-all whitespace-nowrap cursor-pointer"
             title="Créer un nouveau portfolio distinct avec ce contenu"
           >
             <Icon name="DocumentDuplicateIcon" size={13} />
-            <span className="hidden lg:inline">Enregistrer sous...</span>
+            <span className="hidden xl:inline">Enregistrer sous...</span>
           </button>
 
           {/* Enregistrer (Met à jour ou Crée) */}
           <button
             onClick={handleSaveClick}
             disabled={saving}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:opacity-90 disabled:opacity-60 transition-all whitespace-nowrap shadow-xs cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:opacity-90 disabled:opacity-60 transition-all whitespace-nowrap shadow-xs cursor-pointer"
             title="Enregistrer les modifications"
           >
             {saving ? <Icon name="ArrowPathIcon" size={13} className="animate-spin" /> : <Icon name="CloudArrowUpIcon" size={13} />}
-            {saving ? 'Enregistrement...' : 'Enregistrer'}
+            <span>{saving ? '...' : 'Enregistrer'}</span>
           </button>
 
           {/* Partager Template Marketplace */}
           <button
             onClick={() => setShowPublishModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 whitespace-nowrap cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 whitespace-nowrap cursor-pointer"
             title="Partager ce modèle sur la Marketplace publique"
           >
             <Icon name="GlobeAltIcon" size={13} />
-            <span className="hidden md:inline">Partager en Template</span>
+            <span className="hidden lg:inline">Template</span>
           </button>
         </div>
       </div>
@@ -972,10 +1015,10 @@ export default function PortfolioEditorContent() {
                       }} className="text-xs bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg font-600 hover:bg-emerald-200 flex items-center justify-center gap-2">
                         <Icon name="LinkIcon" size={12} /> Copier le lien public
                       </button>
-                      <button onClick={() => setDesign(t.modified_design || t.original_design)} className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-600 hover:opacity-90 flex items-center justify-center gap-2 cursor-pointer">
+                      <button onClick={() => handleLoadSavedPortfolio(t, false)} className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-600 hover:opacity-90 flex items-center justify-center gap-2 cursor-pointer">
                         <Icon name="PencilIcon" size={12} /> Charger (Version Modifiée)
                       </button>
-                      <button onClick={() => setDesign(t.original_design)} className="text-xs bg-card border border-border text-foreground px-3 py-1.5 rounded-lg font-600 hover:bg-muted flex items-center justify-center gap-2 cursor-pointer">
+                      <button onClick={() => handleLoadSavedPortfolio(t, true)} className="text-xs bg-card border border-border text-foreground px-3 py-1.5 rounded-lg font-600 hover:bg-muted flex items-center justify-center gap-2 cursor-pointer">
                         <Icon name="ClockIcon" size={12} /> Charger (Version Originale)
                       </button>
                       <button onClick={() => handleDuplicateTemplate(t)} className="text-xs bg-muted text-foreground border border-border px-3 py-1.5 rounded-lg font-600 hover:bg-muted/80 flex items-center justify-center gap-2 transition-all cursor-pointer" title="Créer une copie indépendante de ce portfolio">
