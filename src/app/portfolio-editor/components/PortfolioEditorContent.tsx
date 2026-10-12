@@ -181,6 +181,8 @@ export default function PortfolioEditorContent() {
   const dragBlockId = useRef<string | null>(null);
   const [savedTemplates, setSavedTemplates] = useState<any[]>([]);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showSaveOptionsModal, setShowSaveOptionsModal] = useState(false);
+  const [saveModalName, setSaveModalName] = useState('');
 
   // ─── Check for template from URL (e.g. /portfolio-editor?templateId=xxx) ───
   useEffect(() => {
@@ -530,54 +532,30 @@ export default function PortfolioEditorContent() {
     setPanelView('blocks');
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const supabase = createClient();
-      let dbId = design.id.startsWith('design-') ? undefined : design.id;
-      
-      if (dbId) {
-        // Update
-        const { error } = await supabase.from('my_templates').update({
-          name: design.name,
-          modified_design: design,
-        }).eq('id', dbId);
-        if (error) throw error;
-        alert(`Portfolio "${design.name}" mis à jour avec succès !`);
-      } else {
-        // Insert
-        const { data, error } = await supabase.from('my_templates').insert({
-          name: design.name,
-          original_design: design,
-          modified_design: design,
-        }).select().single();
-        if (error) throw error;
-        if (data) setDesign(prev => ({ ...prev, id: data.id }));
-        alert(`Nouveau portfolio "${design.name}" enregistré avec succès !`);
-      }
-      loadSavedTemplates();
-    } catch (e: any) {
-      console.error(e);
-      alert("Erreur de sauvegarde: " + e.message);
+  const handleSaveClick = () => {
+    const isExisting = !design.id.startsWith('design-');
+    if (isExisting) {
+      setSaveModalName(design.name);
+      setShowSaveOptionsModal(true);
+    } else {
+      executeSaveNew(design.name);
     }
-    setSaving(false);
   };
 
-  const handleSaveAsNew = async () => {
-    const copyName = prompt("Nom pour cette nouvelle copie de portfolio :", `${design.name} (Nouveau)`);
-    if (!copyName || !copyName.trim()) return;
-
+  const executeSaveNew = async (chosenName?: string) => {
+    const finalName = (chosenName || design.name || 'Mon Portfolio').trim();
     setSaving(true);
+    setShowSaveOptionsModal(false);
     try {
       const supabase = createClient();
       const newDesign = {
         ...design,
         id: `design-${Date.now()}`,
-        name: copyName.trim(),
+        name: finalName,
       };
 
       const { data, error } = await supabase.from('my_templates').insert({
-        name: copyName.trim(),
+        name: finalName,
         original_design: newDesign,
         modified_design: newDesign,
       }).select().single();
@@ -586,13 +564,47 @@ export default function PortfolioEditorContent() {
       if (data) {
         setDesign({ ...newDesign, id: data.id });
       }
-      alert(`Nouveau portfolio "${copyName.trim()}" enregistré avec succès !`);
-      loadSavedTemplates();
+      alert(`Nouveau portfolio "${finalName}" enregistré avec succès ! Vous pouvez en ajouter autant que vous voulez.`);
+      await loadSavedTemplates();
     } catch (e: any) {
       console.error(e);
-      alert("Erreur: " + e.message);
+      alert("Erreur lors de l'enregistrement : " + e.message);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
+  };
+
+  const executeUpdateExisting = async (chosenName?: string) => {
+    const finalName = (chosenName || design.name || 'Mon Portfolio').trim();
+    const dbId = design.id.startsWith('design-') ? undefined : design.id;
+    if (!dbId) {
+      return executeSaveNew(finalName);
+    }
+
+    setSaving(true);
+    setShowSaveOptionsModal(false);
+    try {
+      const supabase = createClient();
+      const updatedDesign = {
+        ...design,
+        name: finalName,
+      };
+
+      const { error } = await supabase.from('my_templates').update({
+        name: finalName,
+        modified_design: updatedDesign,
+      }).eq('id', dbId);
+
+      if (error) throw error;
+      setDesign(updatedDesign);
+      alert(`Portfolio "${finalName}" mis à jour avec succès !`);
+      await loadSavedTemplates();
+    } catch (e: any) {
+      console.error(e);
+      alert("Erreur de mise à jour : " + e.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDuplicateTemplate = async (templateItem: any) => {
@@ -612,11 +624,11 @@ export default function PortfolioEditorContent() {
       });
 
       if (error) throw error;
-      alert(`Portfolio dupliqué sous le nom "${copyName}" !`);
+      alert(`Portfolio dupliqué sous le nom "${copyName}" ! Retrouvez-le dans "Mes Modèles".`);
       loadSavedTemplates();
     } catch (e: any) {
       console.error(e);
-      alert("Erreur de duplication: " + e.message);
+      alert("Erreur de duplication : " + e.message);
     }
   };
 
@@ -798,7 +810,10 @@ export default function PortfolioEditorContent() {
 
           {/* Enregistrer sous / Nouveau Portfolio */}
           <button
-            onClick={handleSaveAsNew}
+            onClick={() => {
+              setSaveModalName(`${design.name} (Copie)`);
+              setShowSaveOptionsModal(true);
+            }}
             disabled={saving}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-muted text-foreground hover:bg-muted/80 border border-border transition-all whitespace-nowrap cursor-pointer"
             title="Créer un nouveau portfolio distinct avec ce contenu"
@@ -809,7 +824,7 @@ export default function PortfolioEditorContent() {
 
           {/* Enregistrer (Met à jour ou Crée) */}
           <button
-            onClick={handleSave}
+            onClick={handleSaveClick}
             disabled={saving}
             className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:opacity-90 disabled:opacity-60 transition-all whitespace-nowrap shadow-xs cursor-pointer"
             title="Enregistrer les modifications"
@@ -1071,6 +1086,96 @@ export default function PortfolioEditorContent() {
           // Open notification or redirect optionally
         }}
       />
+
+      {/* Modal Choix de Sauvegarde (Nouveau vs Mise à jour) */}
+      {showSaveOptionsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                  <Icon name="DocumentDuplicateIcon" size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-foreground">Enregistrer le portfolio</h3>
+                  <p className="text-xs text-muted-foreground">Choisissez comment enregistrer votre travail</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSaveOptionsModal(false)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              >
+                <Icon name="XMarkIcon" size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-foreground">
+                Titre du portfolio :
+              </label>
+              <input
+                type="text"
+                value={saveModalName}
+                onChange={(e) => setSaveModalName(e.target.value)}
+                placeholder="Mon Portfolio..."
+                className="w-full px-3.5 py-2.5 text-sm font-semibold rounded-xl border border-border bg-muted/40 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                autoFocus
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 pt-2">
+              {/* Option 1 : Nouveau Portfolio */}
+              <button
+                onClick={() => executeSaveNew(saveModalName)}
+                disabled={saving}
+                className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-primary/40 bg-primary/5 hover:bg-primary/10 text-left transition-all group cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                  <Icon name="PlusIcon" size={18} />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                    Enregistrer comme un NOUVEAU portfolio
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Crée un nouveau portfolio distinct dans votre compte (5ème, 6ème, etc.).
+                  </div>
+                </div>
+              </button>
+
+              {/* Option 2 : Mettre à jour l'existant */}
+              {!design.id.startsWith('design-') && (
+                <button
+                  onClick={() => executeUpdateExisting(saveModalName)}
+                  disabled={saving}
+                  className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-border bg-muted/30 hover:bg-muted/60 text-left transition-all group cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-muted text-foreground flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                    <Icon name="ArrowPathIcon" size={18} />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-foreground">
+                      Mettre à jour ce portfolio actuel
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Écrase la version actuelle de ce portfolio sans en créer un nouveau.
+                    </div>
+                  </div>
+                </button>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowSaveOptionsModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
