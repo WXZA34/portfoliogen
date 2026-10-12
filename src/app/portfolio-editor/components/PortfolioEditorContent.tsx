@@ -194,6 +194,7 @@ export default function PortfolioEditorContent() {
           if (match && match.designData) {
             setDesign((prev) => ({
               ...prev,
+              id: `design-${Date.now()}`,
               name: match.name,
               templateId: match.id,
               blocks: match.designData.blocks,
@@ -515,7 +516,13 @@ export default function PortfolioEditorContent() {
   };
 
   const handleApplyTemplate = (templateId: string, templateBlocks: Block[], globalStyle: PortfolioDesign['globalStyle']) => {
-    setDesign((prev) => ({ ...prev, templateId, blocks: templateBlocks, globalStyle }));
+    setDesign((prev) => ({
+      ...prev,
+      id: `design-${Date.now()}`,
+      templateId,
+      blocks: templateBlocks,
+      globalStyle,
+    }));
     setSelectedBlockId(templateBlocks[0]?.id ?? null);
     if (templateId.startsWith('blank-')) {
       setPreviewMode('presentation');
@@ -536,6 +543,7 @@ export default function PortfolioEditorContent() {
           modified_design: design,
         }).eq('id', dbId);
         if (error) throw error;
+        alert(`Portfolio "${design.name}" mis à jour avec succès !`);
       } else {
         // Insert
         const { data, error } = await supabase.from('my_templates').insert({
@@ -545,13 +553,71 @@ export default function PortfolioEditorContent() {
         }).select().single();
         if (error) throw error;
         if (data) setDesign(prev => ({ ...prev, id: data.id }));
+        alert(`Nouveau portfolio "${design.name}" enregistré avec succès !`);
       }
-      alert("Sauvegardé avec succès !");
+      loadSavedTemplates();
     } catch (e: any) {
       console.error(e);
       alert("Erreur de sauvegarde: " + e.message);
     }
     setSaving(false);
+  };
+
+  const handleSaveAsNew = async () => {
+    const copyName = prompt("Nom pour cette nouvelle copie de portfolio :", `${design.name} (Nouveau)`);
+    if (!copyName || !copyName.trim()) return;
+
+    setSaving(true);
+    try {
+      const supabase = createClient();
+      const newDesign = {
+        ...design,
+        id: `design-${Date.now()}`,
+        name: copyName.trim(),
+      };
+
+      const { data, error } = await supabase.from('my_templates').insert({
+        name: copyName.trim(),
+        original_design: newDesign,
+        modified_design: newDesign,
+      }).select().single();
+
+      if (error) throw error;
+      if (data) {
+        setDesign({ ...newDesign, id: data.id });
+      }
+      alert(`Nouveau portfolio "${copyName.trim()}" enregistré avec succès !`);
+      loadSavedTemplates();
+    } catch (e: any) {
+      console.error(e);
+      alert("Erreur: " + e.message);
+    }
+    setSaving(false);
+  };
+
+  const handleDuplicateTemplate = async (templateItem: any) => {
+    const copyName = `${templateItem.name} (Copie)`;
+    try {
+      const supabase = createClient();
+      const newDesign = {
+        ...(templateItem.modified_design || templateItem.original_design || initialDesign),
+        id: `design-${Date.now()}`,
+        name: copyName,
+      };
+
+      const { error } = await supabase.from('my_templates').insert({
+        name: copyName,
+        original_design: newDesign,
+        modified_design: newDesign,
+      });
+
+      if (error) throw error;
+      alert(`Portfolio dupliqué sous le nom "${copyName}" !`);
+      loadSavedTemplates();
+    } catch (e: any) {
+      console.error(e);
+      alert("Erreur de duplication: " + e.message);
+    }
   };
 
   return (
@@ -720,21 +786,46 @@ export default function PortfolioEditorContent() {
             <Icon name="EyeIcon" size={13} />
             Aperçu
           </button>
+          {/* Nouveau Portfolio */}
           <button
-            onClick={() => setShowPublishModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-600 transition-all border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 whitespace-nowrap"
-            title="Publier ce modèle sur la Marketplace communautaire"
+            onClick={handleCreateNewPortfolio}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted border border-border transition-all cursor-pointer whitespace-nowrap"
+            title="Créer un tout nouveau portfolio vierge sans écraser le portfolio actuel"
           >
-            <Icon name="GlobeAltIcon" size={13} />
-            <span className="hidden md:inline">Partager en Template</span>
+            <Icon name="PlusIcon" size={13} />
+            <span className="hidden sm:inline">Nouveau</span>
           </button>
+
+          {/* Enregistrer sous / Nouveau Portfolio */}
+          <button
+            onClick={handleSaveAsNew}
+            disabled={saving}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-muted text-foreground hover:bg-muted/80 border border-border transition-all whitespace-nowrap cursor-pointer"
+            title="Créer un nouveau portfolio distinct avec ce contenu"
+          >
+            <Icon name="DocumentDuplicateIcon" size={13} />
+            <span className="hidden lg:inline">Enregistrer sous...</span>
+          </button>
+
+          {/* Enregistrer (Met à jour ou Crée) */}
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-600 hover:opacity-90 disabled:opacity-60 transition-all whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:opacity-90 disabled:opacity-60 transition-all whitespace-nowrap shadow-xs cursor-pointer"
+            title="Enregistrer les modifications"
           >
-            {saving ? <Icon name="ArrowPathIcon" size={13} className="animate-spin" /> : <Icon name="CheckCircleIcon" size={13} />}
-            {saving ? 'Sauvegarde...' : 'Publier'}
+            {saving ? <Icon name="ArrowPathIcon" size={13} className="animate-spin" /> : <Icon name="CloudArrowUpIcon" size={13} />}
+            {saving ? 'Enregistrement...' : 'Enregistrer'}
+          </button>
+
+          {/* Partager Template Marketplace */}
+          <button
+            onClick={() => setShowPublishModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 whitespace-nowrap cursor-pointer"
+            title="Partager ce modèle sur la Marketplace publique"
+          >
+            <Icon name="GlobeAltIcon" size={13} />
+            <span className="hidden md:inline">Partager en Template</span>
           </button>
         </div>
       </div>
@@ -866,11 +957,14 @@ export default function PortfolioEditorContent() {
                       }} className="text-xs bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg font-600 hover:bg-emerald-200 flex items-center justify-center gap-2">
                         <Icon name="LinkIcon" size={12} /> Copier le lien public
                       </button>
-                      <button onClick={() => setDesign(t.modified_design || t.original_design)} className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-600 hover:opacity-90 flex items-center justify-center gap-2">
+                      <button onClick={() => setDesign(t.modified_design || t.original_design)} className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-600 hover:opacity-90 flex items-center justify-center gap-2 cursor-pointer">
                         <Icon name="PencilIcon" size={12} /> Charger (Version Modifiée)
                       </button>
-                      <button onClick={() => setDesign(t.original_design)} className="text-xs bg-card border border-border text-foreground px-3 py-1.5 rounded-lg font-600 hover:bg-muted flex items-center justify-center gap-2">
+                      <button onClick={() => setDesign(t.original_design)} className="text-xs bg-card border border-border text-foreground px-3 py-1.5 rounded-lg font-600 hover:bg-muted flex items-center justify-center gap-2 cursor-pointer">
                         <Icon name="ClockIcon" size={12} /> Charger (Version Originale)
+                      </button>
+                      <button onClick={() => handleDuplicateTemplate(t)} className="text-xs bg-muted text-foreground border border-border px-3 py-1.5 rounded-lg font-600 hover:bg-muted/80 flex items-center justify-center gap-2 transition-all cursor-pointer" title="Créer une copie indépendante de ce portfolio">
+                        <Icon name="DocumentDuplicateIcon" size={12} /> Dupliquer ce portfolio
                       </button>
                     </div>
 
