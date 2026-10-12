@@ -3,6 +3,7 @@ import type { Block, PortfolioDesign } from '../app/portfolio-editor/components/
 
 export interface MarketplaceTemplateItem {
   id: string;
+  originalTemplateId?: string; // ID of the local saved template in my_templates
   name: string;
   author: string;
   category: string;
@@ -237,6 +238,7 @@ export async function publishToMarketplace(template: Omit<MarketplaceTemplateIte
       description: newItem.description,
       downloads: newItem.downloads,
       rating: newItem.rating,
+      original_template_id: newItem.originalTemplateId,
       preview_thumbnail: newItem.previewThumbnail,
       preview_color: newItem.previewColor,
       tags: newItem.tags,
@@ -266,4 +268,21 @@ export async function trackTemplateDownload(templateId: string) {
   } catch {
     // silently continue
   }
+}
+
+// Remove template from Marketplace (unpublish)
+export async function removeFromMarketplace(templateId: string): Promise<boolean> {
+  try {
+    const supabase = createClient();
+    await supabase.from('marketplace_templates').delete().or(`id.eq.${templateId},original_template_id.eq.${templateId}`);
+  } catch (err) {
+    console.warn('Could not delete from Supabase marketplace', err);
+  }
+
+  if (typeof window !== 'undefined') {
+    const local = getLocalTemplates();
+    const filtered = local.filter((t) => t.id !== templateId && t.originalTemplateId !== templateId && t.designData?.templateId !== templateId);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
+  }
+  return true;
 }

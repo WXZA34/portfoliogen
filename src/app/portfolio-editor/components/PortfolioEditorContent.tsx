@@ -277,10 +277,22 @@ export default function PortfolioEditorContent() {
     }
   }, [design.blocks, selectedBlockId]);
 
+  const [publishedTemplateIds, setPublishedTemplateIds] = useState<string[]>([]);
+
   const loadSavedTemplates = async () => {
     const supabase = createClient();
     const { data } = await supabase.from('my_templates').select('*').order('created_at', { ascending: false });
     if (data) setSavedTemplates(data);
+
+    // Fetch marketplace templates to check publication status
+    try {
+      const { getMarketplaceTemplates } = await import('@/lib/services/marketplaceService');
+      const mkt = await getMarketplaceTemplates();
+      const pubIds = mkt.map(m => m.originalTemplateId || m.id).filter(Boolean) as string[];
+      setPublishedTemplateIds(pubIds);
+    } catch {
+      // ignore
+    }
   };
 
   useEffect(() => {
@@ -717,11 +729,48 @@ export default function PortfolioEditorContent() {
                         <Icon name="ClockIcon" size={12} /> Charger (Version Originale)
                       </button>
                     </div>
-                    <div className="pt-2 border-t border-border mt-2">
+
+                    {/* Marketplace Toggle / Status */}
+                    <div className="pt-2 border-t border-border flex flex-col gap-1.5">
+                      {publishedTemplateIds.includes(t.id) ? (
+                        <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg">
+                          <span className="text-[11px] font-700 text-emerald-600 flex items-center gap-1">
+                            <Icon name="CheckCircleIcon" size={12} /> Sur la Marketplace
+                          </span>
+                          <button
+                            onClick={async () => {
+                              if (!confirm("Retirer ce modèle de la Marketplace publique ?")) return;
+                              const { removeFromMarketplace } = await import('@/lib/services/marketplaceService');
+                              await removeFromMarketplace(t.id);
+                              loadSavedTemplates();
+                            }}
+                            className="text-[10px] font-bold text-red-500 hover:text-red-700 underline"
+                          >
+                            Retirer
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setDesign(t.modified_design || t.original_design);
+                            setShowPublishModal(true);
+                          }}
+                          className="text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg font-700 hover:bg-primary/20 flex items-center justify-center gap-1.5 transition-all"
+                        >
+                          <Icon name="GlobeAltIcon" size={13} />
+                          Mettre sur la Marketplace
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-border mt-1">
                       <button onClick={async () => {
                         if (!confirm("Voulez-vous vraiment supprimer ce modèle ?")) return;
                         const supabase = createClient();
                         await supabase.from('my_templates').delete().eq('id', t.id);
+                        // Also remove from marketplace if was published
+                        const { removeFromMarketplace } = await import('@/lib/services/marketplaceService');
+                        await removeFromMarketplace(t.id);
                         loadSavedTemplates();
                       }} className="text-xs text-red-500 hover:text-red-600 font-600 w-full text-center flex items-center justify-center gap-1">
                         <Icon name="TrashIcon" size={12} /> Supprimer définitivement

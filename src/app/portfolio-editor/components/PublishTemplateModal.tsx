@@ -59,6 +59,7 @@ export default function PublishTemplateModal({
       }
 
       const published = await publishToMarketplace({
+        originalTemplateId: design.id,
         name: name.trim(),
         author: author.trim() || 'Anonyme',
         category,
@@ -69,7 +70,7 @@ export default function PublishTemplateModal({
         tags,
         isPremium,
         designData: {
-          templateId: `custom-${Date.now()}`,
+          templateId: design.id,
           blocks: design.blocks,
           globalStyle: design.globalStyle,
         },
