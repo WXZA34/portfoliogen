@@ -286,7 +286,13 @@ export default function PortfolioEditorContent() {
 
   const loadSavedTemplates = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from('my_templates').select('*').order('created_at', { ascending: false });
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    let query = supabase.from('my_templates').select('*').order('created_at', { ascending: false });
+    if (user?.id) {
+      query = query.eq('user_id', user.id);
+    }
+    const { data } = await query;
     if (data) setSavedTemplates(data);
 
     // Fetch marketplace templates to check publication status
@@ -554,10 +560,13 @@ export default function PortfolioEditorContent() {
         name: finalName,
       };
 
+      const { data: { user } } = await supabase.auth.getUser();
+
       const { data, error } = await supabase.from('my_templates').insert({
         name: finalName,
         original_design: newDesign,
         modified_design: newDesign,
+        ...(user?.id ? { user_id: user.id } : {}),
       }).select().single();
 
       if (error) throw error;
@@ -611,6 +620,8 @@ export default function PortfolioEditorContent() {
     const copyName = `${templateItem.name} (Copie)`;
     try {
       const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
       const newDesign = {
         ...(templateItem.modified_design || templateItem.original_design || initialDesign),
         id: `design-${Date.now()}`,
@@ -621,6 +632,7 @@ export default function PortfolioEditorContent() {
         name: copyName,
         original_design: newDesign,
         modified_design: newDesign,
+        ...(user?.id ? { user_id: user.id } : {}),
       });
 
       if (error) throw error;

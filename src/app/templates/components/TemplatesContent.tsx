@@ -30,10 +30,17 @@ export default function TemplatesContent() {
       // Check saved templates from my_templates to know which ones belong to current user
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
-      const { data: myData } = await supabase.from('my_templates').select('id, name');
-      if (myData) {
+      const { data: { user } } = await supabase.auth.getUser();
+      let myQuery = supabase.from('my_templates').select('id, name');
+      if (user?.id) {
+        myQuery = myQuery.eq('user_id', user.id);
+      }
+      const { data: myData } = await myQuery;
+      if (myData && user?.id) {
         const identifiers = myData.flatMap((d) => [d.id, d.name]);
         setMyTemplateIds(identifiers);
+      } else {
+        setMyTemplateIds([]);
       }
     } catch (err) {
       console.error(err);

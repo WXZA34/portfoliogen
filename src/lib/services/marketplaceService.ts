@@ -432,9 +432,9 @@ export async function getMarketplaceTemplates(): Promise<MarketplaceTemplateItem
         return item;
       });
 
-      // Combine with local additions
+      // Combine Supabase templates + default catalog + local additions
       const local = getLocalTemplates();
-      const combined = [...local, ...supabaseTemplates];
+      const combined = [...supabaseTemplates, ...DEFAULT_MARKETPLACE_TEMPLATES, ...local];
       // Deduplicate by id
       const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
       return unique;
@@ -496,6 +496,7 @@ export async function publishToMarketplace(template: Omit<MarketplaceTemplateIte
   // Try to save to Supabase if table exists
   try {
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('marketplace_templates').insert({
       id: newItem.id,
       name: newItem.name,
@@ -513,6 +514,7 @@ export async function publishToMarketplace(template: Omit<MarketplaceTemplateIte
       is_premium: newItem.isPremium,
       is_new: newItem.isNew,
       design_data: newItem.designData,
+      ...(user?.id ? { user_id: user.id } : {}),
     });
   } catch (err) {
     console.warn('Could not save to Supabase marketplace_templates, fallback to local', err);
