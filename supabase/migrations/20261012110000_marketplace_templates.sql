@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.marketplace_templates (
   description TEXT,
   tags TEXT[] DEFAULT '{}',
   preview_thumbnail TEXT,
+  preview_slides TEXT[] DEFAULT '{}',
   preview_color TEXT DEFAULT '#7c3aed',
   design_data JSONB NOT NULL,
   downloads INT DEFAULT 0,

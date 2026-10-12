@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Icon from '@/components/ui/AppIcon';
-import type { MarketplaceTemplateItem } from '@/lib/services/marketplaceService';
+import { extractTemplateSlides, type MarketplaceTemplateItem } from '@/lib/services/marketplaceService';
 
 interface TemplatePreviewModalProps {
   template: MarketplaceTemplateItem | null;
@@ -23,14 +23,37 @@ export default function TemplatePreviewModal({
   const [isFavorite, setIsFavorite] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
 
+  // Compute slides array using high-fidelity extraction
+  const slides = useMemo(() => {
+    if (!template) return [];
+    return extractTemplateSlides(template);
+  }, [template]);
+
+  const totalSlides = slides.length > 0 ? slides.length : (template?.designData?.blocks?.length || 1);
+
+  // Reset slide index on template change
+  useEffect(() => {
+    setActiveSlide(0);
+  }, [template?.id]);
+
+  // Keyboard navigation (Left, Right, Escape)
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        setActiveSlide((prev) => Math.max(0, prev - 1));
+      } else if (e.key === 'ArrowRight') {
+        setActiveSlide((prev) => Math.min(totalSlides - 1, prev + 1));
+      } else if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, totalSlides, onClose]);
+
   if (!isOpen || !template) return null;
 
-  // Compute slides array for the preview
-  const slides = (template.previewSlides && template.previewSlides.length > 0)
-    ? template.previewSlides
-    : (template.previewThumbnail ? [template.previewThumbnail] : []);
-
-  const totalSlides = slides.length > 0 ? slides.length : (template.designData?.blocks?.length || 1);
   const currentSlideUrl = slides[activeSlide] || slides[0] || template.previewThumbnail;
 
   // Related templates from the same category or overall recommendations
@@ -72,7 +95,7 @@ export default function TemplatePreviewModal({
                   <img
                     src={currentSlideUrl}
                     alt={`${template.name} - Diapositive ${activeSlide + 1}`}
-                    className="w-full h-full object-cover transition-all duration-300"
+                    className="w-full h-full object-contain bg-neutral-950 transition-all duration-300"
                   />
                 ) : (
                   <div

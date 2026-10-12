@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import type { PortfolioDesign } from './PortfolioEditorContent';
-import { publishToMarketplace } from '@/lib/services/marketplaceService';
+import { publishToMarketplace, extractTemplateSlides } from '@/lib/services/marketplaceService';
 import { toast } from 'sonner';
 
 interface PublishTemplateModalProps {
@@ -33,6 +33,18 @@ export default function PublishTemplateModal({
   const [isPremium, setIsPremium] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
+  // Pre-calculate extracted slides
+  const extractedSlides = React.useMemo(() => {
+    return extractTemplateSlides({
+      previewColor: design.globalStyle.primaryColor || '#7c3aed',
+      designData: {
+        blocks: design.blocks,
+        globalStyle: design.globalStyle,
+        templateId: design.id,
+      },
+    });
+  }, [design]);
+
   if (!isOpen) return null;
 
   const handlePublish = async (e: React.FormEvent) => {
@@ -49,13 +61,21 @@ export default function PublishTemplateModal({
         .map((t) => t.trim())
         .filter(Boolean);
 
-      let thumbnail: string | undefined = undefined;
-      try {
-        const { captureCanvasThumbnail } = await import('../utils/exportCanvas');
-        const captured = await captureCanvasThumbnail('portfolio-canvas-export');
-        if (captured) thumbnail = captured;
-      } catch (err) {
-        console.warn('Could not capture preview thumbnail', err);
+      // Use extracted slides or fallback
+      let slides = extractedSlides;
+      let thumbnail: string | undefined = slides[0];
+
+      if (!thumbnail) {
+        try {
+          const { captureCanvasThumbnail } = await import('../utils/exportCanvas');
+          const captured = await captureCanvasThumbnail('portfolio-canvas-export');
+          if (captured) {
+            thumbnail = captured;
+            slides = [captured];
+          }
+        } catch (err) {
+          console.warn('Could not capture preview thumbnail', err);
+        }
       }
 
       const published = await publishToMarketplace({
@@ -66,6 +86,7 @@ export default function PublishTemplateModal({
         theme,
         description: description.trim(),
         previewThumbnail: thumbnail,
+        previewSlides: slides,
         previewColor: design.globalStyle.primaryColor || '#7c3aed',
         tags,
         isPremium,
@@ -113,20 +134,29 @@ export default function PublishTemplateModal({
         <form onSubmit={handlePublish} className="p-6 space-y-4 overflow-y-auto flex-1">
           {/* Preview banner */}
           <div
-            className="h-28 rounded-xl p-4 flex flex-col justify-end relative overflow-hidden text-white shadow-inner"
+            className="h-32 rounded-xl p-4 flex flex-col justify-end relative overflow-hidden text-white shadow-inner group border border-border"
             style={{
               backgroundColor: design.globalStyle.bgColor || '#0f172a',
-              border: `2px solid ${design.globalStyle.primaryColor || '#7c3aed'}`,
+              borderColor: design.globalStyle.primaryColor || '#7c3aed',
             }}
           >
+            {extractedSlides[0] && (
+              <img
+                src={extractedSlides[0]}
+                alt="Aperçu première slide"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20" />
+            
             <div
-              className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[10px] font-700 tracking-wide uppercase text-white shadow-sm"
+              className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[10px] font-700 tracking-wide uppercase text-white shadow-sm z-10"
               style={{ backgroundColor: design.globalStyle.primaryColor || '#7c3aed' }}
             >
-              {design.blocks.length} {design.blocks.length > 1 ? 'pages / blocs' : 'page'}
+              {extractedSlides.length || design.blocks.length} {extractedSlides.length > 1 || design.blocks.length > 1 ? 'pages' : 'page'}
             </div>
-            <p className="text-sm font-bold truncate drop-shadow">{name || 'Aperçu du Template'}</p>
-            <p className="text-xs opacity-80 truncate">{author} • {category}</p>
+            <p className="text-sm font-bold truncate drop-shadow relative z-10">{name || 'Aperçu du Template'}</p>
+            <p className="text-xs opacity-90 truncate relative z-10">{author} • {category}</p>
           </div>
 
           <div>

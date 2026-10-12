@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@/components/ui/AppIcon';
-import type { MarketplaceTemplateItem } from '@/lib/services/marketplaceService';
+import { extractTemplateSlides, type MarketplaceTemplateItem } from '@/lib/services/marketplaceService';
 
 interface TemplateCardProps {
   template: MarketplaceTemplateItem;
@@ -15,17 +15,17 @@ export default function TemplateCard({ template, onPreview, onUse }: TemplateCar
   const [slideIndex, setSlideIndex] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // List of slides to cycle through on hover: either explicit previewSlides, or blocks from designData
-  const slides = (template.previewSlides && template.previewSlides.length > 0)
-    ? template.previewSlides
-    : (template.previewThumbnail ? [template.previewThumbnail] : []);
+  // Extract all high-fidelity slides (from previewSlides, PDF image elements, or design blocks)
+  const slides = React.useMemo(() => {
+    return extractTemplateSlides(template);
+  }, [template]);
 
   // When mouse enters, start auto-scrolling through slides like Canva
   useEffect(() => {
     if (isHovered && slides.length > 1) {
       timerRef.current = setInterval(() => {
         setSlideIndex((prev) => (prev + 1) % slides.length);
-      }, 1100); // changes every 1.1s for a smooth slideshow preview
+      }, 1000); // 1.0s per slide for dynamic, smooth presentation cycling
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
       setSlideIndex(0);
@@ -36,7 +36,7 @@ export default function TemplateCard({ template, onPreview, onUse }: TemplateCar
     };
   }, [isHovered, slides.length]);
 
-  const totalSlidesCount = template.designData?.blocks?.length || slides.length || 1;
+  const totalSlidesCount = slides.length || template.designData?.blocks?.length || 1;
 
   return (
     <div
@@ -91,22 +91,24 @@ export default function TemplateCard({ template, onPreview, onUse }: TemplateCar
 
         {/* Canva-style slide progress pill indicator on hover */}
         {slides.length > 1 && isHovered && (
-          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-full z-20 animate-in fade-in duration-200">
-            {slides.map((_, i) => (
+          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-full z-20 animate-in fade-in duration-200 max-w-[75%] overflow-hidden">
+            {slides.slice(0, 10).map((_, i) => (
               <span
                 key={i}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === slideIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/40'
+                  i === (slideIndex % Math.min(slides.length, 10)) ? 'w-3.5 bg-white' : 'w-1.5 bg-white/40'
                 }`}
               />
             ))}
           </div>
         )}
 
-        {/* Slide Counter badge (like "3 sur 17" on Canva) */}
+        {/* Slide Counter badge (like "3 sur 12" on Canva) */}
         <div className="absolute bottom-2.5 left-2.5 z-20">
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-black/60 text-white/90 backdrop-blur-xs shadow-xs">
-            {slides.length > 1 ? `${slideIndex + 1} sur ${totalSlidesCount}` : `${totalSlidesCount} page${totalSlidesCount > 1 ? 's' : ''}`}
+          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-black/75 text-white backdrop-blur-xs shadow-sm">
+            {slides.length > 1 && isHovered
+              ? `${slideIndex + 1} sur ${totalSlidesCount}`
+              : `${totalSlidesCount} page${totalSlidesCount > 1 ? 's' : ''}`}
           </span>
         </div>
 

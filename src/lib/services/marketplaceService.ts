@@ -289,7 +289,108 @@ export const DEFAULT_MARKETPLACE_TEMPLATES: MarketplaceTemplateItem[] = [
   }
 ];
 
-// Helper to fetch all templates (Supabase + localStorage fallback)
+// Extract all high-fidelity slide preview images from a template
+export function extractTemplateSlides(template: Partial<MarketplaceTemplateItem>): string[] {
+  // If template already has a multi-slide list, use it
+  if (template.previewSlides && template.previewSlides.length > 1) {
+    return template.previewSlides;
+  }
+
+  const extracted: string[] = [];
+  const blocks = template.designData?.blocks;
+  const globalBg = template.designData?.globalStyle?.bgColor || template.previewColor || '#0f172a';
+  const globalAccent = template.previewColor || '#7c3aed';
+
+  if (Array.isArray(blocks) && blocks.length > 0) {
+    blocks.forEach((block: any, idx: number) => {
+      let slideImg: string | null = null;
+
+      // 1. Freeform layout (PDF / PPTX import or custom canvas)
+      if (block.layout?.elements && Array.isArray(block.layout.elements)) {
+        // Priority 1: full-page background image (PDF render)
+        const bgImg = block.layout.elements.find(
+          (e: any) => e.type === 'image' && e.url && (e.id?.toString().startsWith('bg-') || Number(e.width) >= 300)
+        );
+        if (bgImg?.url) {
+          slideImg = bgImg.url;
+        } else {
+          // Priority 2: any image element
+          const anyImg = block.layout.elements.find((e: any) => e.type === 'image' && e.url);
+          if (anyImg?.url) {
+            slideImg = anyImg.url;
+          }
+        }
+      }
+
+      // 2. Block style background image
+      if (!slideImg && block.style?.backgroundImage) {
+        const bgMatch = block.style.backgroundImage.match(/url\(['"]?([^'"]+)['"]?\)/);
+        const url = bgMatch ? bgMatch[1] : block.style.backgroundImage;
+        if (url && (url.startsWith('http') || url.startsWith('data:'))) {
+          slideImg = url;
+        }
+      }
+
+      // 3. Block content image fields
+      if (!slideImg && block.content) {
+        const contentUrl = block.content.imageUrl || block.content.image || block.content.url;
+        if (typeof contentUrl === 'string' && (contentUrl.startsWith('http') || contentUrl.startsWith('data:'))) {
+          slideImg = contentUrl;
+        } else if (Array.isArray(block.content.images) && block.content.images[0]) {
+          const first = block.content.images[0];
+          slideImg = typeof first === 'string' ? first : first?.url;
+        }
+      }
+
+      // 4. Procedural Canva-style SVG slide if no image exists for this block
+      if (!slideImg) {
+        const title = (block.content?.title || block.content?.name || `Diapositive ${idx + 1}`) as string;
+        const subtitle = (block.content?.tagline || block.content?.subtitle || block.content?.description || `Section ${block.type}`) as string;
+        const blockBg = block.style?.bgColor || globalBg;
+        const blockAccent = block.style?.accentColor || globalAccent;
+        slideImg = createSlideSvg(title, subtitle, blockBg, blockAccent, idx + 1);
+      }
+
+      if (slideImg) {
+        extracted.push(slideImg);
+      }
+    });
+  }
+
+  if (extracted.length > 0) {
+    return extracted;
+  }
+
+  if (template.previewSlides && template.previewSlides.length > 0) {
+    return template.previewSlides;
+  }
+
+  if (template.previewThumbnail) {
+    return [template.previewThumbnail];
+  }
+
+  return [];
+}
+
+function createSlideSvg(title: string, subtitle: string, bgColor: string, accentColor: string, slideNum: number): string {
+  const safeTitle = (title || `Slide ${slideNum}`).replace(/[<>&"]/g, '').slice(0, 40);
+  const safeSub = (subtitle || '').replace(/[<>&"]/g, '').slice(0, 60);
+  const bg = bgColor && bgColor !== 'transparent' ? bgColor : '#0f172a';
+  const accent = accentColor || '#7c3aed';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+    <rect width="1280" height="720" fill="${bg}"/>
+    <circle cx="1080" cy="180" r="340" fill="${accent}" fill-opacity="0.12"/>
+    <rect x="50" y="50" width="1180" height="620" rx="20" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+    <rect x="90" y="90" width="110" height="34" rx="17" fill="${accent}" fill-opacity="0.25"/>
+    <text x="145" y="112" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="${accent}" text-anchor="middle">PAGE ${slideNum}</text>
+    <text x="90" y="330" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="44" font-weight="800" fill="#ffffff" letter-spacing="-0.02em">${safeTitle}</text>
+    <text x="90" y="390" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="400" fill="rgba(255,255,255,0.7)">${safeSub}</text>
+    <line x1="90" y1="440" x2="260" y2="440" stroke="${accent}" stroke-width="4" stroke-linecap="round"/>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+// Fetch templates combining Supabase + localStorage + Defaults
 export async function getMarketplaceTemplates(): Promise<MarketplaceTemplateItem[]> {
   try {
     const supabase = createClient();
@@ -300,22 +401,37 @@ export async function getMarketplaceTemplates(): Promise<MarketplaceTemplateItem
 
     if (!error && data && data.length > 0) {
       // Map Supabase rows to our interface
-      const supabaseTemplates: MarketplaceTemplateItem[] = data.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        author: row.author || 'Communauté',
-        category: row.category || 'Tech',
-        theme: row.theme || 'Minimaliste',
-        description: row.description || '',
-        downloads: row.downloads || 0,
-        rating: row.rating || 5.0,
-        previewColor: row.preview_color || '#7c3aed',
-        tags: Array.isArray(row.tags) ? row.tags : [],
-        isPremium: !!row.is_premium,
-        isNew: !!row.is_new,
-        createdAt: row.created_at,
-        designData: row.design_data || {},
-      }));
+      const supabaseTemplates: MarketplaceTemplateItem[] = data.map((row: any) => {
+        const item: MarketplaceTemplateItem = {
+          id: row.id,
+          originalTemplateId: row.original_template_id,
+          name: row.name,
+          author: row.author || 'Communauté',
+          category: row.category || 'Tech',
+          theme: row.theme || 'Minimaliste',
+          description: row.description || '',
+          downloads: row.downloads || 0,
+          rating: row.rating || 5.0,
+          previewThumbnail: row.preview_thumbnail,
+          previewSlides: Array.isArray(row.preview_slides) && row.preview_slides.length > 0 ? row.preview_slides : undefined,
+          previewColor: row.preview_color || '#7c3aed',
+          tags: Array.isArray(row.tags) ? row.tags : [],
+          isPremium: !!row.is_premium,
+          isNew: !!row.is_new,
+          createdAt: row.created_at,
+          designData: row.design_data || {},
+        };
+
+        // Ensure rich multi-slides
+        if (!item.previewSlides || item.previewSlides.length <= 1) {
+          const slides = extractTemplateSlides(item);
+          if (slides.length > 0) {
+            item.previewSlides = slides;
+            item.previewThumbnail = slides[0];
+          }
+        }
+        return item;
+      });
 
       // Combine with local additions
       const local = getLocalTemplates();
@@ -339,7 +455,18 @@ function getLocalTemplates(): MarketplaceTemplateItem[] {
   if (typeof window === 'undefined') return [];
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
+    const parsed: MarketplaceTemplateItem[] = saved ? JSON.parse(saved) : [];
+    // Enrich local templates with extracted slides if needed
+    return parsed.map((tpl) => {
+      if (!tpl.previewSlides || tpl.previewSlides.length <= 1) {
+        const slides = extractTemplateSlides(tpl);
+        if (slides.length > 0) {
+          tpl.previewSlides = slides;
+          tpl.previewThumbnail = slides[0];
+        }
+      }
+      return tpl;
+    });
   } catch {
     return [];
   }
@@ -348,9 +475,19 @@ function getLocalTemplates(): MarketplaceTemplateItem[] {
 // Publish a template to Marketplace
 export async function publishToMarketplace(template: Omit<MarketplaceTemplateItem, 'id' | 'createdAt' | 'downloads' | 'rating'>): Promise<MarketplaceTemplateItem> {
   const newId = `mkt-${Date.now()}`;
+  
+  // Extract all slides if not explicitly passed
+  const slides = (template.previewSlides && template.previewSlides.length > 0)
+    ? template.previewSlides
+    : extractTemplateSlides({ ...template, id: newId, downloads: 1, rating: 5.0, createdAt: '' });
+
+  const thumbnail = template.previewThumbnail || (slides.length > 0 ? slides[0] : undefined);
+
   const newItem: MarketplaceTemplateItem = {
     ...template,
     id: newId,
+    previewThumbnail: thumbnail,
+    previewSlides: slides,
     downloads: 1,
     rating: 5.0,
     isNew: true,
@@ -371,6 +508,7 @@ export async function publishToMarketplace(template: Omit<MarketplaceTemplateIte
       rating: newItem.rating,
       original_template_id: newItem.originalTemplateId,
       preview_thumbnail: newItem.previewThumbnail,
+      preview_slides: newItem.previewSlides,
       preview_color: newItem.previewColor,
       tags: newItem.tags,
       is_premium: newItem.isPremium,
