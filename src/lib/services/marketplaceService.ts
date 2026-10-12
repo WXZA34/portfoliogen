@@ -175,6 +175,117 @@ export const DEFAULT_MARKETPLACE_TEMPLATES: MarketplaceTemplateItem[] = [
         { id: 'b1', type: 'hero', content: { name: 'VISUEL PORTFOLIO', title: 'Design & Direction Artistique 2024-2026', tagline: 'Architecture de l\'information, 3D et expériences interactives.', cta: 'Explorer' }, style: { bgColor: '#09090b', textColor: '#ffffff', accentColor: '#ffffff', padding: 'lg', align: 'left', fontFamily: 'Plus Jakarta Sans' } },
       ],
     },
+  },
+  {
+    id: 'mkt-interior-design',
+    name: 'Interior Design Portfolio',
+    author: 'Studio M',
+    category: 'Design',
+    theme: 'Dark',
+    description: 'Portfolio de design d\'intérieur et architecture avec photos plein écran et accents dorés élégants.',
+    downloads: 1450,
+    rating: 4.9,
+    previewThumbnail: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=1200&auto=format&fit=crop',
+    previewSlides: [
+      'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1200&auto=format&fit=crop'
+    ],
+    previewColor: '#1c1917',
+    tags: ['Interior', 'Architecture', 'Luxury', 'Minimal'],
+    isPremium: true,
+    isNew: false,
+    createdAt: new Date().toISOString(),
+    designData: {
+      templateId: 'interior-design',
+      globalStyle: { primaryColor: '#eab308', secondaryColor: '#ca8a04', bgColor: '#18181b', fontHeading: 'Plus Jakarta Sans', fontBody: 'DM Sans', borderRadius: 'md', darkMode: true, presentationWidth: 1280, presentationHeight: 720 },
+      blocks: [
+        { id: 'b1', type: 'hero', content: { name: 'Interior Design', title: 'Architecture d\'intérieur & Espaces contemporains', tagline: 'Concevoir des lieux de vie uniques où la matière rencontre la lumière.', cta: 'Voir les projets' }, style: { bgColor: '#18181b', textColor: '#ffffff', accentColor: '#eab308', padding: 'lg', align: 'left', fontFamily: 'Plus Jakarta Sans' } },
+      ],
+    },
+  },
+  {
+    id: 'mkt-architect-portfolio',
+    name: 'Architect Portfolio • Blueprint Sketches',
+    author: 'ArchViz Studio',
+    category: 'Architecture',
+    theme: 'Minimaliste',
+    description: 'Style plans d\'architecte, croquis techniques et typographie bold monochrome.',
+    downloads: 1980,
+    rating: 4.8,
+    previewThumbnail: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=1200&auto=format&fit=crop',
+    previewSlides: [
+      'https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1200&auto=format&fit=crop'
+    ],
+    previewColor: '#fafaf9',
+    tags: ['Architecture', 'Blueprint', 'Cad', 'BTP'],
+    isPremium: false,
+    isNew: true,
+    createdAt: new Date().toISOString(),
+    designData: {
+      templateId: 'architect-blueprint',
+      globalStyle: { primaryColor: '#0f172a', secondaryColor: '#64748b', bgColor: '#fafaf9', fontHeading: 'Plus Jakarta Sans', fontBody: 'DM Sans', borderRadius: 'none', darkMode: false, presentationWidth: 1280, presentationHeight: 720 },
+      blocks: [
+        { id: 'b1', type: 'hero', content: { name: 'Architect Portfolio', title: 'Conception d\'espaces durables', tagline: 'Designing functional spaces with timeless architecture.', cta: 'Consulter le portfolio' }, style: { bgColor: '#fafaf9', textColor: '#0f172a', accentColor: '#0f172a', padding: 'lg', align: 'left', fontFamily: 'Plus Jakarta Sans' } },
+      ],
+    },
+  },
+  {
+    id: 'mkt-lawyer-pro',
+    name: 'Corporate Lawyer & Legal Consulting',
+    author: 'Cabinet Justice & Associés',
+    category: 'Business',
+    theme: 'Bold',
+    description: 'Prestige, rigueur et professionnalisme pour juristes, avocats et cabinets de conseil.',
+    downloads: 1290,
+    rating: 4.9,
+    previewThumbnail: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=1200&auto=format&fit=crop',
+    previewSlides: [
+      'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1450133064473-71024230f91b?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1200&auto=format&fit=crop'
+    ],
+    previewColor: '#1e293b',
+    tags: ['Lawyer', 'Droit', 'Conseil', 'Corporate'],
+    isPremium: true,
+    isNew: false,
+    createdAt: new Date().toISOString(),
+    designData: {
+      templateId: 'lawyer-corporate',
+      globalStyle: { primaryColor: '#1e3a8a', secondaryColor: '#3b82f6', bgColor: '#f8fafc', fontHeading: 'Manrope', fontBody: 'DM Sans', borderRadius: 'sm', darkMode: false, presentationWidth: 1280, presentationHeight: 720 },
+      blocks: [
+        { id: 'b1', type: 'hero', content: { name: 'Corporate Lawyer', title: 'Avocate au Barreau & Conseil d\'Entreprises', tagline: 'Droit des affaires, fusions-acquisitions et protection des actifs immatériels.', cta: 'Prendre rendez-vous' }, style: { bgColor: '#f8fafc', textColor: '#0f172a', accentColor: '#1e3a8a', padding: 'lg', align: 'left', fontFamily: 'Manrope' } },
+      ],
+    },
+  },
+  {
+    id: 'mkt-brainstorm-agency',
+    name: 'Brainstorm Agency • Creative Doodles',
+    author: 'Doodle Co.',
+    category: 'Créatif',
+    theme: 'Coloré',
+    description: 'Style illustrations faites main, croquis d\'idées et ambiance workshop créatif.',
+    downloads: 2780,
+    rating: 4.9,
+    previewThumbnail: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=1200&auto=format&fit=crop',
+    previewSlides: [
+      'https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=1200&auto=format&fit=crop'
+    ],
+    previewColor: '#ffffff',
+    tags: ['Brainstorm', 'Sketch', 'Workshop', 'Ideation'],
+    isPremium: false,
+    isNew: true,
+    createdAt: new Date().toISOString(),
+    designData: {
+      templateId: 'brainstorm-sketch',
+      globalStyle: { primaryColor: '#e11d48', secondaryColor: '#f43f5e', bgColor: '#ffffff', fontHeading: 'Plus Jakarta Sans', fontBody: 'DM Sans', borderRadius: 'lg', darkMode: false, presentationWidth: 1280, presentationHeight: 720 },
+      blocks: [
+        { id: 'b1', type: 'hero', content: { name: 'Brainstorm Ideas', title: 'Atelier de Créativité & Facilitation Graphique', tagline: 'Transformons vos intuitions en concepts innovants et percutants.', cta: 'Découvrir la méthode' }, style: { bgColor: '#ffffff', textColor: '#0f172a', accentColor: '#e11d48', padding: 'lg', align: 'center', fontFamily: 'Plus Jakarta Sans' } },
+      ],
+    },
   }
 ];
 

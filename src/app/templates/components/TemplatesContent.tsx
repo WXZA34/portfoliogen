@@ -147,6 +147,7 @@ export default function TemplatesContent() {
           setPreviewTemplate(null);
           handleUseTemplate(tpl);
         }}
+        relatedTemplates={templatesList}
       />
     </div>
   );
