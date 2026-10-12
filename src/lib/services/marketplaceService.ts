@@ -13,6 +13,7 @@ export interface MarketplaceTemplateItem {
   likesCount?: number;
   rating: number;
   previewThumbnail?: string;
+  previewSlides?: string[]; // Array of slide preview images or backgrounds that cycle on hover
   previewColor?: string;
   tags: string[];
   isPremium: boolean;
@@ -31,130 +32,149 @@ const LOCAL_STORAGE_KEY = 'portfoliogen_marketplace_templates';
 export const DEFAULT_MARKETPLACE_TEMPLATES: MarketplaceTemplateItem[] = [
   {
     id: 'mkt-dark-pro',
-    name: 'Dark Pro Engineer',
-    author: 'Alex Martin',
+    name: 'Meet My Team • Dark Executive',
+    author: 'Adeline Fahnestock',
     category: 'Tech',
     theme: 'Dark',
-    description: 'Portfolio sombre & percutant orienté ingénierie logicielle et IA.',
-    downloads: 1420,
+    description: 'Présentation sombre et sophistiquée avec portraits en noir & blanc, présentation d\'équipe et projets d\'envergure.',
+    downloads: 1850,
     rating: 4.9,
-    previewColor: '#7c3aed',
-    tags: ['Tech', 'FullStack', 'Dark', 'IA'],
+    previewThumbnail: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1200&auto=format&fit=crop',
+    previewSlides: [
+      'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1200&auto=format&fit=crop'
+    ],
+    previewColor: '#18181b',
+    tags: ['Team', 'Dark Mode', 'Executive', 'Tech'],
     isPremium: false,
     isNew: false,
     createdAt: new Date().toISOString(),
     designData: {
       templateId: 'dark-pro',
-      globalStyle: { primaryColor: '#7c3aed', secondaryColor: '#a78bfa', bgColor: '#0f0f1a', fontHeading: 'Plus Jakarta Sans', fontBody: 'DM Sans', borderRadius: 'md', darkMode: true },
+      globalStyle: { primaryColor: '#ffffff', secondaryColor: '#a1a1aa', bgColor: '#18181b', fontHeading: 'Plus Jakarta Sans', fontBody: 'DM Sans', borderRadius: 'md', darkMode: true, presentationWidth: 1280, presentationHeight: 720 },
       blocks: [
-        { id: 'b1', type: 'hero', content: { name: 'Alex Martin', title: 'Développeur Full-Stack & Architecte IA', tagline: 'Code. Scale. Ship. De l\'idée à la production.', cta: 'Voir mes projets', imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop' }, style: { bgColor: '#0f0f1a', textColor: '#ffffff', accentColor: '#7c3aed', padding: 'lg', align: 'left', fontFamily: 'Plus Jakarta Sans' }, layout: { type: 'split', imagePosition: 'right', imageWidth: '50%' } },
-        { id: 'b2', type: 'stats', content: { stat1: '8+', label1: 'Années d\'expérience', stat2: '42', label2: 'Projets livrés', stat3: '98%', label3: 'Satisfaction client', stat4: '12', label4: 'Startups accompagnées' }, style: { bgColor: '#7c3aed', textColor: '#ffffff', accentColor: '#a78bfa', padding: 'md', align: 'center', fontFamily: 'Plus Jakarta Sans' } },
-        { id: 'b3', type: 'skills', content: { title: 'Stack & Compétences', skills: ['TypeScript', 'Next.js', 'Python / PyTorch', 'Node.js', 'PostgreSQL', 'Docker & K8s'] }, style: { bgColor: '#111827', textColor: '#ffffff', accentColor: '#7c3aed', padding: 'lg', align: 'left', fontFamily: 'DM Sans' } },
-        { id: 'b4', type: 'projects', content: { title: 'Projets Phares', proj1: 'NeuralCommerce Platform', proj1desc: 'Recommandation e-commerce IA temps réel', proj2: 'DistributedDB Orchestrator', proj2desc: 'Orchestrateur cloud natif distribué' }, style: { bgColor: '#0f0f1a', textColor: '#ffffff', accentColor: '#7c3aed', padding: 'lg', align: 'left', fontFamily: 'DM Sans' } },
-        { id: 'b5', type: 'contact', content: { title: 'Démarrons un projet ensemble', email: 'alex@example.com', cta: 'Prendre contact' }, style: { bgColor: '#7c3aed', textColor: '#ffffff', accentColor: '#a78bfa', padding: 'lg', align: 'center', fontFamily: 'Plus Jakarta Sans' } },
+        { id: 'b1', type: 'hero', content: { name: 'Meet My Team', title: 'Creative Engineering Studio', tagline: 'Des talents d\'exception réunis pour concevoir des expériences numériques remarquables.', cta: 'Découvrir nos profils' }, style: { bgColor: '#18181b', textColor: '#ffffff', accentColor: '#ffffff', padding: 'lg', align: 'center', fontFamily: 'Plus Jakarta Sans' } },
+        { id: 'b2', type: 'stats', content: { stat1: '14+', label1: 'Experts', stat2: '80+', label2: 'Projets livrés', stat3: '99%', label3: 'Satisfaction', stat4: '6', label4: 'Bureaux mondiaux' }, style: { bgColor: '#27272a', textColor: '#ffffff', accentColor: '#ffffff', padding: 'md', align: 'center', fontFamily: 'Plus Jakarta Sans' } },
+        { id: 'b3', type: 'projects', content: { title: 'Réalisations récentes', proj1: 'Banking Ecosystem', proj1desc: 'Expérience financière premium', proj2: 'AI Search Engine', proj2desc: 'Moteur sémantique haute performance' }, style: { bgColor: '#18181b', textColor: '#ffffff', accentColor: '#ffffff', padding: 'lg', align: 'left', fontFamily: 'DM Sans' } },
       ],
     },
   },
   {
-    id: 'mkt-minimal-light',
-    name: 'Minimal Light Studio',
-    author: 'Sophie Durand',
+    id: 'mkt-personal-editorial',
+    name: 'Personal Portfolio • Olivia Wilson',
+    author: 'Olivia Wilson Studio',
     category: 'Design',
     theme: 'Minimaliste',
-    description: 'Épuré et élégant avec mise en valeur éditoriale de vos réalisations.',
-    downloads: 980,
-    rating: 4.8,
-    previewColor: '#111827',
-    tags: ['Design', 'UI/UX', 'Minimaliste', 'Clean'],
+    description: 'Typographie serif élégante, tons crème et mise en scène éditoriale style magazine de mode et branding.',
+    downloads: 2430,
+    rating: 5.0,
+    previewThumbnail: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1200&auto=format&fit=crop',
+    previewSlides: [
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1200&auto=format&fit=crop'
+    ],
+    previewColor: '#f4f1ea',
+    tags: ['Serif', 'Editorial', 'Minimal', 'Branding'],
     isPremium: false,
     isNew: true,
     createdAt: new Date().toISOString(),
     designData: {
       templateId: 'minimal-light',
-      globalStyle: { primaryColor: '#111827', secondaryColor: '#6b7280', bgColor: '#fafafa', fontHeading: 'Manrope', fontBody: 'DM Sans', borderRadius: 'sm', darkMode: false },
+      globalStyle: { primaryColor: '#1c1917', secondaryColor: '#78716c', bgColor: '#f4f1ea', fontHeading: 'Playfair Display', fontBody: 'DM Sans', borderRadius: 'sm', darkMode: false, presentationWidth: 1280, presentationHeight: 720 },
       blocks: [
-        { id: 'b1', type: 'hero', content: { name: 'Sophie Durand', title: 'Product & UX/UI Designer', tagline: 'Concevoir des interfaces mémorables, simples et intuitives.', cta: 'Découvrir mon portfolio', imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop' }, style: { bgColor: '#fafafa', textColor: '#111827', accentColor: '#111827', padding: 'lg', align: 'left', fontFamily: 'Manrope' }, layout: { type: 'split', imagePosition: 'right', imageWidth: '50%' } },
-        { id: 'b2', type: 'about', content: { title: 'Mon Approche', text: 'Je conçois des systèmes d\'interfaces pensés pour l\'humain, alliant esthétique rigoureuse et conversion business.' }, style: { bgColor: '#ffffff', textColor: '#374151', accentColor: '#111827', padding: 'lg', align: 'left', fontFamily: 'DM Sans' } },
-        { id: 'b3', type: 'projects', content: { title: 'Études de Cas', proj1: 'Refonte Banque Mobile', proj1desc: 'Expérience fluide pour +2M utilisateurs actifs', proj2: 'Design System SaaS', proj2desc: 'Bibliothèque de 80+ composants Figma & code' }, style: { bgColor: '#f9fafb', textColor: '#111827', accentColor: '#111827', padding: 'lg', align: 'left', fontFamily: 'DM Sans' } },
-        { id: 'b4', type: 'contact', content: { title: 'Collaborons', email: 'sophie@example.com', cta: 'Planifier un appel' }, style: { bgColor: '#111827', textColor: '#ffffff', accentColor: '#ffffff', padding: 'lg', align: 'center', fontFamily: 'Manrope' } },
+        { id: 'b1', type: 'hero', content: { name: 'Olivia Wilson', title: 'Digital Marketing & Brand Strategist', tagline: 'Personal Portfolio — Strategy, Content & Creative Direction', cta: 'Explorer mes travaux' }, style: { bgColor: '#f4f1ea', textColor: '#1c1917', accentColor: '#1c1917', padding: 'lg', align: 'center', fontFamily: 'Playfair Display' } },
+        { id: 'b2', type: 'about', content: { title: 'Vision', text: 'Allier subtilité esthétique et impact commercial pour propulser l\'image des marques les plus exigeantes.' }, style: { bgColor: '#ffffff', textColor: '#292524', accentColor: '#1c1917', padding: 'lg', align: 'left', fontFamily: 'DM Sans' } },
+        { id: 'b3', type: 'projects', content: { title: 'Collections & Campagnes', proj1: 'Vogue Haute Couture', proj1desc: 'Direction éditoriale numérique', proj2: 'Maison Éphémère', proj2desc: 'Stratégie de lancement mondial' }, style: { bgColor: '#f4f1ea', textColor: '#1c1917', accentColor: '#1c1917', padding: 'lg', align: 'left', fontFamily: 'DM Sans' } },
       ],
     },
   },
   {
-    id: 'mkt-creative-bold',
-    name: 'Creative Pulse & Motion',
-    author: 'Lucas Bernard',
+    id: 'mkt-bold-presentation',
+    name: 'Creative Presentation • Big Typography',
+    author: 'Studio Schwartz',
     category: 'Créatif',
-    theme: 'Coloré',
-    description: 'Palette dynamique et impactante pour artistes et studios créatifs.',
-    downloads: 750,
-    rating: 4.9,
-    previewColor: '#f59e0b',
-    tags: ['Motion', 'Vidéo', 'Créatif', 'Bold'],
+    theme: 'Bold',
+    description: 'Typographie géante, contrastes bruts et composition visuelle ultra tendance pour directeurs artistiques.',
+    downloads: 1670,
+    rating: 4.8,
+    previewThumbnail: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=1200&auto=format&fit=crop',
+    previewSlides: [
+      'https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1488161628813-04466f872be2?q=80&w=1200&auto=format&fit=crop'
+    ],
+    previewColor: '#e7e5e4',
+    tags: ['Bold', 'Typo XL', 'Fashion', 'Art Direction'],
     isPremium: true,
     isNew: true,
     createdAt: new Date().toISOString(),
     designData: {
       templateId: 'vibrant-creative',
-      globalStyle: { primaryColor: '#f59e0b', secondaryColor: '#fbbf24', bgColor: '#fffbeb', fontHeading: 'Cabinet Grotesk', fontBody: 'Plus Jakarta Sans', borderRadius: 'lg', darkMode: false },
+      globalStyle: { primaryColor: '#292524', secondaryColor: '#78716c', bgColor: '#e7e5e4', fontHeading: 'Plus Jakarta Sans', fontBody: 'DM Sans', borderRadius: 'none', darkMode: false, presentationWidth: 1280, presentationHeight: 720 },
       blocks: [
-        { id: 'b1', type: 'hero', content: { name: 'Lucas Bernard', title: 'Directeur Artistique & Motion', tagline: 'Donner du rythme et de l\'émotion à vos récits de marque.', cta: 'Voir le Showreel' }, style: { bgColor: '#fef3c7', textColor: '#111827', accentColor: '#f59e0b', padding: 'lg', align: 'center', fontFamily: 'Cabinet Grotesk' } },
-        { id: 'b2', type: 'stats', content: { stat1: '6+', label1: 'Années d\'exp.', stat2: '120+', label2: 'Animations', stat3: '35', label3: 'Grandes marques', stat4: '5', label4: 'Distinctions' }, style: { bgColor: '#f59e0b', textColor: '#ffffff', accentColor: '#fbbf24', padding: 'md', align: 'center', fontFamily: 'Plus Jakarta Sans' } },
-        { id: 'b3', type: 'gallery', content: { title: 'Galerie Réalisations', caption1: 'Spot Publicitaire', caption2: 'Identité Visuelle 3D', caption3: 'Générique Web-Série' }, style: { bgColor: '#fffbeb', textColor: '#111827', accentColor: '#f59e0b', padding: 'lg', align: 'left', fontFamily: 'Plus Jakarta Sans' } },
-        { id: 'b4', type: 'cta', content: { title: 'Un projet en tête ?', subtitle: 'Donnons-lui vie ensemble', cta: 'Lancer une collaboration' }, style: { bgColor: '#111827', textColor: '#ffffff', accentColor: '#f59e0b', padding: 'lg', align: 'center', fontFamily: 'Cabinet Grotesk' } },
+        { id: 'b1', type: 'hero', content: { name: 'PORTFOLIO', title: 'Creative Direction & Photography', tagline: 'Presented by Brigitte Schwartz • May 2026', cta: 'Voir les séries' }, style: { bgColor: '#e7e5e4', textColor: '#292524', accentColor: '#292524', padding: 'lg', align: 'left', fontFamily: 'Plus Jakarta Sans' } },
+        { id: 'b2', type: 'gallery', content: { title: 'Visual Explorations', caption1: 'Serie Paris', caption2: 'Architectural Shadows', caption3: 'Nordic Mood' }, style: { bgColor: '#ffffff', textColor: '#1c1917', accentColor: '#292524', padding: 'lg', align: 'left', fontFamily: 'DM Sans' } },
       ],
     },
   },
   {
-    id: 'mkt-presentation-pitch',
-    name: 'Investor Pitch Deck 16:9',
-    author: 'PortfolioGen Team',
-    category: 'Business',
-    theme: 'Bold',
-    description: 'Format diapositives 16:9 optimisé pour présenter sa startup ou ses projets.',
-    downloads: 1120,
+    id: 'mkt-canva-polaroid-dream',
+    name: 'About Me • Y2K Polaroid & Glow',
+    author: 'Canva Trends',
+    category: 'Créatif',
+    theme: 'Coloré',
+    description: 'Style rétro-chic, effets holographiques rose pastel, cadres polaroids et typographie manuscrite élégante.',
+    downloads: 3120,
     rating: 4.9,
-    previewColor: '#2563eb',
-    tags: ['Slides', 'Pitch Deck', '16:9', 'Investisseurs'],
+    previewThumbnail: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1200&auto=format&fit=crop',
+    previewSlides: [
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1516575334481-f85287c2c82d?q=80&w=1200&auto=format&fit=crop'
+    ],
+    previewColor: '#f472b6',
+    tags: ['Y2K', 'Polaroid', 'Aesthetic', 'Social Media'],
     isPremium: false,
     isNew: true,
     createdAt: new Date().toISOString(),
     designData: {
-      templateId: 'pitch-deck-16-9',
-      globalStyle: { primaryColor: '#2563eb', secondaryColor: '#60a5fa', bgColor: '#ffffff', fontHeading: 'Plus Jakarta Sans', fontBody: 'DM Sans', borderRadius: 'md', darkMode: false, presentationWidth: 1280, presentationHeight: 720 },
+      templateId: 'canva-polaroid',
+      globalStyle: { primaryColor: '#db2777', secondaryColor: '#f472b6', bgColor: '#fdf2f8', fontHeading: 'Plus Jakarta Sans', fontBody: 'DM Sans', borderRadius: 'lg', darkMode: false, presentationWidth: 1280, presentationHeight: 720 },
       blocks: [
-        {
-          id: 'slide-1',
-          type: 'custom',
-          content: { title: 'Slide 1 — Couverture' },
-          style: { bgColor: '#0f172a', textColor: '#ffffff', accentColor: '#38bdf8', padding: 'none', align: 'left', fontFamily: 'Plus Jakarta Sans' },
-          layout: {
-            type: 'freeform',
-            elements: [
-              { id: 's1-title', type: 'text', content: 'PortfolioGen Inc.', x: 100, y: 220, width: 800, height: 80, zIndex: 10, style: { fontSize: '54px', fontWeight: 'bold', color: '#ffffff' } },
-              { id: 's1-sub', type: 'text', content: 'La plateforme nouvelle génération de portfolios interactifs & IA.', x: 100, y: 320, width: 750, height: 60, zIndex: 10, style: { fontSize: '24px', color: '#94a3b8' } },
-              { id: 's1-btn', type: 'button', content: 'Pitch Deck Confidentiel • 2026', x: 100, y: 440, width: 280, height: 48, zIndex: 10, style: { backgroundColor: '#2563eb', color: '#ffffff', borderRadius: '8px', fontSize: '15px' } },
-            ]
-          }
-        },
-        {
-          id: 'slide-2',
-          type: 'custom',
-          content: { title: 'Slide 2 — Le Problème & La Solution' },
-          style: { bgColor: '#ffffff', textColor: '#0f172a', accentColor: '#2563eb', padding: 'none', align: 'left', fontFamily: 'Plus Jakarta Sans' },
-          layout: {
-            type: 'freeform',
-            elements: [
-              { id: 's2-title', type: 'text', content: 'Le Problème vs Notre Solution', x: 80, y: 80, width: 700, height: 60, zIndex: 10, style: { fontSize: '36px', fontWeight: 'bold', color: '#0f172a' } },
-              { id: 's2-card1', type: 'shape', x: 80, y: 180, width: 500, height: 400, zIndex: 5, style: { backgroundColor: '#fee2e2', borderRadius: '16px' } },
-              { id: 's2-c1-t', type: 'text', content: 'Les portfolios traditionnels sont statiques, longs à concevoir et non interactifs.', x: 110, y: 240, width: 440, height: 180, zIndex: 10, style: { fontSize: '20px', color: '#991b1b', lineHeight: '1.6' } },
-              { id: 's2-card2', type: 'shape', x: 640, y: 180, width: 560, height: 400, zIndex: 5, style: { backgroundColor: '#dbeafe', borderRadius: '16px' } },
-              { id: 's2-c2-t', type: 'text', content: 'Import direct depuis Canva/PDF/PPTX, personnalisation temps réel et publication en 1 clic.', x: 670, y: 240, width: 500, height: 180, zIndex: 10, style: { fontSize: '20px', color: '#1e40af', lineHeight: '1.6' } },
-            ]
-          }
-        }
-      ]
-    }
+        { id: 'b1', type: 'hero', content: { name: 'About Me', title: 'Content Creator & Aesthetic Visuals', tagline: 'Donner vie aux idées avec passion, authenticité et fraîcheur.', cta: 'Voir mes créations' }, style: { bgColor: '#fdf2f8', textColor: '#831843', accentColor: '#db2777', padding: 'lg', align: 'center', fontFamily: 'Plus Jakarta Sans' } },
+      ],
+    },
+  },
+  {
+    id: 'mkt-visual-portfolio-split',
+    name: 'Visuel Portfolio • Monochrome 2026',
+    author: 'Bureau Noir',
+    category: 'Design',
+    theme: 'Dark',
+    description: 'Ratio 16:9 cinématographique, fort contraste typographique en noir profond et mise en avant de portfolios visuels.',
+    downloads: 2190,
+    rating: 4.9,
+    previewThumbnail: 'https://images.unsplash.com/photo-1511556532299-8f662fc26c06?q=80&w=1200&auto=format&fit=crop',
+    previewSlides: [
+      'https://images.unsplash.com/photo-1511556532299-8f662fc26c06?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop'
+    ],
+    previewColor: '#09090b',
+    tags: ['Monochrome', 'Brutalism', '3D', 'Graphic'],
+    isPremium: true,
+    isNew: false,
+    createdAt: new Date().toISOString(),
+    designData: {
+      templateId: 'visual-dark',
+      globalStyle: { primaryColor: '#ffffff', secondaryColor: '#71717a', bgColor: '#09090b', fontHeading: 'Plus Jakarta Sans', fontBody: 'DM Sans', borderRadius: 'none', darkMode: true, presentationWidth: 1280, presentationHeight: 720 },
+      blocks: [
+        { id: 'b1', type: 'hero', content: { name: 'VISUEL PORTFOLIO', title: 'Design & Direction Artistique 2024-2026', tagline: 'Architecture de l\'information, 3D et expériences interactives.', cta: 'Explorer' }, style: { bgColor: '#09090b', textColor: '#ffffff', accentColor: '#ffffff', padding: 'lg', align: 'left', fontFamily: 'Plus Jakarta Sans' } },
+      ],
+    },
   }
 ];
 
