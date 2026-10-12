@@ -278,6 +278,8 @@ export default function PortfolioEditorContent() {
   }, [design.blocks, selectedBlockId]);
 
   const [publishedTemplateIds, setPublishedTemplateIds] = useState<string[]>([]);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [editingTemplateName, setEditingTemplateName] = useState<string>('');
 
   const loadSavedTemplates = async () => {
     const supabase = createClient();
@@ -292,6 +294,73 @@ export default function PortfolioEditorContent() {
       setPublishedTemplateIds(pubIds);
     } catch {
       // ignore
+    }
+  };
+
+  const handleSaveTemplateRename = async (templateId: string) => {
+    const trimmed = editingTemplateName.trim();
+    if (!trimmed) return;
+    try {
+      const supabase = createClient();
+      const target = savedTemplates.find((s) => s.id === templateId);
+      const updatedModified = target?.modified_design ? { ...target.modified_design, name: trimmed } : undefined;
+      const updatedOriginal = target?.original_design ? { ...target.original_design, name: trimmed } : undefined;
+
+      await supabase.from('my_templates').update({
+        name: trimmed,
+        ...(updatedModified ? { modified_design: updatedModified } : {}),
+        ...(updatedOriginal ? { original_design: updatedOriginal } : {}),
+      }).eq('id', templateId);
+
+      // If published to marketplace, update marketplace template name as well
+      try {
+        const { getMarketplaceTemplates } = await import('@/lib/services/marketplaceService');
+        const mkt = await getMarketplaceTemplates();
+        const mktMatch = mkt.find(m => m.originalTemplateId === templateId || m.id === templateId);
+        if (mktMatch) {
+          await supabase.from('marketplace_templates').update({ name: trimmed }).eq('id', mktMatch.id);
+        }
+      } catch {
+        // ignore
+      }
+
+      // If active design is this template, update current design name too
+      if (design.id === templateId) {
+        setDesign((prev) => ({ ...prev, name: trimmed }));
+      }
+
+      setEditingTemplateId(null);
+      await loadSavedTemplates();
+    } catch (err: any) {
+      console.error('Error renaming template', err);
+      alert('Erreur lors du renommage : ' + err.message);
+    }
+  };
+
+  const handleCreateNewPortfolio = () => {
+    const newName = prompt('Nom du nouveau portfolio :', 'Mon Nouveau Portfolio');
+    if (!newName || !newName.trim()) return;
+    setDesign({
+      ...initialDesign,
+      id: `design-${Date.now()}`,
+      name: newName.trim(),
+      blocks: defaultBlocks,
+    });
+    setSelectedBlockId('block-1');
+    setPanelView('blocks');
+  };
+
+  const handleAutoSaveName = async () => {
+    const dbId = design.id.startsWith('design-') ? undefined : design.id;
+    if (dbId && design.name.trim()) {
+      try {
+        const supabase = createClient();
+        await supabase.from('my_templates').update({
+          name: design.name.trim(),
+        }).eq('id', dbId);
+      } catch (err) {
+        console.warn('Auto-save name error', err);
+      }
     }
   };
 
@@ -319,10 +388,11 @@ export default function PortfolioEditorContent() {
       const blocks = result.blocks;
       
       if (blocks && blocks.length > 0) {
+        const cleanPdfName = file.name.replace(/\.pdf$/i, '').replace(/[_-]/g, ' ') || 'Document PDF';
         setDesign(prev => ({
           ...prev,
           id: `design-${Date.now()}`,
-          name: file.name.replace('.pdf', ''),
+          name: cleanPdfName,
           blocks: blocks,
           globalStyle: {
             ...prev.globalStyle,
@@ -354,8 +424,11 @@ export default function PortfolioEditorContent() {
       const result = await parsePptxClient(file) as any;
       const blocks = result.blocks;
       if (blocks && blocks.length > 0) {
+        const cleanPptxName = file.name.replace(/\.pptx$/i, '').replace(/[_-]/g, ' ') || 'Présentation PPTX';
         setDesign(prev => ({
           ...prev,
+          id: `design-${Date.now()}`,
+          name: cleanPptxName,
           blocks: blocks,
           globalStyle: {
             ...prev.globalStyle,
@@ -485,13 +558,21 @@ export default function PortfolioEditorContent() {
     <div className="flex flex-col h-[calc(100vh-120px)] -mx-6 -mt-2">
       {/* Top Toolbar */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-card border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <input
-            value={design.name}
-            onChange={(e) => setDesign((prev) => ({ ...prev, name: e.target.value }))}
-            className="text-sm font-600 text-foreground bg-transparent border-none outline-none focus:bg-muted px-2 py-1 rounded-lg transition-all w-48"
-          />
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Brouillon</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-muted/40 hover:bg-muted/70 border border-border/60 hover:border-border focus-within:border-primary focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/20 transition-all group">
+            <Icon name="PencilSquareIcon" size={14} className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+            <input
+              value={design.name}
+              onChange={(e) => setDesign((prev) => ({ ...prev, name: e.target.value }))}
+              onBlur={handleAutoSaveName}
+              placeholder="Nom de votre portfolio..."
+              className="text-sm font-bold text-foreground bg-transparent border-none outline-none w-44 sm:w-64 truncate"
+              title="Cliquez pour modifier le nom du portfolio"
+            />
+          </div>
+          <span className="text-[11px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full hidden sm:inline">
+            Brouillon
+          </span>
         </div>
 
         {/* Preview device switcher */}
@@ -707,13 +788,76 @@ export default function PortfolioEditorContent() {
             )}
             {panelView === 'saved' && (
               <div className="p-4 space-y-4">
-                <h3 className="font-bold text-sm text-foreground">Mes Modèles Sauvegardés</h3>
-                {savedTemplates.map(t => (
-                  <div key={t.id} className="p-3 border border-border rounded-xl bg-muted/30 space-y-3">
-                    <div>
-                      <p className="font-700 text-sm text-foreground line-clamp-1">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">Sauvegardé le {new Date(t.created_at).toLocaleDateString()}</p>
-                    </div>
+                <div className="flex items-center justify-between pb-2 border-b border-border">
+                  <div>
+                    <h3 className="font-bold text-sm text-foreground">Mes Modèles</h3>
+                    <p className="text-[11px] text-muted-foreground">{savedTemplates.length} portfolio{savedTemplates.length > 1 ? 's' : ''}</p>
+                  </div>
+                  <button
+                    onClick={handleCreateNewPortfolio}
+                    className="text-xs bg-primary text-primary-foreground px-2.5 py-1.5 rounded-lg font-bold hover:opacity-90 flex items-center gap-1 shadow-xs transition-all cursor-pointer"
+                    title="Créer un nouveau portfolio vierge"
+                  >
+                    <Icon name="PlusIcon" size={13} /> Nouveau
+                  </button>
+                </div>
+                {savedTemplates.map((t) => (
+                  <div key={t.id} className="p-3.5 border border-border rounded-xl bg-muted/20 space-y-3 hover:border-border/80 transition-all">
+                    {/* Header: Name with Inline Renaming */}
+                    {editingTemplateId === t.id ? (
+                      <div className="space-y-1.5 bg-card p-2 rounded-lg border border-primary/50 shadow-xs">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase">Modifier le nom</label>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            value={editingTemplateName}
+                            onChange={(e) => setEditingTemplateName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveTemplateRename(t.id);
+                              if (e.key === 'Escape') setEditingTemplateId(null);
+                            }}
+                            className="flex-1 text-xs font-bold px-2 py-1.5 rounded-md border border-border bg-muted/30 text-foreground outline-none focus:border-primary"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleSaveTemplateRename(t.id)}
+                            className="px-2.5 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all cursor-pointer"
+                            title="Valider le nom"
+                          >
+                            <Icon name="CheckIcon" size={12} />
+                          </button>
+                          <button
+                            onClick={() => setEditingTemplateId(null)}
+                            className="p-1.5 rounded-md border border-border text-muted-foreground hover:text-foreground text-xs cursor-pointer"
+                            title="Annuler"
+                          >
+                            <Icon name="XMarkIcon" size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-foreground truncate" title={t.name}>
+                            {t.name}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            Sauvegardé le {new Date(t.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setEditingTemplateId(t.id);
+                            setEditingTemplateName(t.name);
+                          }}
+                          className="px-2 py-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all flex items-center gap-1 text-xs border border-border/50 cursor-pointer"
+                          title="Renommer ce portfolio"
+                        >
+                          <Icon name="PencilSquareIcon" size={12} />
+                          <span className="text-[10px] font-bold">Renommer</span>
+                        </button>
+                      </div>
+                    )}
                     <div className="flex flex-col gap-2">
                       <button onClick={() => {
                         const url = `${window.location.origin}/p/${t.id}`;
@@ -722,7 +866,7 @@ export default function PortfolioEditorContent() {
                       }} className="text-xs bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg font-600 hover:bg-emerald-200 flex items-center justify-center gap-2">
                         <Icon name="LinkIcon" size={12} /> Copier le lien public
                       </button>
-                      <button onClick={() => setDesign(t.modified_design)} className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-600 hover:opacity-90 flex items-center justify-center gap-2">
+                      <button onClick={() => setDesign(t.modified_design || t.original_design)} className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-600 hover:opacity-90 flex items-center justify-center gap-2">
                         <Icon name="PencilIcon" size={12} /> Charger (Version Modifiée)
                       </button>
                       <button onClick={() => setDesign(t.original_design)} className="text-xs bg-card border border-border text-foreground px-3 py-1.5 rounded-lg font-600 hover:bg-muted flex items-center justify-center gap-2">
