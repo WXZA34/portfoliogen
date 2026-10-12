@@ -195,7 +195,7 @@ export default function CanvasEditor({
   );
 }
 
-function BlockRenderer({ 
+export function BlockRenderer({ 
   block, previewMode, showPreview = false, selectedBlockId = null, onUpdateBlock = () => {}, scale = 1
 }: { 
   block: Block; 

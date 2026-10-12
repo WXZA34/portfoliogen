@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { extractTemplateSlides, type MarketplaceTemplateItem } from '@/lib/services/marketplaceService';
+import SlideRenderer from './SlideRenderer';
 
 interface TemplateCardProps {
   template: MarketplaceTemplateItem;
@@ -20,12 +21,16 @@ export default function TemplateCard({ template, onPreview, onUse }: TemplateCar
     return extractTemplateSlides(template);
   }, [template]);
 
+  const blocks = template.designData?.blocks || [];
+  const hasBlocks = blocks.length > 0;
+  const totalSlidesCount = hasBlocks ? blocks.length : (slides.length || 1);
+
   // When mouse enters, start auto-scrolling through slides like Canva
   useEffect(() => {
-    if (isHovered && slides.length > 1) {
+    if (isHovered && totalSlidesCount > 1) {
       timerRef.current = setInterval(() => {
-        setSlideIndex((prev) => (prev + 1) % slides.length);
-      }, 1000); // 1.0s per slide for dynamic, smooth presentation cycling
+        setSlideIndex((prev) => (prev + 1) % totalSlidesCount);
+      }, 1200); // 1.2s per slide for dynamic, smooth presentation cycling
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
       setSlideIndex(0);
@@ -34,9 +39,7 @@ export default function TemplateCard({ template, onPreview, onUse }: TemplateCar
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isHovered, slides.length]);
-
-  const totalSlidesCount = slides.length || template.designData?.blocks?.length || 1;
+  }, [isHovered, totalSlidesCount]);
 
   return (
     <div
@@ -48,55 +51,23 @@ export default function TemplateCard({ template, onPreview, onUse }: TemplateCar
       <div
         className="w-full aspect-[16/9] relative overflow-hidden bg-neutral-900 cursor-pointer select-none"
         onClick={() => onPreview(template)}
-        style={{
-          backgroundColor:
-            template.designData?.globalStyle?.bgColor ||
-            template.previewColor ||
-            '#0f172a',
-        }}
       >
-        {/* Slides rendering with cross-fade animation */}
-        {slides.length > 0 ? (
-          <div className="w-full h-full relative overflow-hidden">
-            {slides.map((slideUrl, idx) => (
-              <img
-                key={idx}
-                src={slideUrl}
-                alt={`${template.name} - Diapositive ${idx + 1}`}
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out ${
-                  idx === slideIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'
-                }`}
-              />
-            ))}
-          </div>
-        ) : (
-          /* High-fidelity procedural presentation preview if no image */
-          <div className="w-full h-full p-4 flex flex-col justify-between text-white relative">
-            <div className="flex items-center justify-between text-[11px] opacity-75 font-semibold">
-              <span className="tracking-widest uppercase">{template.category}</span>
-              <span>2026</span>
-            </div>
-            <div className="space-y-1.5 my-auto">
-              <h4 className="text-xl sm:text-2xl font-black tracking-tight leading-tight uppercase drop-shadow-md">
-                {template.name}
-              </h4>
-              <p className="text-xs opacity-70 line-clamp-1 font-medium">{template.author}</p>
-            </div>
-            <div className="flex items-center justify-between text-[10px] opacity-60 border-t border-white/10 pt-2">
-              <span>{template.theme} Style</span>
-              <span>16:9 Slide</span>
-            </div>
-          </div>
-        )}
+        <SlideRenderer
+          block={hasBlocks ? blocks[slideIndex % blocks.length] : null}
+          template={template}
+          slideIndex={slideIndex}
+          fallbackUrl={slides[slideIndex % Math.max(1, slides.length)] || template.previewThumbnail}
+          className="w-full h-full"
+        />
 
         {/* Canva-style slide progress pill indicator on hover */}
-        {slides.length > 1 && isHovered && (
+        {totalSlidesCount > 1 && isHovered && (
           <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-full z-20 animate-in fade-in duration-200 max-w-[75%] overflow-hidden">
-            {slides.slice(0, 10).map((_, i) => (
+            {Array.from({ length: Math.min(totalSlidesCount, 10) }).map((_, i) => (
               <span
                 key={i}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === (slideIndex % Math.min(slides.length, 10)) ? 'w-3.5 bg-white' : 'w-1.5 bg-white/40'
+                  i === (slideIndex % Math.min(totalSlidesCount, 10)) ? 'w-3.5 bg-white' : 'w-1.5 bg-white/40'
                 }`}
               />
             ))}
@@ -106,7 +77,7 @@ export default function TemplateCard({ template, onPreview, onUse }: TemplateCar
         {/* Slide Counter badge (like "3 sur 12" on Canva) */}
         <div className="absolute bottom-2.5 left-2.5 z-20">
           <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-black/75 text-white backdrop-blur-xs shadow-sm">
-            {slides.length > 1 && isHovered
+            {totalSlidesCount > 1 && isHovered
               ? `${slideIndex + 1} sur ${totalSlidesCount}`
               : `${totalSlidesCount} page${totalSlidesCount > 1 ? 's' : ''}`}
           </span>

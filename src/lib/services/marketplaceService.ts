@@ -305,20 +305,22 @@ export function extractTemplateSlides(template: Partial<MarketplaceTemplateItem>
     blocks.forEach((block: any, idx: number) => {
       let slideImg: string | null = null;
 
-      // 1. Freeform layout (PDF / PPTX import or custom canvas)
+      // 1. Full-bleed page background image (pure PDF page export where element is full width)
       if (block.layout?.elements && Array.isArray(block.layout.elements)) {
-        // Priority 1: full-page background image (PDF render)
-        const bgImg = block.layout.elements.find(
-          (e: any) => e.type === 'image' && e.url && (e.id?.toString().startsWith('bg-') || Number(e.width) >= 300)
+        const fullBgImg = block.layout.elements.find(
+          (e: any) => e.type === 'image' && e.url && e.id?.toString().startsWith('bg-') && Number(e.width) >= 700
         );
-        if (bgImg?.url) {
-          slideImg = bgImg.url;
+        if (fullBgImg?.url && block.layout.elements.length === 1) {
+          slideImg = fullBgImg.url;
         } else {
-          // Priority 2: any image element
-          const anyImg = block.layout.elements.find((e: any) => e.type === 'image' && e.url);
-          if (anyImg?.url) {
-            slideImg = anyImg.url;
-          }
+          // It is a composite slide with layout elements (text, photos, shapes, backgrounds)
+          const textEl = block.layout.elements.find((e: any) => e.type === 'text' && e.content);
+          const imgEl = block.layout.elements.find((e: any) => e.type === 'image' && e.url);
+          const title = (textEl?.content || block.content?.title || block.content?.name || `Diapositive ${idx + 1}`) as string;
+          const subtitle = (block.content?.tagline || block.content?.subtitle || `Section ${block.type || idx + 1}`) as string;
+          const blockBg = block.style?.bgColor || globalBg;
+          const blockAccent = block.style?.accentColor || globalAccent;
+          slideImg = createSlideSvg(title, subtitle, blockBg, blockAccent, idx + 1, imgEl?.url);
         }
       }
 
@@ -331,18 +333,7 @@ export function extractTemplateSlides(template: Partial<MarketplaceTemplateItem>
         }
       }
 
-      // 3. Block content image fields
-      if (!slideImg && block.content) {
-        const contentUrl = block.content.imageUrl || block.content.image || block.content.url;
-        if (typeof contentUrl === 'string' && (contentUrl.startsWith('http') || contentUrl.startsWith('data:'))) {
-          slideImg = contentUrl;
-        } else if (Array.isArray(block.content.images) && block.content.images[0]) {
-          const first = block.content.images[0];
-          slideImg = typeof first === 'string' ? first : first?.url;
-        }
-      }
-
-      // 4. Procedural Canva-style SVG slide if no image exists for this block
+      // 3. Procedural Canva-style SVG slide if no image exists for this block
       if (!slideImg) {
         const title = (block.content?.title || block.content?.name || `Diapositive ${idx + 1}`) as string;
         const subtitle = (block.content?.tagline || block.content?.subtitle || block.content?.description || `Section ${block.type}`) as string;
@@ -372,20 +363,25 @@ export function extractTemplateSlides(template: Partial<MarketplaceTemplateItem>
   return [];
 }
 
-function createSlideSvg(title: string, subtitle: string, bgColor: string, accentColor: string, slideNum: number): string {
-  const safeTitle = (title || `Slide ${slideNum}`).replace(/[<>&"]/g, '').slice(0, 40);
+function createSlideSvg(title: string, subtitle: string, bgColor: string, accentColor: string, slideNum: number, featuredImgUrl?: string): string {
+  const safeTitle = (title || `Slide ${slideNum}`).replace(/[<>&"]/g, '').slice(0, 45);
   const safeSub = (subtitle || '').replace(/[<>&"]/g, '').slice(0, 60);
   const bg = bgColor && bgColor !== 'transparent' ? bgColor : '#0f172a';
   const accent = accentColor || '#7c3aed';
+  
+  const imgTag = featuredImgUrl
+    ? `<image href="${featuredImgUrl}" x="740" y="80" width="460" height="560" preserveAspectRatio="xMidYMid slice" clip-path="inset(0 round 16px)"/>`
+    : `<circle cx="1040" cy="220" r="300" fill="${accent}" fill-opacity="0.14"/>`;
+
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
     <rect width="1280" height="720" fill="${bg}"/>
-    <circle cx="1080" cy="180" r="340" fill="${accent}" fill-opacity="0.12"/>
-    <rect x="50" y="50" width="1180" height="620" rx="20" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
-    <rect x="90" y="90" width="110" height="34" rx="17" fill="${accent}" fill-opacity="0.25"/>
-    <text x="145" y="112" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="${accent}" text-anchor="middle">PAGE ${slideNum}</text>
-    <text x="90" y="330" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="44" font-weight="800" fill="#ffffff" letter-spacing="-0.02em">${safeTitle}</text>
-    <text x="90" y="390" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="400" fill="rgba(255,255,255,0.7)">${safeSub}</text>
-    <line x1="90" y1="440" x2="260" y2="440" stroke="${accent}" stroke-width="4" stroke-linecap="round"/>
+    ${imgTag}
+    <rect x="50" y="50" width="1180" height="620" rx="20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+    <rect x="80" y="80" width="110" height="34" rx="17" fill="${accent}" fill-opacity="0.25"/>
+    <text x="135" y="102" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="${accent}" text-anchor="middle">SLIDE ${slideNum}</text>
+    <text x="80" y="320" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="42" font-weight="800" fill="#ffffff" letter-spacing="-0.02em">${safeTitle}</text>
+    <text x="80" y="380" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="400" fill="rgba(255,255,255,0.7)">${safeSub}</text>
+    <line x1="80" y1="430" x2="260" y2="430" stroke="${accent}" stroke-width="4" stroke-linecap="round"/>
   </svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { extractTemplateSlides, type MarketplaceTemplateItem } from '@/lib/services/marketplaceService';
+import SlideRenderer from './SlideRenderer';
 
 interface TemplatePreviewModalProps {
   template: MarketplaceTemplateItem | null;
@@ -29,7 +30,9 @@ export default function TemplatePreviewModal({
     return extractTemplateSlides(template);
   }, [template]);
 
-  const totalSlides = slides.length > 0 ? slides.length : (template?.designData?.blocks?.length || 1);
+  const blocks = template?.designData?.blocks || [];
+  const hasBlocks = blocks.length > 0;
+  const totalSlides = hasBlocks ? blocks.length : (slides.length > 0 ? slides.length : 1);
 
   // Reset slide index on template change
   useEffect(() => {
@@ -53,8 +56,6 @@ export default function TemplatePreviewModal({
   }, [isOpen, totalSlides, onClose]);
 
   if (!isOpen || !template) return null;
-
-  const currentSlideUrl = slides[activeSlide] || slides[0] || template.previewThumbnail;
 
   // Related templates from the same category or overall recommendations
   const sameCategoryList = relatedTemplates
@@ -91,27 +92,13 @@ export default function TemplatePreviewModal({
               
               {/* Main Stage (16:9) */}
               <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden bg-neutral-950 relative shadow-xl border border-border group select-none">
-                {currentSlideUrl ? (
-                  <img
-                    src={currentSlideUrl}
-                    alt={`${template.name} - Diapositive ${activeSlide + 1}`}
-                    className="w-full h-full object-contain bg-neutral-950 transition-all duration-300"
-                  />
-                ) : (
-                  <div
-                    className="w-full h-full p-8 flex flex-col justify-between text-white"
-                    style={{ backgroundColor: template.designData?.globalStyle?.bgColor || '#0f172a' }}
-                  >
-                    <div>
-                      <span className="text-xs uppercase font-bold tracking-widest text-white/70">
-                        {template.category} • {template.theme}
-                      </span>
-                      <h2 className="text-3xl font-black mt-2 tracking-tight">{template.name}</h2>
-                    </div>
-                    <p className="text-sm text-white/80 max-w-lg">{template.description}</p>
-                    <div className="text-xs text-white/60">Diapositive {activeSlide + 1}</div>
-                  </div>
-                )}
+                <SlideRenderer
+                  block={hasBlocks ? blocks[activeSlide] : null}
+                  template={template}
+                  slideIndex={activeSlide}
+                  fallbackUrl={slides[activeSlide] || slides[0] || template.previewThumbnail}
+                  className="w-full h-full"
+                />
 
                 {/* Prev / Next Slide Arrows */}
                 {totalSlides > 1 && (
@@ -119,7 +106,7 @@ export default function TemplatePreviewModal({
                     <button
                       onClick={() => setActiveSlide((prev) => Math.max(0, prev - 1))}
                       disabled={activeSlide === 0}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center disabled:opacity-20 transition-all shadow-md backdrop-blur-xs"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center disabled:opacity-20 transition-all shadow-md backdrop-blur-xs z-20 cursor-pointer"
                       title="Diapositive précédente"
                     >
                       <Icon name="ChevronLeftIcon" size={20} />
@@ -127,7 +114,7 @@ export default function TemplatePreviewModal({
                     <button
                       onClick={() => setActiveSlide((prev) => Math.min(totalSlides - 1, prev + 1))}
                       disabled={activeSlide >= totalSlides - 1}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center disabled:opacity-20 transition-all shadow-md backdrop-blur-xs"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center disabled:opacity-20 transition-all shadow-md backdrop-blur-xs z-20 cursor-pointer"
                       title="Diapositive suivante"
                     >
                       <Icon name="ChevronRightIcon" size={20} />
@@ -136,7 +123,7 @@ export default function TemplatePreviewModal({
                 )}
 
                 {/* Bottom Left Slide Badge */}
-                <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-md text-[11px] font-bold text-white shadow-xs">
+                <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-md text-[11px] font-bold text-white shadow-xs z-20">
                   {activeSlide + 1} sur {totalSlides}
                 </div>
               </div>
@@ -144,18 +131,24 @@ export default function TemplatePreviewModal({
               {/* Thumbnails Strip with Left/Right Buttons (Identical to Canva) */}
               {totalSlides > 1 && (
                 <div className="flex items-center gap-3 overflow-x-auto py-1 scrollbar-none">
-                  {slides.map((sUrl, idx) => (
+                  {Array.from({ length: totalSlides }).map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setActiveSlide(idx)}
-                      className={`relative w-28 sm:w-32 aspect-[16/9] rounded-xl overflow-hidden flex-shrink-0 transition-all duration-200 border-2 ${
+                      className={`relative w-28 sm:w-32 aspect-[16/9] rounded-xl overflow-hidden flex-shrink-0 transition-all duration-200 border-2 cursor-pointer ${
                         activeSlide === idx
                           ? 'border-primary ring-2 ring-primary/30 scale-102 shadow-md'
                           : 'border-border/60 opacity-60 hover:opacity-100 hover:border-border'
                       }`}
                     >
-                      <img src={sUrl} alt={`Miniature ${idx + 1}`} className="w-full h-full object-cover" />
-                      <span className="absolute bottom-1 right-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-black/70 text-white">
+                      <SlideRenderer
+                        block={hasBlocks ? blocks[idx] : null}
+                        template={template}
+                        slideIndex={idx}
+                        fallbackUrl={slides[idx] || slides[0] || template.previewThumbnail}
+                        isThumbnail={true}
+                      />
+                      <span className="absolute bottom-1 right-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-black/75 text-white z-10 pointer-events-none backdrop-blur-xs">
                         {idx + 1}
                       </span>
                     </button>
