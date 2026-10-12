@@ -5,6 +5,7 @@ import Icon from '@/components/ui/AppIcon';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { getMarketplaceTemplates, type MarketplaceTemplateItem } from '@/lib/services/marketplaceService';
+import TemplatePreviewModal from './TemplatePreviewModal';
 
 const categories = ['Tous', 'Tech', 'Design', 'Finance', 'Médecine', 'Journalisme', 'Architecture', 'Mode', 'Business'];
 const themes = ['Tous', 'Minimaliste', 'Bold', 'Dark', 'Coloré', 'Pitch Deck'];
@@ -16,6 +17,7 @@ export default function TemplatesContent() {
   const [search, setSearch] = useState('');
   const [templatesList, setTemplatesList] = useState<MarketplaceTemplateItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewTemplate, setPreviewTemplate] = useState<MarketplaceTemplateItem | null>(null);
 
   const fetchTemplates = async () => {
     setLoading(true);
@@ -131,7 +133,8 @@ export default function TemplatesContent() {
             >
               {/* Visual Preview Header */}
               <div
-                className="h-44 relative flex items-center justify-center overflow-hidden p-4"
+                className="h-44 relative flex items-center justify-center overflow-hidden p-4 cursor-pointer"
+                onClick={() => setPreviewTemplate(template)}
                 style={{
                   backgroundColor:
                     template.designData?.globalStyle?.bgColor ||
@@ -139,29 +142,45 @@ export default function TemplatesContent() {
                     '#1e293b',
                 }}
               >
-                {/* Simulated visual layout */}
-                <div className="w-full h-full rounded-lg border border-white/10 bg-black/20 p-3 flex flex-col justify-between backdrop-blur-xs">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
+                {template.previewThumbnail ? (
+                  <img
+                    src={template.previewThumbnail}
+                    alt={template.name}
+                    className="w-full h-full object-cover rounded-lg shadow-inner"
+                  />
+                ) : (
+                  /* Simulated visual layout */
+                  <div className="w-full h-full rounded-lg border border-white/10 bg-black/20 p-3 flex flex-col justify-between backdrop-blur-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
+                      </div>
+                      <span className="text-[10px] text-white/70 font-medium tracking-wide uppercase px-2 py-0.5 rounded bg-white/10">
+                        {template.theme}
+                      </span>
                     </div>
-                    <span className="text-[10px] text-white/70 font-medium tracking-wide uppercase px-2 py-0.5 rounded bg-white/10">
-                      {template.theme}
-                    </span>
+                    <div className="space-y-1.5">
+                      <p className="text-white text-xs font-bold line-clamp-1 drop-shadow-sm">
+                        {template.name}
+                      </p>
+                      <div className="h-1.5 rounded-full bg-white/20 w-3/4" />
+                      <div className="h-1.5 rounded-full bg-white/15 w-1/2" />
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-white/60">
+                      <span>{template.designData?.blocks?.length || 1} diapositives/blocs</span>
+                      <span>{template.category}</span>
+                    </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <p className="text-white text-xs font-bold line-clamp-1 drop-shadow-sm">
-                      {template.name}
-                    </p>
-                    <div className="h-1.5 rounded-full bg-white/20 w-3/4" />
-                    <div className="h-1.5 rounded-full bg-white/15 w-1/2" />
-                  </div>
-                  <div className="flex items-center justify-between text-[10px] text-white/60">
-                    <span>{template.designData?.blocks?.length || 1} diapositives/blocs</span>
-                    <span>{template.category}</span>
-                  </div>
+                )}
+
+                {/* Hover overlay for preview */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <span className="px-3 py-1.5 rounded-xl bg-white/90 text-gray-900 text-xs font-bold shadow-lg flex items-center gap-1.5">
+                    <Icon name="EyeIcon" size={13} />
+                    Aperçu interactif
+                  </span>
                 </div>
 
                 {/* Badges */}
@@ -211,13 +230,20 @@ export default function TemplatesContent() {
                     <Icon name="ArrowDownTrayIcon" size={12} />
                     {template.downloads.toLocaleString()}
                   </span>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setPreviewTemplate(template)}
+                      title="Prévisualiser le template"
+                      className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+                    >
+                      <Icon name="EyeIcon" size={14} />
+                    </button>
                     <button
                       onClick={() => handleUseTemplate(template)}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-700 hover:opacity-90 transition-all shadow-sm"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-700 hover:opacity-90 transition-all shadow-sm"
                     >
                       <Icon name="PencilSquareIcon" size={13} />
-                      Utiliser ce template
+                      Utiliser
                     </button>
                   </div>
                 </div>
@@ -226,6 +252,17 @@ export default function TemplatesContent() {
           ))}
         </div>
       )}
+
+      {/* Interactive Preview Modal */}
+      <TemplatePreviewModal
+        template={previewTemplate}
+        isOpen={!!previewTemplate}
+        onClose={() => setPreviewTemplate(null)}
+        onUse={(tpl) => {
+          setPreviewTemplate(null);
+          handleUseTemplate(tpl);
+        }}
+      />
     </div>
   );
 }

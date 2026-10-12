@@ -1,6 +1,26 @@
 'use client';
 
 // Dynamic imports to avoid SSR issues
+export async function captureCanvasThumbnail(elementId = 'portfolio-canvas-export'): Promise<string | null> {
+  try {
+    const html2canvas = (await import('html2canvas')).default;
+    const el = document.getElementById(elementId);
+    if (!el) return null;
+
+    const canvas = await html2canvas(el, {
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      scale: 0.5, // lightweight thumbnail
+      logging: false,
+    });
+    return canvas.toDataURL('image/jpeg', 0.8);
+  } catch (err) {
+    console.warn('Could not generate automatic thumbnail', err);
+    return null;
+  }
+}
+
 export async function exportToPNG(elementId: string, filename = 'portfolio.png') {
   const html2canvas = (await import('html2canvas')).default;
 

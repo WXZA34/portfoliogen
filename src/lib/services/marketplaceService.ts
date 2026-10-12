@@ -9,7 +9,9 @@ export interface MarketplaceTemplateItem {
   theme: string;
   description: string;
   downloads: number;
+  likesCount?: number;
   rating: number;
+  previewThumbnail?: string;
   previewColor?: string;
   tags: string[];
   isPremium: boolean;
@@ -235,6 +237,7 @@ export async function publishToMarketplace(template: Omit<MarketplaceTemplateIte
       description: newItem.description,
       downloads: newItem.downloads,
       rating: newItem.rating,
+      preview_thumbnail: newItem.previewThumbnail,
       preview_color: newItem.previewColor,
       tags: newItem.tags,
       is_premium: newItem.isPremium,
@@ -253,4 +256,14 @@ export async function publishToMarketplace(template: Omit<MarketplaceTemplateIte
   }
 
   return newItem;
+}
+
+// Increment downloads count
+export async function trackTemplateDownload(templateId: string) {
+  try {
+    const supabase = createClient();
+    await supabase.rpc('increment_template_downloads', { tpl_id: templateId });
+  } catch {
+    // silently continue
+  }
 }

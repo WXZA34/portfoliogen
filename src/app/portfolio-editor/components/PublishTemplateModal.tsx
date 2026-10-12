@@ -49,12 +49,22 @@ export default function PublishTemplateModal({
         .map((t) => t.trim())
         .filter(Boolean);
 
+      let thumbnail: string | undefined = undefined;
+      try {
+        const { captureCanvasThumbnail } = await import('../utils/exportCanvas');
+        const captured = await captureCanvasThumbnail('portfolio-canvas-export');
+        if (captured) thumbnail = captured;
+      } catch (err) {
+        console.warn('Could not capture preview thumbnail', err);
+      }
+
       const published = await publishToMarketplace({
         name: name.trim(),
         author: author.trim() || 'Anonyme',
         category,
         theme,
         description: description.trim(),
+        previewThumbnail: thumbnail,
         previewColor: design.globalStyle.primaryColor || '#7c3aed',
         tags,
         isPremium,
