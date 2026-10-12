@@ -9,9 +9,11 @@ interface TemplateCardProps {
   template: MarketplaceTemplateItem;
   onPreview: (template: MarketplaceTemplateItem) => void;
   onUse: (template: MarketplaceTemplateItem) => void;
+  onRemove?: (template: MarketplaceTemplateItem) => void;
+  isMyTemplate?: boolean;
 }
 
-export default function TemplateCard({ template, onPreview, onUse }: TemplateCardProps) {
+export default function TemplateCard({ template, onPreview, onUse, onRemove, isMyTemplate }: TemplateCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -45,7 +47,7 @@ export default function TemplateCard({ template, onPreview, onUse }: TemplateCar
     <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/50 transition-all group flex flex-col shadow-xs hover:shadow-xl duration-300"
+      className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/50 transition-all group flex flex-col shadow-xs hover:shadow-xl duration-300 relative"
     >
       {/* 16:9 Presentation Canvas Container */}
       <div
@@ -83,8 +85,13 @@ export default function TemplateCard({ template, onPreview, onUse }: TemplateCar
           </span>
         </div>
 
-        {/* Top Badges (New, Pro, etc.) */}
+        {/* Top Badges (New, Pro, Mon modèle, etc.) */}
         <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-20">
+          {isMyTemplate && (
+            <span className="px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-bold rounded-md shadow-xs flex items-center gap-1">
+              <Icon name="CheckCircleIcon" size={11} /> Mon Modèle
+            </span>
+          )}
           {template.isNew && (
             <span className="px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-md shadow-xs">
               Nouveau
@@ -136,10 +143,24 @@ export default function TemplateCard({ template, onPreview, onUse }: TemplateCar
         </div>
 
         <div className="flex items-center justify-between pt-2.5 border-t border-border mt-1">
-          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-            <Icon name="ArrowDownTrayIcon" size={11} />
-            {template.downloads.toLocaleString()}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Icon name="ArrowDownTrayIcon" size={11} />
+              {template.downloads.toLocaleString()}
+            </span>
+            {isMyTemplate && onRemove && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(template);
+                }}
+                className="text-[10px] font-bold text-red-500 hover:text-red-700 hover:underline cursor-pointer flex items-center gap-0.5"
+                title="Retirer ce modèle de la Marketplace"
+              >
+                <Icon name="TrashIcon" size={10} /> Retirer
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => onPreview(template)}
@@ -150,7 +171,7 @@ export default function TemplateCard({ template, onPreview, onUse }: TemplateCar
             </button>
             <button
               onClick={() => onUse(template)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:opacity-90 transition-all shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:opacity-90 transition-all shadow-xs cursor-pointer"
             >
               <Icon name="PencilSquareIcon" size={12} />
               Personnaliser

@@ -10,6 +10,8 @@ interface TemplatePreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUse: (template: MarketplaceTemplateItem) => void;
+  onRemove?: (template: MarketplaceTemplateItem) => void;
+  isMyTemplate?: boolean;
   relatedTemplates?: MarketplaceTemplateItem[];
 }
 
@@ -18,6 +20,8 @@ export default function TemplatePreviewModal({
   isOpen,
   onClose,
   onUse,
+  onRemove,
+  isMyTemplate,
   relatedTemplates = [],
 }: TemplatePreviewModalProps) {
   const [activeSlide, setActiveSlide] = useState(0);
@@ -225,13 +229,23 @@ export default function TemplatePreviewModal({
 
                 <button
                   onClick={() => onUse(template)}
-                  className="w-full py-2.5 px-4 rounded-xl border border-border bg-card text-xs font-bold text-foreground hover:bg-muted flex items-center justify-center gap-2 transition-all"
+                  className="w-full py-2.5 px-4 rounded-xl border border-border bg-card text-xs font-bold text-foreground hover:bg-muted flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
                   <span className="w-4 h-4 rounded-full bg-gradient-to-tr from-cyan-400 to-fuchsia-500 flex items-center justify-center text-[9px] text-white font-bold">
                     ✦
                   </span>
                   Modifier avec l'IA
                 </button>
+
+                {isMyTemplate && onRemove && (
+                  <button
+                    onClick={() => onRemove(template)}
+                    className="w-full py-2.5 px-4 rounded-xl border border-red-500/30 bg-red-500/10 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    <Icon name="TrashIcon" size={14} />
+                    Retirer de la Marketplace
+                  </button>
+                )}
               </div>
 
               {/* Description & Tags */}

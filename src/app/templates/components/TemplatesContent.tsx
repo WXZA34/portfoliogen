@@ -17,6 +17,7 @@ export default function TemplatesContent() {
   const [selectedTheme, setSelectedTheme] = useState('Tous');
   const [search, setSearch] = useState('');
   const [templatesList, setTemplatesList] = useState<MarketplaceTemplateItem[]>([]);
+  const [myTemplateIds, setMyTemplateIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewTemplate, setPreviewTemplate] = useState<MarketplaceTemplateItem | null>(null);
 
@@ -25,10 +26,37 @@ export default function TemplatesContent() {
     try {
       const items = await getMarketplaceTemplates();
       setTemplatesList(items);
+
+      // Check saved templates from my_templates to know which ones belong to current user
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: myData } = await supabase.from('my_templates').select('id, name');
+      if (myData) {
+        const identifiers = myData.flatMap((d) => [d.id, d.name]);
+        setMyTemplateIds(identifiers);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRemoveFromMarketplace = async (template: MarketplaceTemplateItem) => {
+    if (!confirm(`Voulez-vous retirer le template "${template.name}" de la Marketplace ?`)) return;
+    try {
+      const { removeFromMarketplace } = await import('@/lib/services/marketplaceService');
+      await removeFromMarketplace(template.id);
+      if (template.originalTemplateId) await removeFromMarketplace(template.originalTemplateId);
+      await removeFromMarketplace(template.name);
+      toast.success(`Le template "${template.name}" a été retiré de la Marketplace.`);
+      if (previewTemplate?.id === template.id) {
+        setPreviewTemplate(null);
+      }
+      fetchTemplates();
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erreur lors du retrait du template : ' + err.message);
     }
   };
 
@@ -127,14 +155,23 @@ export default function TemplatesContent() {
       ) : (
         /* Templates Grid */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((template) => (
-            <TemplateCard
-              key={template.id}
-              template={template}
-              onPreview={(tpl) => setPreviewTemplate(tpl)}
-              onUse={handleUseTemplate}
-            />
-          ))}
+          {filtered.map((template) => {
+            const isMine =
+              myTemplateIds.includes(template.id) ||
+              (template.originalTemplateId && myTemplateIds.includes(template.originalTemplateId)) ||
+              myTemplateIds.includes(template.name);
+
+            return (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                isMyTemplate={isMine}
+                onPreview={(tpl) => setPreviewTemplate(tpl)}
+                onUse={handleUseTemplate}
+                onRemove={handleRemoveFromMarketplace}
+              />
+            );
+          })}
         </div>
       )}
 
@@ -142,11 +179,18 @@ export default function TemplatesContent() {
       <TemplatePreviewModal
         template={previewTemplate}
         isOpen={!!previewTemplate}
+        isMyTemplate={
+          !!previewTemplate &&
+          (myTemplateIds.includes(previewTemplate.id) ||
+            (previewTemplate.originalTemplateId && myTemplateIds.includes(previewTemplate.originalTemplateId)) ||
+            myTemplateIds.includes(previewTemplate.name))
+        }
         onClose={() => setPreviewTemplate(null)}
         onUse={(tpl) => {
           setPreviewTemplate(null);
           handleUseTemplate(tpl);
         }}
+        onRemove={handleRemoveFromMarketplace}
         relatedTemplates={templatesList}
       />
     </div>

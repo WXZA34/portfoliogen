@@ -536,17 +536,22 @@ export async function trackTemplateDownload(templateId: string) {
 }
 
 // Remove template from Marketplace (unpublish)
-export async function removeFromMarketplace(templateId: string): Promise<boolean> {
+export async function removeFromMarketplace(templateIdOrName: string): Promise<boolean> {
   try {
     const supabase = createClient();
-    await supabase.from('marketplace_templates').delete().or(`id.eq.${templateId},original_template_id.eq.${templateId}`);
+    await supabase.from('marketplace_templates').delete().or(`id.eq.${templateIdOrName},original_template_id.eq.${templateIdOrName},name.eq.${templateIdOrName}`);
   } catch (err) {
     console.warn('Could not delete from Supabase marketplace', err);
   }
 
   if (typeof window !== 'undefined') {
     const local = getLocalTemplates();
-    const filtered = local.filter((t) => t.id !== templateId && t.originalTemplateId !== templateId && t.designData?.templateId !== templateId);
+    const filtered = local.filter((t) => 
+      t.id !== templateIdOrName && 
+      t.originalTemplateId !== templateIdOrName && 
+      t.designData?.templateId !== templateIdOrName &&
+      t.name !== templateIdOrName
+    );
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
   }
   return true;
