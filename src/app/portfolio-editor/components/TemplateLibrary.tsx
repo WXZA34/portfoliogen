@@ -122,7 +122,18 @@ export default function TemplateLibrary({ onApply, currentTemplateId }: Template
 
   return (
     <div className="p-3 space-y-3">
-      <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider px-1">Bibliothèque de Templates</p>
+      <div className="flex items-center justify-between px-1">
+        <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider">Bibliothèque de Templates</p>
+        <a
+          href="/templates"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[11px] font-600 text-primary hover:underline flex items-center gap-1"
+        >
+          <Icon name="GlobeAltIcon" size={11} />
+          Marketplace
+        </a>
+      </div>
 
       {/* Category filter */}
       <div className="flex flex-wrap gap-1">

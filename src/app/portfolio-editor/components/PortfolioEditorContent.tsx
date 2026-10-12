@@ -12,6 +12,7 @@ import { useHistory } from '../hooks/useHistory';
 import { exportToPNG, exportToPDF, exportToPPTX } from '../utils/exportCanvas';
 import { parsePptxClient } from '../utils/parsePptxClient';
 import { createClient } from '@/lib/supabase/client';
+import PublishTemplateModal from './PublishTemplateModal';
 
 export type BlockType =
   | 'hero' |'about' |'skills' |'projects' |'experience' |'education' |'contact' |'testimonials' |'stats' |'gallery' |'cta' |'divider' |'languages' |'video' |'faq' | 'custom';
@@ -179,6 +180,36 @@ export default function PortfolioEditorContent() {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const dragBlockId = useRef<string | null>(null);
   const [savedTemplates, setSavedTemplates] = useState<any[]>([]);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+
+  // ─── Check for template from URL (e.g. /portfolio-editor?templateId=xxx) ───
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const templateId = params.get('templateId');
+    if (templateId) {
+      import('@/lib/services/marketplaceService').then(({ getMarketplaceTemplates }) => {
+        getMarketplaceTemplates().then((tpls) => {
+          const match = tpls.find((t) => t.id === templateId);
+          if (match && match.designData) {
+            setDesign((prev) => ({
+              ...prev,
+              name: match.name,
+              templateId: match.id,
+              blocks: match.designData.blocks,
+              globalStyle: match.designData.globalStyle || prev.globalStyle,
+            }));
+            if (match.designData.globalStyle?.presentationWidth) {
+              setPreviewMode('presentation');
+            }
+            if (match.designData.blocks?.[0]?.id) {
+              setSelectedBlockId(match.designData.blocks[0].id);
+            }
+          }
+        });
+      });
+    }
+  }, []);
 
   // ─── Keyboard shortcuts: Ctrl+Z / Ctrl+Y ───────────────────────────────
   useEffect(() => {
@@ -597,6 +628,14 @@ export default function PortfolioEditorContent() {
             Aperçu
           </button>
           <button
+            onClick={() => setShowPublishModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-600 transition-all border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 whitespace-nowrap"
+            title="Publier ce modèle sur la Marketplace communautaire"
+          >
+            <Icon name="GlobeAltIcon" size={13} />
+            <span className="hidden md:inline">Partager en Template</span>
+          </button>
+          <button
             onClick={handleSave}
             disabled={saving}
             className="flex items-center gap-1.5 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-600 hover:opacity-90 disabled:opacity-60 transition-all whitespace-nowrap"
@@ -735,6 +774,16 @@ export default function PortfolioEditorContent() {
           )}
         </div>
       </div>
+
+      {/* Modal for publishing template to Marketplace */}
+      <PublishTemplateModal
+        isOpen={showPublishModal}
+        onClose={() => setShowPublishModal(false)}
+        design={design}
+        onSuccess={() => {
+          // Open notification or redirect optionally
+        }}
+      />
     </div>
   );
 }
