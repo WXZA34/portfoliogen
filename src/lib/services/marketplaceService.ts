@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import type { Block, PortfolioDesign } from '../app/portfolio-editor/components/PortfolioEditorContent';
+import type { Block, PortfolioDesign } from '../../app/portfolio-editor/components/PortfolioEditorContent';
 
 export interface MarketplaceTemplateItem {
   id: string;

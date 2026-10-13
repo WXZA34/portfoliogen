@@ -6,11 +6,11 @@ import Topbar from './Topbar';
 
 interface AppLayoutProps {
   children: React.ReactNode;
-  pageTitle: string;
+  pageTitle?: string;
   pageSubtitle?: string;
 }
 
-export default function AppLayout({ children, pageTitle, pageSubtitle }: AppLayoutProps) {
+export default function AppLayout({ children, pageTitle = 'PortfolioGen', pageSubtitle }: AppLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (

@@ -12,9 +12,10 @@ import { useLanguage } from '@/lib/LanguageContext';
 export default function CVthequeContent() {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('tab-projects');
+  const [projectsCount, setProjectsCount] = useState<number>(6);
 
   const tabs = [
-    { id: 'tab-projects', labelKey: 'projects', icon: 'FolderIcon', count: 12 },
+    { id: 'tab-projects', labelKey: 'projects', icon: 'FolderIcon', count: projectsCount },
     { id: 'tab-skills', labelKey: 'skills', icon: 'BrainIcon', count: 34 },
     { id: 'tab-parcours', labelKey: 'parcours', icon: 'GraduationCapIcon', count: 8 },
     { id: 'tab-media', labelKey: 'media', icon: 'ImageIcon', count: 47 },
@@ -46,7 +47,7 @@ export default function CVthequeContent() {
 
       {/* Tab Content */}
       <div className="animate-fade-in">
-        {activeTab === 'tab-projects' && <ProjectsGrid />}
+        {activeTab === 'tab-projects' && <ProjectsGrid onCountChange={setProjectsCount} />}
         {activeTab === 'tab-skills' && <SkillsMatrix />}
         {activeTab === 'tab-parcours' && <ParcoursTimeline />}
         {activeTab === 'tab-media' && <MediaGallery />}

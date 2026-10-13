@@ -31,8 +31,8 @@ export default function CampaignTable() {
       c.persona.toLowerCase().includes(search.toLowerCase())
     )
     .sort((a, b) => {
-      let aVal: any = a[sortKey];
-      let bVal: any = b[sortKey];
+      let aVal: any = sortKey === 'name' ? a.portfolioName : (a as any)[sortKey];
+      let bVal: any = sortKey === 'name' ? b.portfolioName : (b as any)[sortKey];
       if (typeof aVal === 'string' && typeof bVal === 'string') {
         aVal = aVal.replace(/[^0-9]/g, '');
         bVal = bVal.replace(/[^0-9]/g, '');

@@ -2,7 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import PortfolioViewer from './PortfolioViewer';
 import { notFound } from 'next/navigation';
 
-export default async function PublishedPortfolioPage({ params }: { params: { id: string } }) {
+export default async function PublishedPortfolioPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   // We use the anon key for public access to the templates
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,7 +13,7 @@ export default async function PublishedPortfolioPage({ params }: { params: { id:
   const { data, error } = await supabase
     .from('my_templates')
     .select('modified_design')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (error || !data) {

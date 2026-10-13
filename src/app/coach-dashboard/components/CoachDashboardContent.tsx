@@ -367,7 +367,7 @@ export default function CoachDashboardContent() {
             if (s.id !== a.section_id) return s;
             return {
               ...s,
-              annotationCount: prev.filter((ann) => ann.sectionId === s.id && !ann.resolved).length,
+              annotationCount: s.annotationCount + 1,
             };
           }));
         }
@@ -407,8 +407,8 @@ export default function CoachDashboardContent() {
           setSections((prev) => prev.map((sec) =>
             sec.id === s.id ? { ...sec, status: s.review_status, lastUpdated: formatTimestamp(s.updated_at) } : sec
           ));
-          setSelectedSection((prev) =>
-            prev?.id === s.id ? { ...prev, status: s.review_status } : prev
+          setSelectedSection((prev: CVSection | null) =>
+            prev && prev.id === s.id ? { ...prev, status: s.review_status } : prev
           );
         }
       )
