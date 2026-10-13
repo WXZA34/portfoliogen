@@ -392,6 +392,7 @@ function createSlideSvg(title: string, subtitle: string, bgColor: string, accent
 
 // Fetch templates combining Supabase + localStorage + Defaults
 export async function getMarketplaceTemplates(): Promise<MarketplaceTemplateItem[]> {
+  let supabaseTemplates: MarketplaceTemplateItem[] = [];
   try {
     const supabase = createClient();
     const { data, error } = await supabase
@@ -399,8 +400,9 @@ export async function getMarketplaceTemplates(): Promise<MarketplaceTemplateItem
       .select('*')
       .order('created_at', { ascending: false });
 
-    let supabaseTemplates: MarketplaceTemplateItem[] = [];
-    if (!error && Array.isArray(data)) {
+    if (error) {
+      console.warn('Supabase marketplace error:', error);
+    } else if (Array.isArray(data)) {
       // Map Supabase rows to our interface
       supabaseTemplates = data.map((row: any) => {
         const item: MarketplaceTemplateItem = {
@@ -435,25 +437,32 @@ export async function getMarketplaceTemplates(): Promise<MarketplaceTemplateItem
         return item;
       });
     }
-
-    // Combine Supabase templates + default catalog
-    const combined = [...supabaseTemplates, ...DEFAULT_MARKETPLACE_TEMPLATES];
-    // Deduplicate strictly by unique ID (never by name!)
-    const seenIds = new Set<string>();
-    const unique: MarketplaceTemplateItem[] = [];
-    for (const item of combined) {
-      if (!seenIds.has(item.id)) {
-        seenIds.add(item.id);
-        unique.push(item);
-      }
-    }
-    return unique;
   } catch (err) {
     console.warn('Supabase marketplace error or table missing, using localStorage fallback', err);
-    const local = getLocalTemplates();
-    const all = [...local, ...DEFAULT_MARKETPLACE_TEMPLATES];
-    return Array.from(new Map(all.map(item => [item.id, item])).values());
   }
+
+  // Also include localStorage templates so local changes are never lost on refresh
+  const local = getLocalTemplates();
+
+  // Combine: Supabase user templates first (highest priority), then local templates, then default starter catalog
+  const combined = [...supabaseTemplates, ...local, ...DEFAULT_MARKETPLACE_TEMPLATES];
+
+  // Strictly deduplicate by normalized name AND ID so no two cards have the same name:
+  // If multiple items share the exact same name, the first one encountered (Supabase > local > default) wins.
+  const seenNames = new Set<string>();
+  const seenIds = new Set<string>();
+  const unique: MarketplaceTemplateItem[] = [];
+
+  for (const item of combined) {
+    const normName = (item.name || '').trim().toLowerCase();
+    if (!seenIds.has(item.id) && !seenNames.has(normName)) {
+      seenIds.add(item.id);
+      if (normName) seenNames.add(normName);
+      unique.push(item);
+    }
+  }
+
+  return unique;
 }
 
 // Get user published templates from localStorage
@@ -481,16 +490,18 @@ function getLocalTemplates(): MarketplaceTemplateItem[] {
 // Publish a template to Marketplace
 export async function publishToMarketplace(template: Omit<MarketplaceTemplateItem, 'id' | 'createdAt' | 'downloads' | 'rating'>): Promise<MarketplaceTemplateItem> {
   const newId = `mkt-${Date.now()}`;
+  const trimmedName = (template.name || 'Mon Modèle').trim();
   
   // Extract all slides if not explicitly passed
   const slides = (template.previewSlides && template.previewSlides.length > 0)
     ? template.previewSlides
-    : extractTemplateSlides({ ...template, id: newId, downloads: 1, rating: 5.0, createdAt: '' });
+    : extractTemplateSlides({ ...template, name: trimmedName, id: newId, downloads: 1, rating: 5.0, createdAt: '' });
 
   const thumbnail = template.previewThumbnail || (slides.length > 0 ? slides[0] : undefined);
 
   const newItem: MarketplaceTemplateItem = {
     ...template,
+    name: trimmedName,
     id: newId,
     previewThumbnail: thumbnail,
     previewSlides: slides,
@@ -504,67 +515,88 @@ export async function publishToMarketplace(template: Omit<MarketplaceTemplateIte
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    // 1. If this exact portfolio was already published by this user, update it instead of creating duplicates
+    // 1. Check if a template with this name OR this originalTemplateId already exists
+    let existingMatch: any = null;
+
+    // Check by originalTemplateId first if present
     if (newItem.originalTemplateId) {
-      let query = supabase.from('marketplace_templates').select('id').eq('original_template_id', newItem.originalTemplateId);
-      if (user?.id) {
-        query = query.eq('user_id', user.id);
-      }
-      const { data: existing } = await query;
-      if (existing && existing.length > 0) {
-        const existingId = existing[0].id;
-        const { error: updateError } = await supabase
-          .from('marketplace_templates')
-          .update({
-            name: newItem.name,
-            author: newItem.author,
-            category: newItem.category,
-            theme: newItem.theme,
-            description: newItem.description,
-            preview_thumbnail: newItem.previewThumbnail,
-            preview_slides: newItem.previewSlides,
-            preview_color: newItem.previewColor,
-            tags: newItem.tags,
-            is_premium: newItem.isPremium,
-            design_data: newItem.designData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existingId);
-
-        if (updateError) {
-          console.error('Update error in marketplace_templates:', updateError);
-          throw new Error("Erreur de mise à jour sur la Marketplace : " + updateError.message);
-        }
-
-        newItem.id = existingId;
-        return newItem;
+      const { data: byOrig } = await supabase
+        .from('marketplace_templates')
+        .select('*')
+        .eq('original_template_id', newItem.originalTemplateId)
+        .limit(1);
+      if (byOrig && byOrig.length > 0) {
+        existingMatch = byOrig[0];
       }
     }
 
-    // 2. Otherwise insert a brand new template entry
-    const { error: insertError } = await supabase.from('marketplace_templates').insert({
-      id: newItem.id,
-      name: newItem.name,
-      author: newItem.author,
-      category: newItem.category,
-      theme: newItem.theme,
-      description: newItem.description,
-      downloads: newItem.downloads,
-      rating: newItem.rating,
-      original_template_id: newItem.originalTemplateId,
-      preview_thumbnail: newItem.previewThumbnail,
-      preview_slides: newItem.previewSlides,
-      preview_color: newItem.previewColor,
-      tags: newItem.tags,
-      is_premium: newItem.isPremium,
-      is_new: newItem.isNew,
-      design_data: newItem.designData,
-      ...(user?.id ? { user_id: user.id } : {}),
-    });
+    // If not found by originalTemplateId, check by exact name (case-insensitive)
+    if (!existingMatch && trimmedName) {
+      const { data: byName } = await supabase
+        .from('marketplace_templates')
+        .select('*')
+        .ilike('name', trimmedName)
+        .limit(1);
+      if (byName && byName.length > 0) {
+        existingMatch = byName[0];
+      }
+    }
 
-    if (insertError) {
-      console.error('Insert error in marketplace_templates:', insertError);
-      throw new Error("Erreur de publication sur la Marketplace : " + insertError.message);
+    if (existingMatch) {
+      // UPDATE THE EXISTING MARKETPLACE TEMPLATE (No duplicate created!)
+      const existingId = existingMatch.id;
+      const { error: updateError } = await supabase
+        .from('marketplace_templates')
+        .update({
+          name: trimmedName,
+          author: newItem.author,
+          category: newItem.category,
+          theme: newItem.theme,
+          description: newItem.description,
+          preview_thumbnail: newItem.previewThumbnail,
+          preview_slides: newItem.previewSlides,
+          preview_color: newItem.previewColor,
+          tags: newItem.tags,
+          is_premium: newItem.isPremium,
+          design_data: newItem.designData,
+          original_template_id: newItem.originalTemplateId || existingMatch.original_template_id,
+          user_id: user?.id || existingMatch.user_id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingId);
+
+      if (updateError) {
+        console.error('Update error in marketplace_templates:', updateError);
+        throw new Error("Erreur de mise à jour sur la Marketplace : " + updateError.message);
+      }
+
+      newItem.id = existingId;
+    } else {
+      // 2. Otherwise insert a brand new template entry
+      const { error: insertError } = await supabase.from('marketplace_templates').insert({
+        id: newItem.id,
+        name: trimmedName,
+        author: newItem.author,
+        category: newItem.category,
+        theme: newItem.theme,
+        description: newItem.description,
+        downloads: newItem.downloads,
+        rating: newItem.rating,
+        original_template_id: newItem.originalTemplateId,
+        preview_thumbnail: newItem.previewThumbnail,
+        preview_slides: newItem.previewSlides,
+        preview_color: newItem.previewColor,
+        tags: newItem.tags,
+        is_premium: newItem.isPremium,
+        is_new: newItem.isNew,
+        design_data: newItem.designData,
+        ...(user?.id ? { user_id: user.id } : {}),
+      });
+
+      if (insertError) {
+        console.error('Insert error in marketplace_templates:', insertError);
+        throw new Error("Erreur de publication sur la Marketplace : " + insertError.message);
+      }
     }
   } catch (err: any) {
     console.error('Could not save to Supabase marketplace_templates', err);
@@ -574,7 +606,7 @@ export async function publishToMarketplace(template: Omit<MarketplaceTemplateIte
   // Backup to localStorage
   if (typeof window !== 'undefined') {
     const local = getLocalTemplates();
-    const updated = [newItem, ...local.filter(t => t.id !== newItem.id && t.originalTemplateId !== newItem.originalTemplateId)];
+    const updated = [newItem, ...local.filter(t => t.id !== newItem.id && t.name.toLowerCase().trim() !== trimmedName.toLowerCase() && t.originalTemplateId !== newItem.originalTemplateId)];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
   }
 

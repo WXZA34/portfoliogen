@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import type { PortfolioDesign } from './PortfolioEditorContent';
 import { publishToMarketplace, extractTemplateSlides } from '@/lib/services/marketplaceService';
+import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
 interface PublishTemplateModalProps {
@@ -22,7 +23,7 @@ export default function PublishTemplateModal({
   design,
   onSuccess,
 }: PublishTemplateModalProps) {
-  const [name, setName] = useState(design.name || 'Mon Modèle');
+  const [name, setName] = useState(design?.name || 'Mon Modèle');
   const [author, setAuthor] = useState('Créateur PortfolioGen');
   const [category, setCategory] = useState('Tech');
   const [theme, setTheme] = useState('Minimaliste');
@@ -32,15 +33,92 @@ export default function PublishTemplateModal({
   const [tagInput, setTagInput] = useState('Portfolio, Showcase, Web');
   const [isPremium, setIsPremium] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [isUpdate, setIsUpdate] = useState(false);
+  const [existingMarketplaceTitle, setExistingMarketplaceTitle] = useState('');
+
+  // Synchronize modal state with currently targeted portfolio name whenever modal opens
+  useEffect(() => {
+    if (isOpen && design) {
+      const targetName = (design.name || '').trim();
+      setName(targetName || 'Mon Modèle');
+
+      // Check if this portfolio or name already exists on Marketplace
+      import('@/lib/services/marketplaceService').then(({ getMarketplaceTemplates }) => {
+        getMarketplaceTemplates().then((tpls) => {
+          const match = tpls.find(
+            (t) =>
+              (design.id && t.originalTemplateId === design.id) ||
+              (targetName && t.name.toLowerCase().trim() === targetName.toLowerCase())
+          );
+          if (match) {
+            setIsUpdate(true);
+            setExistingMarketplaceTitle(match.name);
+            if (match.category) setCategory(match.category);
+            if (match.theme) setTheme(match.theme);
+            if (match.author) setAuthor(match.author);
+            if (match.description) setDescription(match.description);
+            if (match.tags && match.tags.length > 0) setTagInput(match.tags.join(', '));
+            if (match.isPremium !== undefined) setIsPremium(match.isPremium);
+          } else {
+            setIsUpdate(false);
+            setExistingMarketplaceTitle('');
+          }
+        });
+      });
+    }
+  }, [isOpen, design?.id, design?.name]);
+
+  // Check dynamically if typed name matches an existing template
+  useEffect(() => {
+    if (!isOpen) return;
+    const trimmed = name.trim().toLowerCase();
+    if (!trimmed) return;
+    import('@/lib/services/marketplaceService').then(({ getMarketplaceTemplates }) => {
+      getMarketplaceTemplates().then((tpls) => {
+        const match = tpls.find(
+          (t) =>
+            t.name.toLowerCase().trim() === trimmed ||
+            (design?.id && t.originalTemplateId === design.id)
+        );
+        if (match) {
+          setIsUpdate(true);
+          setExistingMarketplaceTitle(match.name);
+        } else {
+          setIsUpdate(false);
+          setExistingMarketplaceTitle('');
+        }
+      });
+    });
+  }, [name, isOpen, design?.id]);
+
+  // Auto-detect logged-in author's name
+  useEffect(() => {
+    if (isOpen) {
+      const fetchAuthor = async () => {
+        try {
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.user_metadata?.full_name) {
+            setAuthor(user.user_metadata.full_name);
+          } else if (user?.email) {
+            setAuthor(user.email.split('@')[0]);
+          }
+        } catch {
+          // keep default
+        }
+      };
+      fetchAuthor();
+    }
+  }, [isOpen]);
 
   // Pre-calculate extracted slides
   const extractedSlides = React.useMemo(() => {
     return extractTemplateSlides({
-      previewColor: design.globalStyle.primaryColor || '#7c3aed',
+      previewColor: design?.globalStyle?.primaryColor || '#7c3aed',
       designData: {
-        blocks: design.blocks,
-        globalStyle: design.globalStyle,
-        templateId: design.id,
+        blocks: design?.blocks || [],
+        globalStyle: design?.globalStyle,
+        templateId: design?.id,
       },
     });
   }, [design]);
@@ -97,7 +175,11 @@ export default function PublishTemplateModal({
         },
       });
 
-      toast.success(`Le modèle "${published.name}" a été publié sur la Marketplace !`);
+      if (isUpdate) {
+        toast.success(`Le modèle "${published.name}" a été mis à jour avec succès sur la Marketplace !`);
+      } else {
+        toast.success(`Le modèle "${published.name}" a été publié sur la Marketplace !`);
+      }
       if (onSuccess) onSuccess(published.id);
       onClose();
     } catch (err: any) {
@@ -118,7 +200,9 @@ export default function PublishTemplateModal({
               <Icon name="GlobeAltIcon" size={20} />
             </div>
             <div>
-              <h2 className="text-base font-700 text-foreground">Publier sur la Marketplace</h2>
+              <h2 className="text-base font-700 text-foreground">
+                {isUpdate ? 'Mettre à jour sur la Marketplace' : 'Publier sur la Marketplace'}
+              </h2>
               <p className="text-xs text-muted-foreground">Partagez votre design avec toute la communauté</p>
             </div>
           </div>
@@ -132,6 +216,20 @@ export default function PublishTemplateModal({
 
         {/* Form Body */}
         <form onSubmit={handlePublish} className="p-6 space-y-4 overflow-y-auto flex-1">
+          {/* Informative banner if updating existing template */}
+          {isUpdate && (
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-600 dark:text-blue-400 text-xs">
+              <Icon name="InformationCircleIcon" size={18} className="flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Mise à jour automatique sur la Marketplace</p>
+                <p className="text-[11px] opacity-90 mt-0.5">
+                  Un modèle nommé « {existingMarketplaceTitle || name} » est déjà présent sur la Marketplace. 
+                  Pour éviter toute confusion, ce modèle existant sera <strong>mis à jour</strong> sans créer de doublon.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Preview banner */}
           <div
             className="h-32 rounded-xl p-4 flex flex-col justify-end relative overflow-hidden text-white shadow-inner group border border-border"
@@ -166,7 +264,7 @@ export default function PublishTemplateModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="ex: Portfolio Architecte Minimaliste"
-              className="w-full px-3.5 py-2 rounded-xl bg-card border border-border text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="w-full px-3.5 py-2 rounded-xl bg-card border border-border text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 font-semibold"
               required
             />
           </div>
@@ -257,24 +355,29 @@ export default function PublishTemplateModal({
               type="button"
               onClick={onClose}
               disabled={publishing}
-              className="px-4 py-2 rounded-xl border border-border text-xs font-600 text-muted-foreground hover:text-foreground transition-all"
+              className="px-4 py-2 rounded-xl border border-border text-xs font-600 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={publishing}
-              className="flex items-center gap-1.5 px-5 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-700 hover:opacity-90 transition-all disabled:opacity-50 shadow-md"
+              className="flex items-center gap-1.5 px-5 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-700 hover:opacity-90 transition-all disabled:opacity-50 shadow-md cursor-pointer"
             >
               {publishing ? (
                 <>
                   <Icon name="ArrowPathIcon" size={14} className="animate-spin" />
-                  Publication en cours...
+                  {isUpdate ? 'Mise à jour...' : 'Publication...'}
+                </>
+              ) : isUpdate ? (
+                <>
+                  <Icon name="ArrowPathIcon" size={14} />
+                  Mettre à jour sur la Marketplace
                 </>
               ) : (
                 <>
                   <Icon name="GlobeAltIcon" size={14} />
-                  Mettre en ligne
+                  Mettre sur la Marketplace
                 </>
               )}
             </button>

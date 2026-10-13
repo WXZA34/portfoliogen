@@ -181,6 +181,7 @@ export default function PortfolioEditorContent() {
   const dragBlockId = useRef<string | null>(null);
   const [savedTemplates, setSavedTemplates] = useState<any[]>([]);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishTargetDesign, setPublishTargetDesign] = useState<PortfolioDesign | null>(null);
   const [showSaveOptionsModal, setShowSaveOptionsModal] = useState(false);
   const [saveModalName, setSaveModalName] = useState('');
 
@@ -284,7 +285,49 @@ export default function PortfolioEditorContent() {
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [editingTemplateName, setEditingTemplateName] = useState<string>('');
 
-  const loadSavedTemplates = async () => {
+  const handleLoadSavedPortfolio = useCallback((templateItem: any, useOriginal = false) => {
+    const rawDesign = (useOriginal ? templateItem.original_design : (templateItem.modified_design || templateItem.original_design)) || initialDesign;
+    const targetBlocks = Array.isArray(rawDesign.blocks) && rawDesign.blocks.length > 0 
+      ? rawDesign.blocks 
+      : defaultBlocks;
+
+    const loadedDesign: PortfolioDesign = {
+      ...initialDesign,
+      ...rawDesign,
+      id: templateItem.id || rawDesign.id || `design-${Date.now()}`,
+      name: (templateItem.name || rawDesign.name || 'Mon Portfolio').trim(),
+      blocks: targetBlocks,
+      globalStyle: {
+        ...initialDesign.globalStyle,
+        ...(rawDesign.globalStyle || {}),
+      },
+    };
+
+    setDesign(loadedDesign);
+
+    if (typeof window !== 'undefined' && templateItem?.id) {
+      localStorage.setItem('portfoliogen_active_portfolio_id', templateItem.id);
+    }
+
+    // Auto-select first slide or block
+    if (targetBlocks[0]?.id) {
+      setSelectedBlockId(targetBlocks[0].id);
+    } else {
+      setSelectedBlockId(null);
+    }
+
+    // Auto switch to presentation mode if it has slides / presentation dimensions
+    if (loadedDesign.globalStyle?.presentationWidth || loadedDesign.templateId?.startsWith('blank-')) {
+      setPreviewMode('presentation');
+    } else {
+      setPreviewMode('desktop');
+    }
+
+    // Switch left panel to blocks view so user immediately sees their slides/blocks
+    setPanelView('blocks');
+  }, [setDesign]);
+
+  const loadSavedTemplates = useCallback(async () => {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -297,7 +340,22 @@ export default function PortfolioEditorContent() {
       return;
     }
     const { data } = await query;
-    if (data) setSavedTemplates(data);
+    if (data) {
+      setSavedTemplates(data);
+
+      // Restore active portfolio if page was refreshed and editor is on initial draft
+      if (typeof window !== 'undefined') {
+        const storedActiveId = localStorage.getItem('portfoliogen_active_portfolio_id');
+        const hasUrlParam = new URLSearchParams(window.location.search).has('templateId');
+        if (!hasUrlParam && (design.id === 'design-1' || design.id.startsWith('design-'))) {
+          const match = storedActiveId ? data.find((t) => t.id === storedActiveId) : null;
+          const candidate = match || data[0];
+          if (candidate) {
+            handleLoadSavedPortfolio(candidate, false);
+          }
+        }
+      }
+    }
 
     // Fetch marketplace templates to check publication status
     try {
@@ -311,7 +369,12 @@ export default function PortfolioEditorContent() {
     } catch {
       // ignore
     }
-  };
+  }, [design.id, handleLoadSavedPortfolio]);
+
+  // Load saved templates on initial component mount so portfolios and marketplace badges never disappear
+  useEffect(() => {
+    loadSavedTemplates();
+  }, [loadSavedTemplates]);
 
   const handleSaveTemplateRename = async (templateId: string) => {
     const trimmed = editingTemplateName.trim();
@@ -382,7 +445,7 @@ export default function PortfolioEditorContent() {
 
   useEffect(() => {
     if (panelView === 'saved') loadSavedTemplates();
-  }, [panelView]);
+  }, [panelView, loadSavedTemplates]);
 
   const selectedBlock = design.blocks.find((b) => b.id === selectedBlockId) ?? null;
 
@@ -579,6 +642,9 @@ export default function PortfolioEditorContent() {
       if (error) throw error;
       if (data) {
         setDesign({ ...newDesign, id: data.id });
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('portfoliogen_active_portfolio_id', data.id);
+        }
       }
       alert(`Nouveau portfolio "${finalName}" enregistré avec succès ! Vous pouvez en ajouter autant que vous voulez.`);
       await loadSavedTemplates();
@@ -613,6 +679,9 @@ export default function PortfolioEditorContent() {
 
       if (error) throw error;
       setDesign(updatedDesign);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('portfoliogen_active_portfolio_id', dbId);
+      }
       alert(`Portfolio "${finalName}" mis à jour avec succès !`);
       await loadSavedTemplates();
     } catch (e: any) {
@@ -649,44 +718,6 @@ export default function PortfolioEditorContent() {
       console.error(e);
       alert("Erreur de duplication : " + e.message);
     }
-  };
-
-  const handleLoadSavedPortfolio = (templateItem: any, useOriginal = false) => {
-    const rawDesign = (useOriginal ? templateItem.original_design : (templateItem.modified_design || templateItem.original_design)) || initialDesign;
-    const targetBlocks = Array.isArray(rawDesign.blocks) && rawDesign.blocks.length > 0 
-      ? rawDesign.blocks 
-      : defaultBlocks;
-
-    const loadedDesign: PortfolioDesign = {
-      ...initialDesign,
-      ...rawDesign,
-      id: templateItem.id || rawDesign.id || `design-${Date.now()}`,
-      name: templateItem.name || rawDesign.name || 'Mon Portfolio',
-      blocks: targetBlocks,
-      globalStyle: {
-        ...initialDesign.globalStyle,
-        ...(rawDesign.globalStyle || {}),
-      },
-    };
-
-    setDesign(loadedDesign);
-
-    // Auto-select first slide or block
-    if (targetBlocks[0]?.id) {
-      setSelectedBlockId(targetBlocks[0].id);
-    } else {
-      setSelectedBlockId(null);
-    }
-
-    // Auto switch to presentation mode if it has slides / presentation dimensions
-    if (loadedDesign.globalStyle?.presentationWidth || loadedDesign.templateId?.startsWith('blank-')) {
-      setPreviewMode('presentation');
-    } else {
-      setPreviewMode('desktop');
-    }
-
-    // Switch left panel to blocks view so user immediately sees their slides/blocks
-    setPanelView('blocks');
   };
 
   return (
@@ -918,7 +949,10 @@ export default function PortfolioEditorContent() {
             </div>
           ) : (
             <button
-              onClick={() => setShowPublishModal(true)}
+              onClick={() => {
+                setPublishTargetDesign(design);
+                setShowPublishModal(true);
+              }}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 whitespace-nowrap cursor-pointer"
               title="Partager ce portfolio sur la Marketplace publique"
             >
@@ -1089,10 +1123,18 @@ export default function PortfolioEditorContent() {
                       ) : (
                         <button
                           onClick={() => {
-                            setDesign(t.modified_design || t.original_design);
+                            const raw = t.modified_design || t.original_design || initialDesign;
+                            const targetDesign: PortfolioDesign = {
+                              ...initialDesign,
+                              ...raw,
+                              id: t.id,
+                              name: (t.name || raw.name || 'Mon Portfolio').trim(),
+                            };
+                            setPublishTargetDesign(targetDesign);
+                            setDesign(targetDesign);
                             setShowPublishModal(true);
                           }}
-                          className="text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg font-700 hover:bg-primary/20 flex items-center justify-center gap-1.5 transition-all"
+                          className="text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg font-700 hover:bg-primary/20 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                         >
                           <Icon name="GlobeAltIcon" size={13} />
                           Mettre sur la Marketplace
@@ -1164,8 +1206,11 @@ export default function PortfolioEditorContent() {
       {/* Modal for publishing template to Marketplace */}
       <PublishTemplateModal
         isOpen={showPublishModal}
-        onClose={() => setShowPublishModal(false)}
-        design={design}
+        onClose={() => {
+          setShowPublishModal(false);
+          setPublishTargetDesign(null);
+        }}
+        design={publishTargetDesign || design}
         onSuccess={() => {
           loadSavedTemplates();
         }}
