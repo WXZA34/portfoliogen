@@ -14,11 +14,12 @@ export default function CVthequeContent() {
   const [activeTab, setActiveTab] = useState('tab-projects');
   const [projectsCount, setProjectsCount] = useState<number>(6);
   const [skillsCount, setSkillsCount] = useState<number>(24);
+  const [parcoursCount, setParcoursCount] = useState<number>(6);
 
   const tabs = [
     { id: 'tab-projects', labelKey: 'projects', icon: 'FolderIcon', count: projectsCount },
     { id: 'tab-skills', labelKey: 'skills', icon: 'BrainIcon', count: skillsCount },
-    { id: 'tab-parcours', labelKey: 'parcours', icon: 'GraduationCapIcon', count: 8 },
+    { id: 'tab-parcours', labelKey: 'parcours', icon: 'GraduationCapIcon', count: parcoursCount },
     { id: 'tab-media', labelKey: 'media', icon: 'ImageIcon', count: 47 },
     { id: 'tab-personas', labelKey: 'personas', icon: 'UsersIcon', count: 5 },
   ];
@@ -50,7 +51,7 @@ export default function CVthequeContent() {
       <div className="animate-fade-in">
         {activeTab === 'tab-projects' && <ProjectsGrid onCountChange={setProjectsCount} />}
         {activeTab === 'tab-skills' && <SkillsMatrix onCountChange={setSkillsCount} />}
-        {activeTab === 'tab-parcours' && <ParcoursTimeline />}
+        {activeTab === 'tab-parcours' && <ParcoursTimeline onCountChange={setParcoursCount} />}
         {activeTab === 'tab-media' && <MediaGallery />}
         {activeTab === 'tab-personas' && <PersonasPanel />}
       </div>

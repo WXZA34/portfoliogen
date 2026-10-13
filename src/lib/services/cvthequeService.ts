@@ -491,3 +491,292 @@ export async function deleteSkill(id: string): Promise<boolean> {
   return true;
 }
 
+// ============================================================================
+// PARCOURS & FORMATIONS SERVICE
+// ============================================================================
+
+export interface ParcoursItem {
+  id: string;
+  userId?: string;
+  type: 'experience' | 'formation';
+  title: string;
+  organization: string;
+  location?: string;
+  period: string;
+  duration?: string;
+  description: string;
+  achievements?: string[];
+  tech?: string[];
+  document?: string | null;
+  current?: boolean;
+  createdAt?: string;
+}
+
+const LOCAL_STORAGE_PARCOURS_PREFIX = 'portfoliogen_cvtheque_parcours_';
+
+export const DEFAULT_STARTER_PARCOURS: ParcoursItem[] = [
+  {
+    id: 'par-001',
+    type: 'experience',
+    title: 'Senior Full-Stack Engineer & Lead Tech',
+    organization: 'Mistral AI',
+    location: 'Paris, France',
+    period: 'Jan 2025 — Présent',
+    duration: '1 an 9 mois',
+    description: 'Pilotage de l\'architecture de la plateforme développeur servant plus de 120 000 utilisateurs API. Conception de l\'interface playground, du tableau de bord de consommation et du système de facturation Stripe. Encadrement d\'une équipe de 4 ingénieurs.',
+    achievements: [
+      'Réduction de la latence API de 40% via optimisation des flux streaming',
+      'Lancement du playground interactif utilisé par 45 000 développeurs/mois',
+      'Intégration et onboarding de clients grands comptes représentant 2,4M€ d\'ARR',
+    ],
+    tech: ['Next.js', 'Python', 'FastAPI', 'PostgreSQL', 'Stripe', 'Docker'],
+    document: 'recommandation_mistral.pdf',
+    current: true,
+  },
+  {
+    id: 'par-002',
+    type: 'experience',
+    title: 'Software Engineer II (APM & Distributed Tracing)',
+    organization: 'Datadog',
+    location: 'Paris, France (Remote)',
+    period: 'Mar 2023 — Déc 2024',
+    duration: '1 an 10 mois',
+    description: 'Développement des fonctionnalités de traçage distribué pour le produit APM. Contribution majeure à l\'agent open-source et optimisation du pipeline d\'ingestion traitant plus de 15 To de données par jour.',
+    achievements: [
+      'Déploiement du sampling distribué adopté par plus de 8 000 clients enterprise',
+      'Réduction des coûts d\'infrastructure du pipeline de 22%',
+      'Mentorat technique de 3 développeurs juniors',
+    ],
+    tech: ['Go', 'Python', 'Kafka', 'Cassandra', 'OpenTelemetry'],
+    document: 'attestation_datadog.pdf',
+    current: false,
+  },
+  {
+    id: 'par-003',
+    type: 'experience',
+    title: 'Développeur Full-Stack Web & FinTech',
+    organization: 'Qonto',
+    location: 'Paris, France',
+    period: 'Juil 2021 — Fév 2023',
+    duration: '1 an 8 mois',
+    description: 'Développement des fonctionnalités bancaires centrales pour les PME. Conception du flux de virements internationaux, du moteur de catégorisation automatique des dépenses et des exports comptables.',
+    achievements: [
+      'Lancement des virements internationaux dans 7 nouveaux marchés européens',
+      'Moteur de dépenses traitant plus de 180M€ de transactions mensuelles',
+      'Zéro incident de production critique sur une période de 18 mois',
+    ],
+    tech: ['Ruby on Rails', 'React', 'TypeScript', 'PostgreSQL', 'Redis'],
+    document: null,
+    current: false,
+  },
+  {
+    id: 'par-004',
+    type: 'formation',
+    title: 'Master 2 — Génie Logiciel & Intelligence Artificielle',
+    organization: 'Université Paris-Saclay',
+    location: 'Orsay, France',
+    period: 'Sep 2019 — Juin 2021',
+    duration: '2 ans',
+    description: 'Spécialisation en systèmes distribués, algorithmes de Machine Learning et architecture logicielle moderne. Diplômé Major de promotion avec Mention Très Bien.',
+    achievements: [
+      'Major de promotion — 18.4/20 de moyenne générale',
+      'Stage de recherche à l\'INRIA sur les réseaux de neurones sur graphes',
+      'Publication scientifique sur les algorithmes de consensus distribués',
+    ],
+    tech: ['Python', 'Java', 'C++', 'PyTorch', 'LaTeX'],
+    document: 'diplome_master_paris_saclay.pdf',
+    current: false,
+  },
+  {
+    id: 'par-005',
+    type: 'experience',
+    title: 'Développeur Junior (Alternance)',
+    organization: 'BNP Paribas',
+    location: 'Paris, France',
+    period: 'Sep 2019 — Juin 2021',
+    duration: '2 ans',
+    description: 'Contrat d\'alternance en parallèle du Master. Développement d\'outils internes pour l\'équipe gestion des risques, notamment un agrégateur temps réel de positions de trading.',
+    achievements: [
+      'Agrégateur de positions déployé auprès de plus de 200 traders',
+      'Automatisation du reporting manuel économisant 6h de travail hebdomadaire',
+    ],
+    tech: ['Java', 'Spring Boot', 'Angular', 'Oracle DB'],
+    document: null,
+    current: false,
+  },
+  {
+    id: 'par-006',
+    type: 'formation',
+    title: 'Licence — Informatique Générale',
+    organization: 'Université Paris-Diderot (Paris VII)',
+    location: 'Paris, France',
+    period: 'Sep 2016 — Juin 2019',
+    duration: '3 ans',
+    description: 'Fondamentaux de l\'informatique : algorithmique, structures de données, systèmes d\'exploitation, réseaux et programmation web.',
+    achievements: [
+      'Classé dans le Top 5% de la promotion',
+      'Vainqueur du hackathon inter-universitaire "Paris Hack 2018" (1ère place)',
+    ],
+    tech: ['C', 'Java', 'Python', 'HTML/CSS', 'JavaScript', 'SQL'],
+    document: 'diplome_licence_paris7.pdf',
+    current: false,
+  },
+];
+
+function getLocalParcours(userId: string = 'guest'): ParcoursItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${LOCAL_STORAGE_PARCOURS_PREFIX}${userId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function setLocalParcours(parcours: ParcoursItem[], userId: string = 'guest') {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${LOCAL_STORAGE_PARCOURS_PREFIX}${userId}`, JSON.stringify(parcours));
+  } catch {}
+}
+
+export async function fetchUserParcours(): Promise<ParcoursItem[]> {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const userId = user?.id || 'guest';
+    const local = getLocalParcours(userId);
+
+    if (!user) {
+      return local.length > 0 ? local : DEFAULT_STARTER_PARCOURS;
+    }
+
+    const { data, error } = await supabase
+      .from('parcours')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('Supabase parcours query error:', error);
+      return local.length > 0 ? local : DEFAULT_STARTER_PARCOURS;
+    }
+
+    if (Array.isArray(data) && data.length > 0) {
+      const mapped: ParcoursItem[] = data.map((row: any) => {
+        const localMatch = local.find((p) => p.id === row.id);
+        return {
+          id: row.id,
+          userId: row.user_id,
+          type: (row.type as any) || 'experience',
+          title: row.title,
+          organization: row.organization || '',
+          location: row.location || localMatch?.location || '',
+          period: localMatch?.period || (row.start_date ? `${new Date(row.start_date).getFullYear()}` : 'En cours'),
+          duration: localMatch?.duration || (row.is_current ? 'En cours' : undefined),
+          description: row.description || '',
+          achievements: localMatch?.achievements || [],
+          tech: localMatch?.tech || [],
+          document: localMatch?.document || null,
+          current: !!row.is_current,
+          createdAt: row.created_at,
+        };
+      });
+
+      setLocalParcours(mapped, user.id);
+      return mapped;
+    }
+
+    if (local.length > 0) {
+      return local;
+    }
+
+    return DEFAULT_STARTER_PARCOURS;
+  } catch (err) {
+    console.warn('Error fetching parcours:', err);
+    return DEFAULT_STARTER_PARCOURS;
+  }
+}
+
+export async function saveParcours(
+  item: Omit<ParcoursItem, 'id' | 'createdAt'>,
+  existingId?: string
+): Promise<ParcoursItem> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const newId = existingId || `par-${Date.now()}`;
+  const parcoursItem: ParcoursItem = {
+    ...item,
+    id: newId,
+    userId: user?.id,
+    createdAt: new Date().toISOString(),
+  };
+
+  if (user?.id) {
+    try {
+      await ensureUserProfileExists(supabase, user);
+
+      const isUUID = !!existingId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existingId);
+      const dbPayload = {
+        ...(isUUID ? { id: existingId } : {}),
+        user_id: user.id,
+        type: parcoursItem.type,
+        title: parcoursItem.title.trim(),
+        organization: parcoursItem.organization.trim(),
+        location: parcoursItem.location || '',
+        description: parcoursItem.description.trim(),
+        is_current: !!parcoursItem.current,
+      };
+
+      if (isUUID) {
+        await supabase.from('parcours').update(dbPayload).eq('id', existingId);
+      } else {
+        const { data: inserted, error: insertErr } = await supabase
+          .from('parcours')
+          .insert(dbPayload)
+          .select()
+          .single();
+
+        if (!insertErr && inserted) {
+          parcoursItem.id = inserted.id;
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase parcours save error, saved locally', err);
+    }
+  }
+
+  const local = getLocalParcours(userId);
+  const filtered = local.filter((p) => p.id !== parcoursItem.id && p.id !== existingId);
+  const updated = [parcoursItem, ...filtered];
+  setLocalParcours(updated, userId);
+
+  return parcoursItem;
+}
+
+export async function deleteParcours(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const isUUID = !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+  if (user?.id && isUUID) {
+    try {
+      await supabase.from('parcours').delete().eq('id', id);
+    } catch (err) {
+      console.warn('Supabase parcours delete error', err);
+    }
+  }
+
+  const local = getLocalParcours(userId);
+  const filtered = local.filter((p) => p.id !== id);
+  setLocalParcours(filtered, userId);
+
+  return true;
+}
+
+
