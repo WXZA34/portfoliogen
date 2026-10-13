@@ -295,3 +295,199 @@ export async function deleteProject(id: string): Promise<boolean> {
 
   return true;
 }
+
+// ============================================================================
+// SKILLS / COMPÉTENCES SERVICE
+// ============================================================================
+
+export interface SkillItem {
+  id: string;
+  userId?: string;
+  name: string;
+  category: 'hard' | 'soft' | 'tools';
+  level: number; // 0 - 100
+  years: number;
+  isFeatured?: boolean;
+  createdAt?: string;
+}
+
+const LOCAL_STORAGE_SKILLS_PREFIX = 'portfoliogen_cvtheque_skills_';
+
+export const DEFAULT_STARTER_SKILLS: SkillItem[] = [
+  // Hard skills
+  { id: 'sk-001', name: 'TypeScript / JavaScript', category: 'hard', level: 95, years: 7, isFeatured: true },
+  { id: 'sk-002', name: 'React / Next.js', category: 'hard', level: 93, years: 6, isFeatured: true },
+  { id: 'sk-003', name: 'Node.js / Express', category: 'hard', level: 88, years: 6 },
+  { id: 'sk-004', name: 'Python', category: 'hard', level: 82, years: 5 },
+  { id: 'sk-005', name: 'Go (Golang)', category: 'hard', level: 74, years: 3 },
+  { id: 'sk-006', name: 'PostgreSQL / Supabase', category: 'hard', level: 85, years: 6, isFeatured: true },
+  { id: 'sk-007', name: 'System Design & Architecture', category: 'hard', level: 90, years: 5 },
+  { id: 'sk-008', name: 'Machine Learning (Appliqué)', category: 'hard', level: 68, years: 3 },
+  { id: 'sk-009', name: 'Docker / Kubernetes', category: 'hard', level: 80, years: 4 },
+  { id: 'sk-010', name: 'GraphQL / REST API Design', category: 'hard', level: 91, years: 5 },
+
+  // Soft skills
+  { id: 'sk-011', name: 'Leadership Technique', category: 'soft', level: 88, years: 4, isFeatured: true },
+  { id: 'sk-012', name: 'Communication Transverse', category: 'soft', level: 85, years: 6 },
+  { id: 'sk-013', name: 'Mentoring & Code Review', category: 'soft', level: 90, years: 5, isFeatured: true },
+  { id: 'sk-014', name: 'Agilité / Scrum Facilitation', category: 'soft', level: 82, years: 5 },
+  { id: 'sk-015', name: 'Sens Produit (Product Thinking)', category: 'soft', level: 78, years: 4 },
+  { id: 'sk-016', name: 'Collaboration Distribuée (Remote)', category: 'soft', level: 92, years: 5 },
+
+  // Tools & Platforms
+  { id: 'sk-017', name: 'VS Code / JetBrains IDEs', category: 'tools', level: 95, years: 7 },
+  { id: 'sk-018', name: 'GitHub / GitLab CI/CD', category: 'tools', level: 93, years: 7, isFeatured: true },
+  { id: 'sk-019', name: 'AWS (EC2, S3, Lambda, RDS)', category: 'tools', level: 84, years: 4 },
+  { id: 'sk-020', name: 'Terraform / Pulumi', category: 'tools', level: 75, years: 3 },
+  { id: 'sk-021', name: 'Figma (Design Handoff)', category: 'tools', level: 65, years: 3 },
+  { id: 'sk-022', name: 'Datadog / Grafana', category: 'tools', level: 80, years: 4 },
+  { id: 'sk-023', name: 'Linear / Jira', category: 'tools', level: 88, years: 5 },
+  { id: 'sk-024', name: 'Notion / Confluence', category: 'tools', level: 86, years: 5 },
+];
+
+function getLocalSkills(userId: string = 'guest'): SkillItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${LOCAL_STORAGE_SKILLS_PREFIX}${userId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function setLocalSkills(skills: SkillItem[], userId: string = 'guest') {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${LOCAL_STORAGE_SKILLS_PREFIX}${userId}`, JSON.stringify(skills));
+  } catch {}
+}
+
+export async function fetchUserSkills(): Promise<SkillItem[]> {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const userId = user?.id || 'guest';
+    const local = getLocalSkills(userId);
+
+    if (!user) {
+      return local.length > 0 ? local : DEFAULT_STARTER_SKILLS;
+    }
+
+    const { data, error } = await supabase
+      .from('skills')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('sort_order', { ascending: true })
+      .order('level', { ascending: false });
+
+    if (error) {
+      console.warn('Supabase skills query error:', error);
+      return local.length > 0 ? local : DEFAULT_STARTER_SKILLS;
+    }
+
+    if (Array.isArray(data) && data.length > 0) {
+      const mapped: SkillItem[] = data.map((row: any) => ({
+        id: row.id,
+        userId: row.user_id,
+        name: row.name,
+        category: (row.category as any) || 'hard',
+        level: Number(row.level) || 50,
+        years: Number(row.years_experience) || 1,
+        isFeatured: !!row.is_featured,
+        createdAt: row.created_at,
+      }));
+
+      setLocalSkills(mapped, user.id);
+      return mapped;
+    }
+
+    if (local.length > 0) {
+      return local;
+    }
+
+    return DEFAULT_STARTER_SKILLS;
+  } catch (err) {
+    console.warn('Error fetching skills:', err);
+    return DEFAULT_STARTER_SKILLS;
+  }
+}
+
+export async function saveSkill(
+  skill: Omit<SkillItem, 'id' | 'createdAt'>,
+  existingId?: string
+): Promise<SkillItem> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const newId = existingId || `sk-${Date.now()}`;
+  const item: SkillItem = {
+    ...skill,
+    id: newId,
+    userId: user?.id,
+    createdAt: new Date().toISOString(),
+  };
+
+  if (user?.id) {
+    try {
+      await ensureUserProfileExists(supabase, user);
+
+      const isUUID = !!existingId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existingId);
+      const dbPayload = {
+        ...(isUUID ? { id: existingId } : {}),
+        user_id: user.id,
+        name: item.name.trim(),
+        category: item.category,
+        level: Math.min(100, Math.max(0, Math.round(item.level))),
+        years_experience: Math.max(0, item.years),
+        is_featured: !!item.isFeatured,
+      };
+
+      if (isUUID) {
+        await supabase.from('skills').update(dbPayload).eq('id', existingId);
+      } else {
+        const { data: inserted, error: insertErr } = await supabase
+          .from('skills')
+          .insert(dbPayload)
+          .select()
+          .single();
+
+        if (!insertErr && inserted) {
+          item.id = inserted.id;
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase skill save error, saved locally', err);
+    }
+  }
+
+  const local = getLocalSkills(userId);
+  const filtered = local.filter((s) => s.id !== item.id && s.id !== existingId);
+  const updated = [item, ...filtered];
+  setLocalSkills(updated, userId);
+
+  return item;
+}
+
+export async function deleteSkill(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const isUUID = !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+  if (user?.id && isUUID) {
+    try {
+      await supabase.from('skills').delete().eq('id', id);
+    } catch (err) {
+      console.warn('Supabase skill delete error', err);
+    }
+  }
+
+  const local = getLocalSkills(userId);
+  const filtered = local.filter((s) => s.id !== id);
+  setLocalSkills(filtered, userId);
+
+  return true;
+}
+
