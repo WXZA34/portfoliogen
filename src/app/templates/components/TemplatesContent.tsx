@@ -18,6 +18,7 @@ export default function TemplatesContent() {
   const [search, setSearch] = useState('');
   const [templatesList, setTemplatesList] = useState<MarketplaceTemplateItem[]>([]);
   const [myTemplateIds, setMyTemplateIds] = useState<string[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [previewTemplate, setPreviewTemplate] = useState<MarketplaceTemplateItem | null>(null);
 
@@ -31,13 +32,15 @@ export default function TemplatesContent() {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      let myQuery = supabase.from('my_templates').select('id, name');
+      setCurrentUserId(user?.id || null);
+
+      let myQuery = supabase.from('my_templates').select('id');
       if (user?.id) {
         myQuery = myQuery.eq('user_id', user.id);
       }
       const { data: myData } = await myQuery;
       if (myData && user?.id) {
-        const identifiers = myData.flatMap((d) => [d.id, d.name]);
+        const identifiers = myData.map((d) => d.id).filter(Boolean);
         setMyTemplateIds(identifiers);
       } else {
         setMyTemplateIds([]);
@@ -54,8 +57,9 @@ export default function TemplatesContent() {
     try {
       const { removeFromMarketplace } = await import('@/lib/services/marketplaceService');
       await removeFromMarketplace(template.id);
-      if (template.originalTemplateId) await removeFromMarketplace(template.originalTemplateId);
-      await removeFromMarketplace(template.name);
+      if (template.originalTemplateId) {
+        await removeFromMarketplace(template.originalTemplateId);
+      }
       toast.success(`Le template "${template.name}" a été retiré de la Marketplace.`);
       if (previewTemplate?.id === template.id) {
         setPreviewTemplate(null);
@@ -164,9 +168,9 @@ export default function TemplatesContent() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((template) => {
             const isMine =
+              Boolean(currentUserId && template.userId && template.userId === currentUserId) ||
               myTemplateIds.includes(template.id) ||
-              (template.originalTemplateId && myTemplateIds.includes(template.originalTemplateId)) ||
-              myTemplateIds.includes(template.name);
+              Boolean(template.originalTemplateId && myTemplateIds.includes(template.originalTemplateId));
 
             return (
               <TemplateCard
@@ -188,9 +192,9 @@ export default function TemplatesContent() {
         isOpen={!!previewTemplate}
         isMyTemplate={
           !!previewTemplate &&
-          (myTemplateIds.includes(previewTemplate.id) ||
-            (previewTemplate.originalTemplateId && myTemplateIds.includes(previewTemplate.originalTemplateId)) ||
-            myTemplateIds.includes(previewTemplate.name))
+          (Boolean(currentUserId && previewTemplate.userId && previewTemplate.userId === currentUserId) ||
+            myTemplateIds.includes(previewTemplate.id) ||
+            Boolean(previewTemplate.originalTemplateId && myTemplateIds.includes(previewTemplate.originalTemplateId)))
         }
         onClose={() => setPreviewTemplate(null)}
         onUse={(tpl) => {

@@ -303,7 +303,10 @@ export default function PortfolioEditorContent() {
     try {
       const { getMarketplaceTemplates } = await import('@/lib/services/marketplaceService');
       const mkt = await getMarketplaceTemplates();
-      const pubIdentifiers = mkt.flatMap(m => [m.originalTemplateId, m.id, m.name]).filter(Boolean) as string[];
+      const pubIdentifiers = mkt
+        .filter(m => !user?.id || !m.userId || m.userId === user.id)
+        .flatMap(m => [m.originalTemplateId, m.id])
+        .filter(Boolean) as string[];
       setPublishedTemplateIds(pubIdentifiers);
     } catch {
       // ignore
@@ -893,7 +896,7 @@ export default function PortfolioEditorContent() {
           </button>
 
           {/* Partager / Statut Template Marketplace */}
-          {publishedTemplateIds.includes(design.id) || publishedTemplateIds.includes(design.name) ? (
+          {publishedTemplateIds.includes(design.id) ? (
             <div className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-0.5">
               <span className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap" title="Ce portfolio est actuellement visible sur la Marketplace publique">
                 <Icon name="CheckCircleIcon" size={13} />
@@ -904,7 +907,6 @@ export default function PortfolioEditorContent() {
                   if (!confirm(`Retirer "${design.name}" de la Marketplace publique ?`)) return;
                   const { removeFromMarketplace } = await import('@/lib/services/marketplaceService');
                   await removeFromMarketplace(design.id);
-                  await removeFromMarketplace(design.name);
                   await loadSavedTemplates();
                   alert(`"${design.name}" a été retiré de la Marketplace.`);
                 }}
@@ -1067,7 +1069,7 @@ export default function PortfolioEditorContent() {
 
                     {/* Marketplace Toggle / Status */}
                     <div className="pt-2 border-t border-border flex flex-col gap-1.5">
-                      {publishedTemplateIds.includes(t.id) || publishedTemplateIds.includes(t.name) ? (
+                      {publishedTemplateIds.includes(t.id) ? (
                         <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg">
                           <span className="text-[11px] font-700 text-emerald-600 flex items-center gap-1">
                             <Icon name="CheckCircleIcon" size={12} /> Sur la Marketplace
@@ -1077,7 +1079,6 @@ export default function PortfolioEditorContent() {
                               if (!confirm("Retirer ce modèle de la Marketplace publique ?")) return;
                               const { removeFromMarketplace } = await import('@/lib/services/marketplaceService');
                               await removeFromMarketplace(t.id);
-                              await removeFromMarketplace(t.name);
                               await loadSavedTemplates();
                             }}
                             className="text-[10px] font-bold text-red-500 hover:text-red-700 underline cursor-pointer"
