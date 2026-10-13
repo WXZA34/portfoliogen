@@ -779,4 +779,387 @@ export async function deleteParcours(id: string): Promise<boolean> {
   return true;
 }
 
+// ============================================================================
+// MÉDIAS (MEDIA GALLERY) SERVICE
+// ============================================================================
+
+export interface MediaFileItem {
+  id: string;
+  userId?: string;
+  fileName: string;
+  fileUrl: string;
+  mediaType: 'image' | 'document' | 'video';
+  fileSize?: string;
+  altText?: string;
+  project?: string;
+  createdAt?: string;
+}
+
+const LOCAL_STORAGE_MEDIA_PREFIX = 'portfoliogen_cvtheque_media_';
+
+export const DEFAULT_STARTER_MEDIA: MediaFileItem[] = [
+  {
+    id: 'media-001',
+    fileName: 'Capture Dashboard NeuralCommerce',
+    fileUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop',
+    mediaType: 'image',
+    fileSize: '1.2 Mo',
+    altText: 'Tableau de bord analytics IA et prévisions',
+    project: 'NeuralCommerce',
+  },
+  {
+    id: 'media-002',
+    fileName: 'Schéma Architecture API Distribuée',
+    fileUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=1200&auto=format&fit=crop',
+    mediaType: 'image',
+    fileSize: '0.8 Mo',
+    altText: 'Architecture réseau et serveurs haute disponibilité',
+    project: 'DistributedDB',
+  },
+  {
+    id: 'media-003',
+    fileName: 'Collaboration Équipe & Workshops',
+    fileUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1200&auto=format&fit=crop',
+    mediaType: 'image',
+    fileSize: '2.4 Mo',
+    altText: 'Équipe de développeurs en session de conception collaborative',
+    project: 'Général',
+  },
+  {
+    id: 'media-004',
+    fileName: 'Démo CLI Framework Terminal',
+    fileUrl: 'https://images.unsplash.com/photo-1618401471353-b98aedd04e11?q=80&w=1200&auto=format&fit=crop',
+    mediaType: 'image',
+    fileSize: '3.1 Mo',
+    altText: 'Interface terminal interactif CLI Forge',
+    project: 'CLI Forge',
+  },
+  {
+    id: 'media-005',
+    fileName: 'Conférence Paris Tech Talk',
+    fileUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1200&auto=format&fit=crop',
+    mediaType: 'image',
+    fileSize: '1.8 Mo',
+    altText: 'Présentation sur scène lors de Paris.js',
+    project: 'Général',
+  },
+  {
+    id: 'media-006',
+    fileName: 'Tableau de Bord Supervision Métriques',
+    fileUrl: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?q=80&w=1200&auto=format&fit=crop',
+    mediaType: 'image',
+    fileSize: '0.9 Mo',
+    altText: 'Métriques APM et alertes en direct',
+    project: 'Datadog',
+  },
+  {
+    id: 'media-007',
+    fileName: 'Livre Blanc — Architecture Distribuée',
+    fileUrl: '#',
+    mediaType: 'document',
+    fileSize: '0.4 Mo',
+    altText: 'Livre blanc PDF',
+    project: 'NeuralCommerce',
+  },
+  {
+    id: 'media-008',
+    fileName: 'Publication Recherche Graph Neural Networks',
+    fileUrl: '#',
+    mediaType: 'document',
+    fileSize: '1.1 Mo',
+    altText: 'Document PDF recherche',
+    project: 'INRIA',
+  },
+];
+
+function getLocalMedia(userId: string = 'guest'): MediaFileItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${LOCAL_STORAGE_MEDIA_PREFIX}${userId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function setLocalMedia(items: MediaFileItem[], userId: string = 'guest') {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${LOCAL_STORAGE_MEDIA_PREFIX}${userId}`, JSON.stringify(items));
+  } catch {}
+}
+
+export async function fetchUserMediaFiles(): Promise<MediaFileItem[]> {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || 'guest';
+    const local = getLocalMedia(userId);
+
+    if (!user) {
+      return local.length > 0 ? local : DEFAULT_STARTER_MEDIA;
+    }
+
+    const { data, error } = await supabase
+      .from('media_files')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('Supabase media query error:', error);
+      return local.length > 0 ? local : DEFAULT_STARTER_MEDIA;
+    }
+
+    if (Array.isArray(data) && data.length > 0) {
+      const mapped: MediaFileItem[] = data.map((row: any) => ({
+        id: row.id,
+        userId: row.user_id,
+        fileName: row.file_name,
+        fileUrl: row.file_url,
+        mediaType: (row.media_type as any) || 'image',
+        fileSize: row.file_size ? `${(row.file_size / 1024 / 1024).toFixed(1)} Mo` : '1.0 Mo',
+        altText: row.alt_text || row.file_name,
+        project: row.caption || 'Général',
+        createdAt: row.created_at,
+      }));
+
+      setLocalMedia(mapped, user.id);
+      return mapped;
+    }
+
+    if (local.length > 0) {
+      return local;
+    }
+
+    return DEFAULT_STARTER_MEDIA;
+  } catch (err) {
+    console.warn('Error fetching media:', err);
+    return DEFAULT_STARTER_MEDIA;
+  }
+}
+
+export async function saveMediaFile(
+  item: Omit<MediaFileItem, 'id' | 'createdAt'>,
+  existingId?: string
+): Promise<MediaFileItem> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const newId = existingId || `media-${Date.now()}`;
+  const mediaItem: MediaFileItem = {
+    ...item,
+    id: newId,
+    userId: user?.id,
+    createdAt: new Date().toISOString(),
+  };
+
+  if (user?.id) {
+    try {
+      await ensureUserProfileExists(supabase, user);
+
+      const isUUID = !!existingId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existingId);
+      const dbPayload = {
+        ...(isUUID ? { id: existingId } : {}),
+        user_id: user.id,
+        file_name: mediaItem.fileName.trim(),
+        file_url: mediaItem.fileUrl.trim(),
+        media_type: mediaItem.mediaType,
+        alt_text: mediaItem.altText || mediaItem.fileName,
+        caption: mediaItem.project || 'Général',
+      };
+
+      if (isUUID) {
+        await supabase.from('media_files').update(dbPayload).eq('id', existingId);
+      } else {
+        const { data: inserted, error: insertErr } = await supabase
+          .from('media_files')
+          .insert(dbPayload)
+          .select()
+          .single();
+
+        if (!insertErr && inserted) {
+          mediaItem.id = inserted.id;
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase media save error, saved locally', err);
+    }
+  }
+
+  const local = getLocalMedia(userId);
+  const filtered = local.filter((m) => m.id !== mediaItem.id && m.id !== existingId);
+  const updated = [mediaItem, ...filtered];
+  setLocalMedia(updated, userId);
+
+  return mediaItem;
+}
+
+export async function deleteMediaFile(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const isUUID = !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+  if (user?.id && isUUID) {
+    try {
+      await supabase.from('media_files').delete().eq('id', id);
+    } catch (err) {
+      console.warn('Supabase media delete error', err);
+    }
+  }
+
+  const local = getLocalMedia(userId);
+  const filtered = local.filter((m) => m.id !== id);
+  setLocalMedia(filtered, userId);
+
+  return true;
+}
+
+// ============================================================================
+// PERSONAS (TARGET PERSONAS) SERVICE
+// ============================================================================
+
+export interface PersonaItem {
+  id: string;
+  userId?: string;
+  name: string;
+  targetRole: string;
+  industry: string;
+  toneOfVoice: string;
+  expectations: string[];
+  portfoliosLinked?: number;
+  color?: string;
+  emoji?: string;
+  createdAt?: string;
+}
+
+const LOCAL_STORAGE_PERSONAS_PREFIX = 'portfoliogen_cvtheque_personas_';
+
+export const DEFAULT_STARTER_PERSONAS: PersonaItem[] = [
+  {
+    id: 'persona-001',
+    name: 'Recruteur Tech Senior',
+    targetRole: 'Lead Developer / Architecte',
+    industry: 'Tech & SaaS',
+    toneOfVoice: 'Précis, technique, orienté résultats',
+    expectations: ['Stack technique détaillée', 'KPIs mesurables', 'Liens GitHub actifs', 'Architecture des projets', 'Contributions open source'],
+    portfoliosLinked: 2,
+    color: 'bg-primary/10 border-primary/20',
+    emoji: '💻',
+  },
+  {
+    id: 'persona-002',
+    name: 'Fondateur Startup IA',
+    targetRole: 'CTO / ML Engineer',
+    industry: 'Intelligence Artificielle',
+    toneOfVoice: 'Visionnaire, pragmatique, orienté impact',
+    expectations: ['Expérience ML/LLM', 'Capacité à scaler', 'Mindset produit', 'Vitesse d\'exécution', 'Gestion de l\'incertitude'],
+    portfoliosLinked: 1,
+    color: 'bg-accent/10 border-accent/20',
+    emoji: '🚀',
+  },
+  {
+    id: 'persona-003',
+    name: 'DRH Grand Groupe',
+    targetRole: 'Ingénieur Senior / Manager',
+    industry: 'Industrie & Aéronautique',
+    toneOfVoice: 'Formel, structuré, axé compétences certifiées',
+    expectations: ['Diplômes et certifications', 'Stabilité du parcours', 'Soft skills démontrés', 'Références vérifiables', 'Conformité aux normes'],
+    portfoliosLinked: 1,
+    color: 'bg-info/10 border-info/20',
+    emoji: '🏢',
+  },
+  {
+    id: 'persona-004',
+    name: 'Directeur Artistique',
+    targetRole: 'Designer / Créatif Senior',
+    industry: 'Mode & Design',
+    toneOfVoice: 'Esthétique, narratif, émotionnel',
+    expectations: ['Portfolio visuel fort', 'Cohérence de l\'identité', 'Processus créatif visible', 'Collaborations notables', 'Sens du détail'],
+    portfoliosLinked: 1,
+    color: 'bg-warning/10 border-warning/20',
+    emoji: '🎨',
+  },
+  {
+    id: 'persona-005',
+    name: 'Rédacteur en Chef',
+    targetRole: 'Journaliste / Rédacteur',
+    industry: 'Médias & Presse',
+    toneOfVoice: 'Clair, percutant, factuel',
+    expectations: ['Sujets traités et publications', 'Ligne éditoriale', 'Capacité d\'investigation', 'Adaptabilité des formats', 'Réseau de sources'],
+    portfoliosLinked: 0,
+    color: 'bg-negative/10 border-negative/20',
+    emoji: '📰',
+  },
+];
+
+function getLocalPersonas(userId: string = 'guest'): PersonaItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${LOCAL_STORAGE_PERSONAS_PREFIX}${userId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function setLocalPersonas(items: PersonaItem[], userId: string = 'guest') {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${LOCAL_STORAGE_PERSONAS_PREFIX}${userId}`, JSON.stringify(items));
+  } catch {}
+}
+
+export async function fetchUserPersonas(): Promise<PersonaItem[]> {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || 'guest';
+    const local = getLocalPersonas(userId);
+
+    return local.length > 0 ? local : DEFAULT_STARTER_PERSONAS;
+  } catch (err) {
+    console.warn('Error fetching personas:', err);
+    return DEFAULT_STARTER_PERSONAS;
+  }
+}
+
+export async function savePersona(
+  item: Omit<PersonaItem, 'id' | 'createdAt'>,
+  existingId?: string
+): Promise<PersonaItem> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const newId = existingId || `persona-${Date.now()}`;
+  const personaItem: PersonaItem = {
+    ...item,
+    id: newId,
+    userId: user?.id,
+    createdAt: new Date().toISOString(),
+  };
+
+  const local = getLocalPersonas(userId);
+  const filtered = local.filter((p) => p.id !== personaItem.id && p.id !== existingId);
+  const updated = [personaItem, ...filtered];
+  setLocalPersonas(updated, userId);
+
+  return personaItem;
+}
+
+export async function deletePersona(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const local = getLocalPersonas(userId);
+  const filtered = local.filter((p) => p.id !== id);
+  setLocalPersonas(filtered, userId);
+
+  return true;
+}
+
+
 

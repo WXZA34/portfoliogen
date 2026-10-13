@@ -15,13 +15,15 @@ export default function CVthequeContent() {
   const [projectsCount, setProjectsCount] = useState<number>(6);
   const [skillsCount, setSkillsCount] = useState<number>(24);
   const [parcoursCount, setParcoursCount] = useState<number>(6);
+  const [mediaCount, setMediaCount] = useState<number>(8);
+  const [personasCount, setPersonasCount] = useState<number>(5);
 
   const tabs = [
     { id: 'tab-projects', labelKey: 'projects', icon: 'FolderIcon', count: projectsCount },
     { id: 'tab-skills', labelKey: 'skills', icon: 'BrainIcon', count: skillsCount },
     { id: 'tab-parcours', labelKey: 'parcours', icon: 'GraduationCapIcon', count: parcoursCount },
-    { id: 'tab-media', labelKey: 'media', icon: 'ImageIcon', count: 47 },
-    { id: 'tab-personas', labelKey: 'personas', icon: 'UsersIcon', count: 5 },
+    { id: 'tab-media', labelKey: 'media', icon: 'ImageIcon', count: mediaCount },
+    { id: 'tab-personas', labelKey: 'personas', icon: 'UsersIcon', count: personasCount },
   ];
 
   return (
@@ -52,8 +54,8 @@ export default function CVthequeContent() {
         {activeTab === 'tab-projects' && <ProjectsGrid onCountChange={setProjectsCount} />}
         {activeTab === 'tab-skills' && <SkillsMatrix onCountChange={setSkillsCount} />}
         {activeTab === 'tab-parcours' && <ParcoursTimeline onCountChange={setParcoursCount} />}
-        {activeTab === 'tab-media' && <MediaGallery />}
-        {activeTab === 'tab-personas' && <PersonasPanel />}
+        {activeTab === 'tab-media' && <MediaGallery onCountChange={setMediaCount} />}
+        {activeTab === 'tab-personas' && <PersonasPanel onCountChange={setPersonasCount} />}
       </div>
     </div>
   );
