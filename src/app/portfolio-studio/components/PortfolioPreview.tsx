@@ -55,39 +55,18 @@ export default function PortfolioPreview({
   );
 
   const renderTemplateContent = () => {
-    if (portfolio.template === 'IndustrialGEII') {
-      return (
-        <IndustrialGEIITemplatePreview
-          portfolio={portfolio}
-          projects={projects}
-          personalProjects={personalProjects}
-          creativeStudio={creativeStudio}
-          skills={skills}
-          parcours={parcours}
-          profile={profile}
-          languages={languages}
-          certifications={certifications}
-          media={media}
-        />
-      );
-    }
-
-    if (portfolio.template === 'ClassicCream') {
-      return (
-        <ClassicCreamPreview
-          portfolio={portfolio}
-          selectedProjects={selectedProjectItems}
-          selectedSkills={selectedSkillItems}
-        />
-      );
-    }
-
-    // Default: BentoMinimal or other modern layouts
     return (
-      <BentoMinimalPreview
+      <IndustrialGEIITemplatePreview
         portfolio={portfolio}
-        selectedProjects={selectedProjectItems}
-        selectedSkills={selectedSkillItems}
+        projects={projects}
+        personalProjects={personalProjects}
+        creativeStudio={creativeStudio}
+        skills={skills}
+        parcours={parcours}
+        profile={profile}
+        languages={languages}
+        certifications={certifications}
+        media={media}
       />
     );
   };

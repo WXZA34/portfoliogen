@@ -11,7 +11,7 @@ import type {
   SectionColors,
   SectionTexts,
 } from '@/lib/services/portfolioStudioService';
-import { DEFAULT_STUDIO_SECTIONS, DEFAULT_STARTER_PORTFOLIOS } from '@/lib/services/portfolioStudioService';
+import { DEFAULT_STUDIO_SECTIONS, DEFAULT_STARTER_PORTFOLIOS, TEMPLATE_COLOR_PRESETS } from '@/lib/services/portfolioStudioService';
 import type {
   ProjectItem,
   PersonalProjectItem,
@@ -360,7 +360,19 @@ export default function PortfolioBuilder({
                 return (
                   <button
                     key={`tpl-${tpl.id}`}
-                    onClick={() => onUpdate({ ...portfolio, template: tpl.id })}
+                    onClick={() => {
+                      const newTpl = tpl.id;
+                      const newColors = TEMPLATE_COLOR_PRESETS[newTpl] || portfolio.themeColors;
+                      onUpdate({
+                        ...portfolio,
+                        template: newTpl,
+                        themeColors: {
+                          ...portfolio.themeColors,
+                          ...newColors,
+                        },
+                      });
+                      toast.success(`Modèle "${tpl.label}" appliqué avec son style visuel`);
+                    }}
                     className={`w-full flex items-center gap-4 p-3 rounded-xl border-2 transition-all duration-150 text-left ${
                       isSelected
                         ? 'border-primary bg-primary/5 shadow-xs'

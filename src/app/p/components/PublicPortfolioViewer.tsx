@@ -38,10 +38,6 @@ import {
   DEFAULT_STARTER_MEDIA,
 } from '@/lib/services/cvthequeService';
 import IndustrialGEIITemplatePreview from '@/app/portfolio-studio/components/templates/IndustrialGEIITemplatePreview';
-import {
-  ClassicCreamPreview,
-  BentoMinimalPreview,
-} from '@/app/portfolio-studio/components/PortfolioPreview';
 import CanvasEditor from '@/app/portfolio-editor/components/CanvasEditor';
 import { PortfolioDesign } from '@/app/portfolio-editor/components/PortfolioEditorContent';
 import { createClient } from '@/lib/supabase/client';
@@ -354,32 +350,18 @@ export default function PublicPortfolioViewer({
       {/* PORTFOLIO CONTENT (FULL STANDALONE VIEW) */}
       {/* =================================================================== */}
       <div className="flex-1 w-full max-w-7xl mx-auto">
-        {activePortfolio.template === 'BentoMinimal' ? (
-          <BentoMinimalPreview
-            portfolio={activePortfolio}
-            selectedProjects={selectedProjects}
-            selectedSkills={selectedSkills}
-          />
-        ) : activePortfolio.template === 'ClassicCream' ? (
-          <ClassicCreamPreview
-            portfolio={activePortfolio}
-            selectedProjects={selectedProjects}
-            selectedSkills={selectedSkills}
-          />
-        ) : (
-          <IndustrialGEIITemplatePreview
-            portfolio={activePortfolio}
-            projects={projects}
-            personalProjects={personalProjects}
-            creativeStudio={creativeStudio}
-            skills={skills}
-            parcours={parcours}
-            profile={profile}
-            languages={languages}
-            certifications={certifications}
-            media={media}
-          />
-        )}
+        <IndustrialGEIITemplatePreview
+          portfolio={activePortfolio}
+          projects={projects}
+          personalProjects={personalProjects}
+          creativeStudio={creativeStudio}
+          skills={skills}
+          parcours={parcours}
+          profile={profile}
+          languages={languages}
+          certifications={certifications}
+          media={media}
+        />
       </div>
 
       {/* =================================================================== */}
