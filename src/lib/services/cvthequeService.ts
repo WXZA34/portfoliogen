@@ -1292,6 +1292,27 @@ export async function saveUserProfileInfo(info: UserProfileInfo): Promise<UserPr
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(`${LOCAL_STORAGE_PROFILE_PREFIX}${userId}`, JSON.stringify(updated));
+    localStorage.setItem('portfoliogen_cvtheque_profile_latest', JSON.stringify(updated));
+  }
+
+  if (user?.id) {
+    try {
+      await supabase.from('user_profiles').upsert(
+        {
+          id: user.id,
+          email: info.email || user.email || '',
+          full_name: info.fullName || '',
+          avatar_url: info.avatarUrl || '',
+          headline: info.headline || '',
+          location: info.location || '',
+          website: info.website || '',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      );
+    } catch (e) {
+      console.warn('Could not upsert user_profiles:', e);
+    }
   }
 
   return updated;

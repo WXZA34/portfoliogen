@@ -173,6 +173,11 @@ export interface StudioPortfolio {
   promotion?: string;
   authorName?: string;
   authorAvatar?: string;
+  cvPdfUrl?: string;
+  cvFileName?: string;
+  cvFileSize?: string;
+  profileInfo?: any;
+  cvthequeData?: any;
   createdAt?: string;
 }
 
@@ -478,7 +483,9 @@ export async function fetchStudioPortfolios(): Promise<StudioPortfolio[]> {
 }
 
 export async function saveStudioPortfolio(
-  portfolio: StudioPortfolio
+  portfolio: StudioPortfolio,
+  fallbackProfile?: any,
+  fallbackCvthequeData?: any
 ): Promise<StudioPortfolio> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -494,9 +501,22 @@ export async function saveStudioPortfolio(
     : '';
   const canonicalUrl = `https://portfoliogen.net/p/${cleanSlug}${companyQuery}`;
 
+  const activeAvatar = portfolio.authorAvatar || fallbackProfile?.avatarUrl || '';
+  const activeCvPdfUrl = portfolio.cvPdfUrl || fallbackProfile?.cvPdfUrl || '';
+  const activeCvFileName = portfolio.cvFileName || fallbackProfile?.cvFileName || '';
+  const activeCvFileSize = portfolio.cvFileSize || fallbackProfile?.cvFileSize || '';
+  const activeAuthorName = portfolio.authorName || fallbackProfile?.fullName || '';
+
   const item: StudioPortfolio = {
     ...portfolio,
     slug: cleanSlug,
+    authorName: activeAuthorName || portfolio.authorName || 'KOKOU DUSSEY',
+    authorAvatar: activeAvatar,
+    cvPdfUrl: activeCvPdfUrl,
+    cvFileName: activeCvFileName,
+    cvFileSize: activeCvFileSize,
+    profileInfo: portfolio.profileInfo || fallbackProfile || undefined,
+    cvthequeData: portfolio.cvthequeData || fallbackCvthequeData || undefined,
     customShareUrl: (!portfolio.customShareUrl || portfolio.customShareUrl.includes('portfoliogen.net/p/'))
       ? canonicalUrl
       : portfolio.customShareUrl.trim(),
@@ -525,6 +545,11 @@ export async function saveStudioPortfolio(
     promotion: item.promotion || '',
     authorName: item.authorName || '',
     authorAvatar: item.authorAvatar || '',
+    cvPdfUrl: item.cvPdfUrl || '',
+    cvFileName: item.cvFileName || '',
+    cvFileSize: item.cvFileSize || '',
+    profileInfo: item.profileInfo || fallbackProfile || null,
+    cvthequeData: item.cvthequeData || fallbackCvthequeData || null,
     selectedProjects: item.selectedProjects || [],
     selectedPersonalProjects: item.selectedPersonalProjects || [],
     selectedCreativeStudio: item.selectedCreativeStudio || [],
@@ -744,8 +769,13 @@ export async function fetchPublicStudioPortfolio(
           degree: dd.degree || 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE',
           subTitle: dd.subTitle || 'Portfolio Semestre 2',
           promotion: dd.promotion || 'PROMOTION 2025–2026',
-          authorName: dd.authorName || 'KOKOU DUSSEY',
-          authorAvatar: dd.authorAvatar || '',
+          authorName: dd.authorName || dd.profileInfo?.fullName || 'KOKOU DUSSEY',
+          authorAvatar: dd.authorAvatar || dd.profileInfo?.avatarUrl || '',
+          cvPdfUrl: dd.cvPdfUrl || dd.profileInfo?.cvPdfUrl || '',
+          cvFileName: dd.cvFileName || dd.profileInfo?.cvFileName || '',
+          cvFileSize: dd.cvFileSize || dd.profileInfo?.cvFileSize || '',
+          profileInfo: dd.profileInfo || null,
+          cvthequeData: dd.cvthequeData || null,
           selectedProjects: dd.selectedProjects || ['proj-sae-001', 'proj-sae-002', 'proj-001'],
           selectedPersonalProjects: dd.selectedPersonalProjects || ['perso-001', 'perso-002', 'perso-003'],
           selectedCreativeStudio: dd.selectedCreativeStudio || ['creat-001', 'creat-002', 'creat-003'],
@@ -814,8 +844,13 @@ export async function fetchPublicStudioPortfolio(
         degree: customData?.degree || 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE',
         subTitle: customData?.subTitle || 'Portfolio Semestre 2',
         promotion: customData?.promotion || 'PROMOTION 2025–2026',
-        authorName: customData?.authorName || 'KOKOU DUSSEY',
-        authorAvatar: customData?.authorAvatar || '',
+        authorName: customData?.authorName || customData?.profileInfo?.fullName || 'KOKOU DUSSEY',
+        authorAvatar: customData?.authorAvatar || customData?.profileInfo?.avatarUrl || '',
+        cvPdfUrl: customData?.cvPdfUrl || customData?.profileInfo?.cvPdfUrl || '',
+        cvFileName: customData?.cvFileName || customData?.profileInfo?.cvFileName || '',
+        cvFileSize: customData?.cvFileSize || customData?.profileInfo?.cvFileSize || '',
+        profileInfo: customData?.profileInfo || null,
+        cvthequeData: customData?.cvthequeData || null,
         recipientCompany: customData?.recipientCompany || '',
         recipientName: customData?.recipientName || '',
         customShareUrl: customData?.customShareUrl || '',

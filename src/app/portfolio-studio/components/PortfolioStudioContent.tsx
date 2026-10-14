@@ -169,6 +169,23 @@ export default function PortfolioStudioContent() {
           selectedItem = matched || finalPortfolios[0];
         }
 
+        if (selectedItem && profData) {
+          let needsUpdate = false;
+          if (!selectedItem.authorAvatar && profData.avatarUrl) {
+            selectedItem.authorAvatar = profData.avatarUrl;
+            needsUpdate = true;
+          }
+          if (!selectedItem.cvPdfUrl && profData.cvPdfUrl) {
+            selectedItem.cvPdfUrl = profData.cvPdfUrl;
+            selectedItem.cvFileName = profData.cvFileName;
+            selectedItem.cvFileSize = profData.cvFileSize;
+            needsUpdate = true;
+          }
+          if (needsUpdate) {
+            finalPortfolios = finalPortfolios.map((p) => p.id === selectedItem?.id ? selectedItem! : p);
+          }
+        }
+
         setPortfolios(finalPortfolios);
         if (selectedItem) {
           setSelectedPortfolioId(selectedItem.id);
@@ -227,7 +244,16 @@ export default function PortfolioStudioContent() {
     }
     // 2. Persist to database
     try {
-      const saved = await saveStudioPortfolio(updated);
+      const saved = await saveStudioPortfolio(updated, profile, {
+        projects,
+        personalProjects,
+        creativeStudio,
+        skills,
+        parcours,
+        languages,
+        certifications,
+        media,
+      });
       if (saved && saved.id !== updated.id) {
         setPortfolios((prev) => prev.map((p) => (p.id === updated.id ? saved : p)));
         setSelectedPortfolioId(saved.id);

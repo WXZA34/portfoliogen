@@ -10,6 +10,7 @@ import {
   saveUserProfileInfo,
   DEFAULT_USER_PROFILE,
 } from '@/lib/services/cvthequeService';
+import { saveStudioPortfolio } from '@/lib/services/portfolioStudioService';
 import { uploadMediaFromPC, openDocumentSafe, downloadDocumentSafe } from '@/lib/utils/mediaUploadHelper';
 
 export default function ProfileContactPanel() {
@@ -32,8 +33,23 @@ export default function ProfileContactPanel() {
     const toastId = toast.loading(`Import de votre photo "${file.name}"...`);
     try {
       const result = await uploadMediaFromPC(file);
-      setProfile((prev) => ({ ...prev, avatarUrl: result.url }));
-      toast.success('Photo de profil mise à jour !', { id: toastId });
+      const updated = { ...profile, avatarUrl: result.url };
+      setProfile(updated);
+      await saveUserProfileInfo(updated);
+
+      if (typeof window !== 'undefined') {
+        const activeRaw = localStorage.getItem('portfoliogen_current_active_portfolio');
+        if (activeRaw) {
+          try {
+            const activePf = JSON.parse(activeRaw);
+            activePf.authorAvatar = result.url;
+            activePf.profileInfo = updated;
+            saveStudioPortfolio(activePf, updated).catch(() => {});
+          } catch {}
+        }
+      }
+
+      toast.success('Photo de profil mise à jour et liée à vos portfolios !', { id: toastId });
     } catch (err: any) {
       toast.error(err?.message || 'Erreur lors de l\'import de la photo.', { id: toastId });
     } finally {
@@ -50,13 +66,30 @@ export default function ProfileContactPanel() {
     const toastId = toast.loading(`Import du CV "${file.name}"...`);
     try {
       const result = await uploadMediaFromPC(file);
-      setProfile((prev) => ({
-        ...prev,
+      const updated = {
+        ...profile,
         cvPdfUrl: result.url,
         cvFileName: file.name,
         cvFileSize: result.fileSize,
-      }));
-      toast.success(`CV "${file.name}" importé avec succès !`, { id: toastId });
+      };
+      setProfile(updated);
+      await saveUserProfileInfo(updated);
+
+      if (typeof window !== 'undefined') {
+        const activeRaw = localStorage.getItem('portfoliogen_current_active_portfolio');
+        if (activeRaw) {
+          try {
+            const activePf = JSON.parse(activeRaw);
+            activePf.cvPdfUrl = result.url;
+            activePf.cvFileName = file.name;
+            activePf.cvFileSize = result.fileSize;
+            activePf.profileInfo = updated;
+            saveStudioPortfolio(activePf, updated).catch(() => {});
+          } catch {}
+        }
+      }
+
+      toast.success(`CV "${file.name}" importé et lié à vos portfolios !`, { id: toastId });
     } catch (err: any) {
       toast.error(err?.message || 'Erreur lors de l\'import du CV.', { id: toastId });
     } finally {
@@ -82,8 +115,25 @@ export default function ProfileContactPanel() {
     e.preventDefault();
     setSaving(true);
     try {
-      await saveUserProfileInfo(profile);
-      toast.success('Profil et coordonnées enregistrés dans la CVthèque Master !');
+      const updated = await saveUserProfileInfo(profile);
+
+      if (typeof window !== 'undefined') {
+        const activeRaw = localStorage.getItem('portfoliogen_current_active_portfolio');
+        if (activeRaw) {
+          try {
+            const activePf = JSON.parse(activeRaw);
+            activePf.authorAvatar = updated.avatarUrl || activePf.authorAvatar;
+            activePf.cvPdfUrl = updated.cvPdfUrl || activePf.cvPdfUrl;
+            activePf.cvFileName = updated.cvFileName || activePf.cvFileName;
+            activePf.cvFileSize = updated.cvFileSize || activePf.cvFileSize;
+            activePf.authorName = updated.fullName || activePf.authorName;
+            activePf.profileInfo = updated;
+            await saveStudioPortfolio(activePf, updated);
+          } catch {}
+        }
+      }
+
+      toast.success('Profil et coordonnées enregistrés et synchronisés avec vos portfolios !');
     } catch {
       toast.error('Erreur lors de l\'enregistrement.');
     } finally {

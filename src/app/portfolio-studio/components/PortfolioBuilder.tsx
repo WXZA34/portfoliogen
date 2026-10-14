@@ -142,8 +142,37 @@ export default function PortfolioBuilder({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const saved = await saveStudioPortfolio(portfolio);
-      onUpdate(saved || portfolio);
+      const portfolioToSave: StudioPortfolio = {
+        ...portfolio,
+        authorAvatar: portfolio.authorAvatar || profile?.avatarUrl || '',
+        cvPdfUrl: portfolio.cvPdfUrl || profile?.cvPdfUrl || '',
+        cvFileName: portfolio.cvFileName || profile?.cvFileName || '',
+        cvFileSize: portfolio.cvFileSize || profile?.cvFileSize || '',
+        authorName: portfolio.authorName || profile?.fullName || 'KOKOU DUSSEY',
+        profileInfo: profile || undefined,
+        cvthequeData: {
+          projects,
+          personalProjects,
+          creativeStudio,
+          skills,
+          parcours,
+          languages,
+          certifications,
+          media,
+        },
+      };
+
+      const saved = await saveStudioPortfolio(portfolioToSave, profile, {
+        projects,
+        personalProjects,
+        creativeStudio,
+        skills,
+        parcours,
+        languages,
+        certifications,
+        media,
+      });
+      onUpdate(saved || portfolioToSave);
       toast.success(`"${portfolio.name}" enregistré et synchronisé avec le lien public ✓`);
     } catch (err: any) {
       console.error('Error saving portfolio:', err);
@@ -2047,6 +2076,14 @@ export default function PortfolioBuilder({
                       const tid = toast.loading(`Import du CV "${file.name}"...`);
                       try {
                         const res = await uploadMediaFromPC(file);
+                        const updatedPortfolio: StudioPortfolio = {
+                          ...portfolio,
+                          cvPdfUrl: res.url,
+                          cvFileName: file.name,
+                          cvFileSize: res.fileSize,
+                        };
+                        onUpdate(updatedPortfolio);
+
                         if (profile) {
                           const updatedProf = {
                             ...profile,
@@ -2082,28 +2119,47 @@ export default function PortfolioBuilder({
                       <span>Importer CV depuis mon PC (PDF)</span>
                     </button>
 
-                    {profile?.cvPdfUrl && (
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => openDocumentSafe(profile.cvPdfUrl!, `CV_${(portfolio.authorName || profile?.fullName || 'Candidat').replace(/\s+/g, '_')}.pdf`)}
-                          className="px-2.5 py-1.5 bg-muted text-foreground hover:bg-muted/80 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                          title="Visualiser le CV dans un nouvel onglet"
-                        >
-                          <Icon name="ArrowTopRightOnSquareIcon" size={12} />
-                          Visualiser
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => downloadDocumentSafe(profile.cvPdfUrl!, `CV_${(portfolio.authorName || profile?.fullName || 'Candidat').replace(/\s+/g, '_')}.pdf`)}
-                          className="px-2.5 py-1.5 bg-muted text-foreground hover:bg-muted/80 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                          title="Télécharger le document CV sur votre ordinateur"
-                        >
-                          <Icon name="ArrowDownTrayIcon" size={12} />
-                          Télécharger
-                        </button>
-                      </div>
-                    )}
+                    {(portfolio.cvPdfUrl || profile?.cvPdfUrl) && (() => {
+                      const activeCv = portfolio.cvPdfUrl || profile?.cvPdfUrl || '';
+                      const activeName = portfolio.cvFileName || profile?.cvFileName || `CV_${(portfolio.authorName || profile?.fullName || 'Candidat').replace(/\s+/g, '_')}.pdf`;
+                      return (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => openDocumentSafe(activeCv, activeName)}
+                            className="px-2.5 py-1.5 bg-muted text-foreground hover:bg-muted/80 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                            title="Visualiser le CV dans un nouvel onglet"
+                          >
+                            <Icon name="ArrowTopRightOnSquareIcon" size={12} />
+                            Visualiser
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => downloadDocumentSafe(activeCv, activeName)}
+                            className="px-2.5 py-1.5 bg-muted text-foreground hover:bg-muted/80 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                            title="Télécharger le document CV sur votre ordinateur"
+                          >
+                            <Icon name="ArrowDownTrayIcon" size={12} />
+                            Télécharger
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onUpdate({ ...portfolio, cvPdfUrl: '', cvFileName: '', cvFileSize: '' });
+                              if (profile) {
+                                const updatedProf = { ...profile, cvPdfUrl: '', cvFileName: '', cvFileSize: '' };
+                                saveUserProfileInfo(updatedProf).catch(() => {});
+                                onProfileUpdate?.(updatedProf);
+                              }
+                              toast.info('Document CV retiré.');
+                            }}
+                            className="px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:text-red-500 rounded-md transition-colors cursor-pointer"
+                          >
+                            Supprimer
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -2211,7 +2267,36 @@ export default function PortfolioBuilder({
                       onClick={async () => {
                         const tid = toast.loading('Synchronisation du lien en cours...');
                         try {
-                          await saveStudioPortfolio(portfolio);
+                          const portfolioToSave: StudioPortfolio = {
+                            ...portfolio,
+                            authorAvatar: portfolio.authorAvatar || profile?.avatarUrl || '',
+                            cvPdfUrl: portfolio.cvPdfUrl || profile?.cvPdfUrl || '',
+                            cvFileName: portfolio.cvFileName || profile?.cvFileName || '',
+                            cvFileSize: portfolio.cvFileSize || profile?.cvFileSize || '',
+                            authorName: portfolio.authorName || profile?.fullName || 'KOKOU DUSSEY',
+                            profileInfo: profile || undefined,
+                            cvthequeData: {
+                              projects,
+                              personalProjects,
+                              creativeStudio,
+                              skills,
+                              parcours,
+                              languages,
+                              certifications,
+                              media,
+                            },
+                          };
+                          await saveStudioPortfolio(portfolioToSave, profile, {
+                            projects,
+                            personalProjects,
+                            creativeStudio,
+                            skills,
+                            parcours,
+                            languages,
+                            certifications,
+                            media,
+                          });
+                          onUpdate(portfolioToSave);
                           toast.success('Lien synchronisé ! Ouverture...', { id: tid });
                         } catch {
                           toast.dismiss(tid);

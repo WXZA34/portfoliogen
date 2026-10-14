@@ -166,6 +166,8 @@ export default function IndustrialGEIITemplatePreview({
 
   const authorName = texts.coverAuthorName || portfolio.authorName || profile?.fullName || 'KOKOU DUSSEY';
   const authorAvatar = portfolio.authorAvatar || profile?.avatarUrl;
+  const cvUrl = portfolio.cvPdfUrl || profile?.cvPdfUrl;
+  const cvFileName = portfolio.cvFileName || profile?.cvFileName || `CV_${authorName.replace(/\s+/g, '_')}.pdf`;
   const headline = texts.coverHeadline || texts.heroHeadline || profile?.headline || 'Étudiant en B.U.T. GEII & Automatisme';
   const institution = texts.coverInstitution || portfolio.institution || 'IUT SÉNART-FONTAINEBLEAU';
   const degree = texts.coverDegree || portfolio.degree || 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE';
@@ -491,8 +493,8 @@ export default function IndustrialGEIITemplatePreview({
               <button
                 type="button"
                 onClick={() => {
-                  if (profile?.cvPdfUrl) {
-                    downloadDocumentSafe(profile.cvPdfUrl, `CV_${authorName.replace(/\s+/g, '_')}.pdf`);
+                  if (cvUrl) {
+                    downloadDocumentSafe(cvUrl, cvFileName);
                   } else {
                     setShowCvModal(true);
                   }
@@ -1716,10 +1718,10 @@ export default function IndustrialGEIITemplatePreview({
               </div>
 
               <div className="flex items-center gap-2">
-                {profile?.cvPdfUrl && (
+                {cvUrl && (
                   <button
                     type="button"
-                    onClick={() => downloadDocumentSafe(profile.cvPdfUrl!, `CV_${authorName.replace(/\s+/g, '_')}.pdf`)}
+                    onClick={() => downloadDocumentSafe(cvUrl, cvFileName)}
                     className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold flex items-center gap-1.5 hover:bg-emerald-700 transition-colors shadow-2xs cursor-pointer"
                   >
                     <Icon name="ArrowDownTrayIcon" size={12} />
@@ -1748,6 +1750,43 @@ export default function IndustrialGEIITemplatePreview({
 
             {/* CV Modal Body (Printable CV layout) */}
             <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6 bg-[#FCFBF8]">
+              {/* Document CV PDF original joint */}
+              {cvUrl && (
+                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-600/15 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                      <Icon name="DocumentCheckIcon" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                        <span>Document CV officiel joint</span>
+                        <span className="text-[10px] font-semibold text-emerald-700 font-mono">({cvFileName})</span>
+                      </p>
+                      <p className="text-[11px] text-emerald-800">
+                        Consultez ou téléchargez directement le fichier original fourni par le candidat.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => openDocumentSafe(cvUrl, cvFileName)}
+                      className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                    >
+                      <Icon name="ArrowTopRightOnSquareIcon" size={13} />
+                      <span>Ouvrir PDF</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadDocumentSafe(cvUrl, cvFileName)}
+                      className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-white border border-emerald-300 hover:bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Icon name="ArrowDownTrayIcon" size={13} />
+                      <span>Télécharger</span>
+                    </button>
+                  </div>
+                </div>
+              )}
               {/* Header profile */}
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-6 border-b border-[#E1D9C6]">
                 {authorAvatar ? (

@@ -157,6 +157,31 @@ export default function PublicPortfolioViewer({
         if (userLanguages && userLanguages.length > 0) setLanguages(userLanguages);
         if (userCerts && userCerts.length > 0) setCertifications(userCerts);
         if (userMedia && userMedia.length > 0) setMedia(userMedia);
+
+        // 4. Prioritize embedded snapshot data from the author's saved portfolio
+        if (resolvedPortfolio.profileInfo) {
+          setProfile(resolvedPortfolio.profileInfo);
+        } else {
+          setProfile((prev) => ({
+            ...prev,
+            avatarUrl: resolvedPortfolio.authorAvatar || prev.avatarUrl,
+            cvPdfUrl: resolvedPortfolio.cvPdfUrl || prev.cvPdfUrl,
+            cvFileName: resolvedPortfolio.cvFileName || prev.cvFileName,
+            fullName: resolvedPortfolio.authorName || prev.fullName,
+          }));
+        }
+
+        if (resolvedPortfolio.cvthequeData) {
+          const cd = resolvedPortfolio.cvthequeData;
+          if (cd.projects && cd.projects.length > 0) setProjects(cd.projects);
+          if (cd.personalProjects && cd.personalProjects.length > 0) setPersonalProjects(cd.personalProjects);
+          if (cd.creativeStudio && cd.creativeStudio.length > 0) setCreativeStudio(cd.creativeStudio);
+          if (cd.skills && cd.skills.length > 0) setSkills(cd.skills);
+          if (cd.parcours && cd.parcours.length > 0) setParcours(cd.parcours);
+          if (cd.languages && cd.languages.length > 0) setLanguages(cd.languages);
+          if (cd.certifications && cd.certifications.length > 0) setCertifications(cd.certifications);
+          if (cd.media && cd.media.length > 0) setMedia(cd.media);
+        }
       } catch (err) {
         console.error('Error loading public portfolio:', err);
         setPortfolio(DEFAULT_STARTER_PORTFOLIOS[0]);
