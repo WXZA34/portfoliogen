@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import AppImage from '@/components/ui/AppImage';
 import { toast } from 'sonner';
@@ -10,6 +10,7 @@ import {
   MAX_PROJECT_VIDEOS,
   MAX_VIDEO_DURATION_SECONDS,
 } from '@/lib/services/cvthequeService';
+import { uploadMediaFromPC, getVideoDuration } from '@/lib/utils/mediaUploadHelper';
 
 interface MediaUploadManagerProps {
   images: string[];
@@ -32,14 +33,58 @@ export default function MediaUploadManager({
 }: MediaUploadManagerProps) {
   // Image addition state
   const [newImageUrl, setNewImageUrl] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const imageFileInputRef = useRef<HTMLInputElement>(null);
 
   // Video addition state
   const [newVideoUrl, setNewVideoUrl] = useState('');
   const [newVideoTitle, setNewVideoTitle] = useState('');
-  const [newVideoDuration, setNewVideoDuration] = useState('90'); // default 90 seconds (1m 30s)
+  const [newVideoDuration, setNewVideoDuration] = useState('90');
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const videoFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle adding an image (limit: 6)
-  const handleAddImage = () => {
+  // Handle direct PC Image Upload
+  const handleImageFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const remainingSlots = maxImages - images.length;
+    if (remainingSlots <= 0) {
+      toast.error(`Limite de ${maxImages} images déjà atteinte.`);
+      if (imageFileInputRef.current) imageFileInputRef.current.value = '';
+      return;
+    }
+
+    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+    setIsUploadingImage(true);
+    const toastId = toast.loading(`Importation de ${filesToUpload.length} image(s) depuis votre PC...`);
+
+    try {
+      const uploadedUrls: string[] = [];
+      for (const file of filesToUpload) {
+        const result = await uploadMediaFromPC(file);
+        if (result.url && !images.includes(result.url) && !uploadedUrls.includes(result.url)) {
+          uploadedUrls.push(result.url);
+        }
+      }
+
+      if (uploadedUrls.length > 0) {
+        onChangeImages([...images, ...uploadedUrls]);
+        toast.success(`${uploadedUrls.length} image(s) importée(s) avec succès !`, { id: toastId });
+      } else {
+        toast.info('Aucune nouvelle image importée.', { id: toastId });
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Erreur lors de l'import de l'image.", { id: toastId });
+    } finally {
+      setIsUploadingImage(false);
+      if (imageFileInputRef.current) imageFileInputRef.current.value = '';
+    }
+  };
+
+  // Handle adding an image by URL
+  const handleAddImageUrl = () => {
     const url = newImageUrl.trim();
     if (!url) return;
 
@@ -62,6 +107,53 @@ export default function MediaUploadManager({
     onChangeImages(images.filter((_, idx) => idx !== indexToRemove));
   };
 
+  // Handle direct PC Video Upload
+  const handleVideoFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (videos.length >= maxVideos) {
+      toast.error(`Limite atteinte : ${maxVideos} vidéos maximum autorisées.`);
+      if (videoFileInputRef.current) videoFileInputRef.current.value = '';
+      return;
+    }
+
+    setIsUploadingVideo(true);
+    const toastId = toast.loading(`Import de la vidéo "${file.name}" depuis votre PC...`);
+
+    try {
+      // 1. Detect duration automatically from file metadata
+      let durationSec = await getVideoDuration(file);
+      if (durationSec <= 0) durationSec = 60;
+
+      if (durationSec > maxDurationSeconds) {
+        toast.warning(
+          `Attention : la vidéo (${durationSec}s) dépasse la recommandation de 2 minutes (120s).`,
+          { duration: 5000 }
+        );
+      }
+
+      // 2. Upload file
+      const result = await uploadMediaFromPC(file);
+
+      const newVideo: VideoMediaItem = {
+        id: `vid-${Date.now()}`,
+        url: result.url,
+        title: file.name.replace(/\.[^/.]+$/, ''),
+        durationSeconds: Math.min(durationSec, 300),
+      };
+
+      onChangeVideos([...videos, newVideo]);
+      toast.success(`Vidéo "${file.name}" importée avec succès !`, { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Erreur lors de l'import de la vidéo.", { id: toastId });
+    } finally {
+      setIsUploadingVideo(false);
+      if (videoFileInputRef.current) videoFileInputRef.current.value = '';
+    }
+  };
+
   // Helper to parse duration string (e.g. "90", "1:30", "2:00")
   const parseDuration = (input: string): number => {
     const trimmed = input.trim();
@@ -74,11 +166,11 @@ export default function MediaUploadManager({
     return parseInt(trimmed, 10) || 0;
   };
 
-  // Handle adding a video (limit: 2, max 120 seconds)
-  const handleAddVideo = () => {
+  // Handle adding a video by URL (YouTube, Vimeo, etc.)
+  const handleAddVideoUrl = () => {
     const url = newVideoUrl.trim();
     if (!url) {
-      toast.error('Veuillez renseigner l\'URL de la vidéo (YouTube, Vimeo, MP4...).');
+      toast.error("Veuillez renseigner l'URL de la vidéo (YouTube, Vimeo, MP4...).");
       return;
     }
 
@@ -88,8 +180,6 @@ export default function MediaUploadManager({
     }
 
     const durationSeconds = parseDuration(newVideoDuration);
-
-    // Strict validation: Max 2 minutes (120 seconds)
     if (durationSeconds <= 0) {
       toast.error('Veuillez renseigner une durée valide (ex: 60s ou 1:30).');
       return;
@@ -102,14 +192,14 @@ export default function MediaUploadManager({
       return;
     }
 
-    const newVideoItem: VideoMediaItem = {
+    const newVideo: VideoMediaItem = {
       id: `vid-${Date.now()}`,
       url,
       title: newVideoTitle.trim() || `Démonstration #${videos.length + 1}`,
       durationSeconds,
     };
 
-    onChangeVideos([...videos, newVideoItem]);
+    onChangeVideos([...videos, newVideo]);
     setNewVideoUrl('');
     setNewVideoTitle('');
     setNewVideoDuration('90');
@@ -121,45 +211,78 @@ export default function MediaUploadManager({
   };
 
   return (
-    <div className="space-y-4 pt-1">
+    <div className="space-y-4">
       {/* =================================================================== */}
-      {/* 1. SECTION IMAGES (Max 6) */}
+      {/* 1. SECTION IMAGES DU PROJET (Max 6) */}
       {/* =================================================================== */}
       <div className="p-3.5 rounded-xl border border-border bg-card space-y-3">
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
             <Icon name="PhotoIcon" size={14} className="text-primary" />
-            Galerie d&apos;Images ({images.length}/{maxImages} max)
+            Photos & Captures d&apos;écran ({images.length}/{maxImages} max)
           </label>
-          <span className="text-[10px] font-semibold text-muted-foreground">
-            Max {maxImages} images
+          <span className="text-[10px] text-muted-foreground font-semibold">
+            Formats : JPG, PNG, WebP, GIF
           </span>
         </div>
 
-        {/* Input to add image */}
+        {/* Input & Direct PC Upload */}
         {images.length < maxImages ? (
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newImageUrl}
-              onChange={(e) => setNewImageUrl(e.target.value)}
-              placeholder="Collez une URL d'image (https://...)"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddImage();
-                }
-              }}
-              className="flex-1 px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary font-mono"
-            />
-            <button
-              type="button"
-              onClick={handleAddImage}
-              className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:opacity-90 flex items-center gap-1 transition-all btn-press flex-shrink-0"
-            >
-              <Icon name="PlusIcon" size={13} />
-              Ajouter
-            </button>
+          <div className="space-y-2">
+            {/* Direct Upload from PC */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input
+                ref={imageFileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                multiple
+                className="hidden"
+                onChange={handleImageFileSelect}
+              />
+
+              <button
+                type="button"
+                disabled={isUploadingImage}
+                onClick={() => imageFileInputRef.current?.click()}
+                className="px-3.5 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-xs font-bold flex items-center justify-center gap-2 transition-all btn-press shadow-2xs"
+              >
+                {isUploadingImage ? (
+                  <Icon name="ArrowPathIcon" size={14} className="animate-spin" />
+                ) : (
+                  <Icon name="ArrowUpTrayIcon" size={14} />
+                )}
+                <span>Importer photo(s) depuis mon PC</span>
+              </button>
+
+              <span className="text-[11px] text-muted-foreground text-center sm:text-left font-medium">
+                ou par URL directe :
+              </span>
+            </div>
+
+            {/* URL input fallback */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newImageUrl}
+                onChange={(e) => setNewImageUrl(e.target.value)}
+                placeholder="https://images.unsplash.com/... ou URL image"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddImageUrl();
+                  }
+                }}
+                className="flex-1 px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary font-mono"
+              />
+              <button
+                type="button"
+                onClick={handleAddImageUrl}
+                className="px-3 py-1.5 bg-muted border border-border hover:bg-muted/80 text-foreground rounded-lg text-xs font-bold flex items-center gap-1 transition-all btn-press flex-shrink-0"
+              >
+                <Icon name="PlusIcon" size={13} />
+                Ajouter
+              </button>
+            </div>
           </div>
         ) : (
           <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[11px] font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
@@ -208,13 +331,43 @@ export default function MediaUploadManager({
           </span>
         </div>
 
-        {/* Input to add video */}
+        {/* Input to add video (PC File or URL) */}
         {videos.length < maxVideos ? (
-          <div className="space-y-2 p-2.5 rounded-lg bg-muted/60 border border-border/80">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="space-y-3 p-3 rounded-lg bg-muted/60 border border-border/80">
+            {/* Direct Upload Video from PC */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input
+                ref={videoFileInputRef}
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime,video/ogg"
+                className="hidden"
+                onChange={handleVideoFileSelect}
+              />
+
+              <button
+                type="button"
+                disabled={isUploadingVideo}
+                onClick={() => videoFileInputRef.current?.click()}
+                className="px-3.5 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all btn-press shadow-2xs"
+              >
+                {isUploadingVideo ? (
+                  <Icon name="ArrowPathIcon" size={14} className="animate-spin" />
+                ) : (
+                  <Icon name="ArrowUpTrayIcon" size={14} />
+                )}
+                <span>Importer vidéo depuis mon PC (MP4, WebM, MOV)</span>
+              </button>
+
+              <span className="text-[11px] text-muted-foreground text-center sm:text-left font-medium">
+                ou lien vidéo externe :
+              </span>
+            </div>
+
+            {/* External URL inputs */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-border/60">
               <div>
                 <label className="block text-[10px] font-bold text-muted-foreground mb-1">
-                  URL Vidéo (YouTube, Vimeo, MP4, Loom)
+                  URL Vidéo (YouTube, Vimeo, MP4 direct)
                 </label>
                 <input
                   type="text"
@@ -241,7 +394,7 @@ export default function MediaUploadManager({
             <div className="flex items-center justify-between gap-2 pt-1">
               <div className="flex items-center gap-2">
                 <label className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">
-                  Durée (max 120s / 2m) :
+                  Durée (max 120s) :
                 </label>
                 <input
                   type="text"
@@ -255,11 +408,11 @@ export default function MediaUploadManager({
 
               <button
                 type="button"
-                onClick={handleAddVideo}
+                onClick={handleAddVideoUrl}
                 className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:opacity-90 flex items-center gap-1 transition-all btn-press flex-shrink-0"
               >
                 <Icon name="PlusIcon" size={13} />
-                Ajouter la vidéo
+                Ajouter URL
               </button>
             </div>
           </div>

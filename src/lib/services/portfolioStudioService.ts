@@ -172,6 +172,7 @@ export interface StudioPortfolio {
   subTitle?: string;
   promotion?: string;
   authorName?: string;
+  authorAvatar?: string;
   createdAt?: string;
 }
 

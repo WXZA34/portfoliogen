@@ -1212,6 +1212,7 @@ export async function deletePersona(id: string): Promise<boolean> {
 export interface UserProfileInfo {
   id?: string;
   userId?: string;
+  avatarUrl?: string; // Profile photo URL
   fullName: string;
   headline: string;
   slogan: string;
@@ -1224,6 +1225,8 @@ export interface UserProfileInfo {
   github: string;
   website: string;
   cvPdfUrl?: string;
+  cvFileName?: string;
+  cvFileSize?: string;
   hobbies: string[];
   methodologies: string[];
   availability: string;
@@ -1233,6 +1236,7 @@ export interface UserProfileInfo {
 const LOCAL_STORAGE_PROFILE_PREFIX = 'portfoliogen_cvtheque_profile_';
 
 export const DEFAULT_USER_PROFILE: UserProfileInfo = {
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop',
   fullName: 'KOKOU DUSSEY',
   headline: 'Étudiant B.U.T. Génie Électrique & Informatique Industrielle (GEII)',
   slogan: 'Concevoir la logique. Piloter le système.',
@@ -1245,6 +1249,8 @@ export const DEFAULT_USER_PROFILE: UserProfileInfo = {
   github: 'https://github.com/kokou-dussey',
   website: 'https://my-portfolify.vercel.app/#/dussey%20larry',
   cvPdfUrl: '',
+  cvFileName: '',
+  cvFileSize: '',
   availability: 'Disponible pour alternance 2026–2028',
   hobbies: ['Robotique autonome', 'Impression 3D', 'Aéromodélisme', 'Course à pied'],
   methodologies: [
@@ -1265,7 +1271,7 @@ export async function fetchUserProfileInfo(): Promise<UserProfileInfo> {
 
     const raw = localStorage.getItem(`${LOCAL_STORAGE_PROFILE_PREFIX}${userId}`);
     if (raw) {
-      return JSON.parse(raw);
+      return { ...DEFAULT_USER_PROFILE, ...JSON.parse(raw) };
     }
     return DEFAULT_USER_PROFILE;
   } catch {

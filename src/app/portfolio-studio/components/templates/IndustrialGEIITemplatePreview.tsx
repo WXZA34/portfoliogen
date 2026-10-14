@@ -121,6 +121,7 @@ export default function IndustrialGEIITemplatePreview({
   const [activeSection, setActiveSection] = useState<string>('accueil');
   const [selectedDetailItem, setSelectedDetailItem] = useState<DetailModalItem | null>(null);
   const [modalActiveImageIdx, setModalActiveImageIdx] = useState<number>(0);
+  const [showCvModal, setShowCvModal] = useState<boolean>(false);
 
   // Close modal on Escape key press
   useEffect(() => {
@@ -163,6 +164,7 @@ export default function IndustrialGEIITemplatePreview({
   const displayMedia = media.slice(0, 6);
 
   const authorName = texts.coverAuthorName || portfolio.authorName || profile?.fullName || 'KOKOU DUSSEY';
+  const authorAvatar = portfolio.authorAvatar || profile?.avatarUrl;
   const headline = texts.coverHeadline || texts.heroHeadline || profile?.headline || 'Étudiant en B.U.T. GEII & Automatisme';
   const institution = texts.coverInstitution || portfolio.institution || 'IUT SÉNART-FONTAINEBLEAU';
   const degree = texts.coverDegree || portfolio.degree || 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE';
@@ -215,6 +217,11 @@ export default function IndustrialGEIITemplatePreview({
           className="my-8 w-full max-w-sm px-6 py-7 rounded-3xl border border-black/5 shadow-sm backdrop-blur-xs"
           style={{ backgroundColor: cardBg }}
         >
+          {authorAvatar && (
+            <div className="relative w-20 h-20 rounded-full mx-auto mb-3 overflow-hidden border-2 border-white/80 shadow-md">
+              <AppImage src={authorAvatar} alt={authorName} fill className="object-cover" />
+            </div>
+          )}
           <p
             className="text-[10px] font-bold tracking-[0.2em] uppercase mb-1"
             style={{ color: heroColor }}
@@ -284,11 +291,19 @@ export default function IndustrialGEIITemplatePreview({
           {sections.cover && (
             <button
               onClick={() => setSplashEntered(false)}
-              className="w-7 h-7 rounded-lg text-white flex items-center justify-center font-bold text-xs hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: heroColor }}
+              className="w-7 h-7 rounded-lg overflow-hidden border border-black/10 flex items-center justify-center hover:opacity-90 transition-opacity relative flex-shrink-0"
               title="Revenir à la page de couverture"
             >
-              {authorName.charAt(0)}
+              {authorAvatar ? (
+                <AppImage src={authorAvatar} alt={authorName} fill className="object-cover" />
+              ) : (
+                <div
+                  className="w-full h-full text-white flex items-center justify-center font-bold text-xs"
+                  style={{ backgroundColor: heroColor }}
+                >
+                  {authorName.charAt(0)}
+                </div>
+              )}
             </button>
           )}
           <div>
@@ -399,6 +414,16 @@ export default function IndustrialGEIITemplatePreview({
               Contact
             </button>
           )}
+
+          <button
+            onClick={() => setShowCvModal(true)}
+            className="px-2.5 py-1 rounded-md transition-colors hover:bg-black/5 flex items-center gap-1 font-bold text-[11px]"
+            style={{ color: heroColor }}
+            title="Consulter le Curriculum Vitæ"
+          >
+            <Icon name="DocumentTextIcon" size={12} />
+            CV
+          </button>
         </div>
 
         {sections.cover && (
@@ -419,12 +444,18 @@ export default function IndustrialGEIITemplatePreview({
       {sections.hero && (
         <header className="px-5 py-10 border-b border-[#E1D9C6]/60">
           <div className="max-w-2xl mx-auto text-center space-y-3.5">
-            <div
-              className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-xl font-bold text-white shadow-sm"
-              style={{ backgroundColor: heroColor }}
-            >
-              {authorName.charAt(0)}
-            </div>
+            {authorAvatar ? (
+              <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-3xl mx-auto overflow-hidden shadow-md border-3 border-white">
+                <AppImage src={authorAvatar} alt={authorName} fill className="object-cover" />
+              </div>
+            ) : (
+              <div
+                className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-xl font-bold text-white shadow-sm"
+                style={{ backgroundColor: heroColor }}
+              >
+                {authorName.charAt(0)}
+              </div>
+            )}
 
             <h1 className="text-2xl sm:text-3xl font-black text-[#1A1815] tracking-tight">
               {authorName}
@@ -456,14 +487,31 @@ export default function IndustrialGEIITemplatePreview({
             )}
 
             <div className="flex items-center justify-center gap-2 pt-2">
-              <a
-                href={profile?.cvPdfUrl || '#contact'}
-                className="px-4 py-2 rounded-xl text-white text-[11px] font-bold shadow-xs flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+              <button
+                type="button"
+                onClick={() => {
+                  if (profile?.cvPdfUrl) {
+                    window.open(profile.cvPdfUrl, '_blank');
+                  } else {
+                    setShowCvModal(true);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl text-white text-[11px] font-bold shadow-xs flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer"
                 style={{ backgroundColor: heroColor }}
               >
                 <Icon name="ArrowDownTrayIcon" size={12} />
                 {texts.heroDownloadCv || 'Télécharger CV'}
-              </a>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowCvModal(true)}
+                className="px-3.5 py-2 rounded-xl text-[#4A4234] border border-black/10 text-[11px] font-semibold transition-colors hover:bg-black/5 flex items-center gap-1.5 cursor-pointer"
+                style={{ backgroundColor: cardBg }}
+              >
+                <Icon name="DocumentTextIcon" size={12} />
+                Consulter CV
+              </button>
               {linkedin && (
                 <a
                   href={linkedin}
@@ -1643,6 +1691,222 @@ export default function IndustrialGEIITemplatePreview({
           </div>
         </div>
       </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* INTEGRATED CURRICULUM VITÆ MODAL */}
+      {/* =================================================================== */}
+      {showCvModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
+          onClick={() => setShowCvModal(false)}
+        >
+          <div
+            className="w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl border border-black/10 my-auto flex flex-col max-h-[90vh] bg-white text-[#2C2720]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* CV Modal Header Actions */}
+            <div className="px-6 py-3.5 border-b border-[#E1D9C6] flex items-center justify-between bg-[#FAF8F3]">
+              <div className="flex items-center gap-2">
+                <Icon name="DocumentTextIcon" size={18} style={{ color: heroColor }} />
+                <span className="font-extrabold text-xs sm:text-sm text-[#1A1815] uppercase tracking-wide">
+                  Curriculum Vitæ · {authorName}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {profile?.cvPdfUrl && (
+                  <a
+                    href={profile.cvPdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    download
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold flex items-center gap-1.5 hover:bg-emerald-700 transition-colors shadow-2xs"
+                  >
+                    <Icon name="ArrowDownTrayIcon" size={12} />
+                    <span>Télécharger PDF</span>
+                  </a>
+                )}
+
+                <button
+                  onClick={() => window.print()}
+                  className="px-3 py-1.5 rounded-lg border border-black/10 hover:bg-black/5 text-[#4A4234] text-[11px] font-bold flex items-center gap-1.5 transition-colors"
+                  title="Imprimer ou enregistrer en PDF"
+                >
+                  <Icon name="PrinterIcon" size={13} />
+                  <span>Imprimer</span>
+                </button>
+
+                <button
+                  onClick={() => setShowCvModal(false)}
+                  className="p-1.5 rounded-lg hover:bg-black/5 text-[#6D624C] hover:text-[#1A1815] transition-colors"
+                  title="Fermer"
+                >
+                  <Icon name="XMarkIcon" size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* CV Modal Body (Printable CV layout) */}
+            <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6 bg-[#FCFBF8]">
+              {/* Header profile */}
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-6 border-b border-[#E1D9C6]">
+                {authorAvatar ? (
+                  <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-white shadow-md flex-shrink-0">
+                    <AppImage src={authorAvatar} alt={authorName} fill className="object-cover" />
+                  </div>
+                ) : (
+                  <div
+                    className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-md flex-shrink-0"
+                    style={{ backgroundColor: heroColor }}
+                  >
+                    {authorName.charAt(0)}
+                  </div>
+                )}
+
+                <div className="flex-1 text-center sm:text-left space-y-1">
+                  <h2 className="text-xl sm:text-2xl font-black text-[#1A1815] tracking-tight">
+                    {authorName}
+                  </h2>
+                  <p className="text-xs sm:text-sm font-bold" style={{ color: heroColor }}>
+                    {headline}
+                  </p>
+                  <p className="text-[11px] text-[#6D624C] italic max-w-xl">
+                    « {customIntro} »
+                  </p>
+
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 pt-2 text-[11px] text-[#6D624C]">
+                    <span className="flex items-center gap-1">
+                      <Icon name="EnvelopeIcon" size={12} style={{ color: heroColor }} />
+                      {email}
+                    </span>
+                    {phone && (
+                      <span className="flex items-center gap-1">
+                        <Icon name="PhoneIcon" size={12} style={{ color: heroColor }} />
+                        {phone}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Icon name="MapPinIcon" size={12} style={{ color: heroColor }} />
+                      {location}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bio & Objectif */}
+              <div className="space-y-1.5">
+                <h3 className="text-xs font-black uppercase tracking-wider text-[#1A1815] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: heroColor }} />
+                  Profil & Objectif Professionnel
+                </h3>
+                <p className="text-xs text-[#524838] leading-relaxed">
+                  {bio}
+                </p>
+                {objective && (
+                  <p className="text-xs text-[#1A1815] font-semibold bg-[#EFEAE1]/60 p-2.5 rounded-xl border border-black/5">
+                    🎯 <strong>Objectif :</strong> {objective}
+                  </p>
+                )}
+              </div>
+
+              {/* Parcours & Formations */}
+              {displayParcours.length > 0 && (
+                <div className="space-y-2.5">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-[#1A1815] flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: parcoursColor }} />
+                    Parcours & Formations
+                  </h3>
+                  <div className="space-y-2">
+                    {displayParcours.map((p) => (
+                      <div key={p.id} className="p-3 rounded-xl border border-black/5 bg-[#EFEAE1]/40 flex justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-bold text-[#1A1815]">{p.title}</p>
+                          <p className="text-[11px] font-semibold text-[#8A7D63]">{p.organization} {p.location && `· ${p.location}`}</p>
+                          <p className="text-[11px] text-[#6D624C] mt-1">{p.description}</p>
+                        </div>
+                        <span className="text-[10px] font-mono text-[#8A7D63] font-bold flex-shrink-0">{p.period}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Compétences Clés */}
+              {displaySkills.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-[#1A1815] flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: skillsColor }} />
+                    Compétences Techniques & Industrielles
+                  </h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {displaySkills.map((s) => (
+                      <span key={s.id} className="px-2.5 py-1 rounded-lg bg-[#EFEAE1] border border-black/5 text-[11px] font-bold text-[#2C2720]">
+                        {s.name} {s.level ? `(${s.level}%)` : ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Projets Phares */}
+              {displayProjects.length > 0 && (
+                <div className="space-y-2.5">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-[#1A1815] flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: saeColor }} />
+                    Réalisations Majeures & SAÉ
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {displayProjects.slice(0, 4).map((pr) => (
+                      <div key={pr.id} className="p-3 rounded-xl border border-black/5 bg-[#EFEAE1]/30">
+                        <p className="text-xs font-bold text-[#1A1815]">{pr.title}</p>
+                        <p className="text-[10px] text-[#6D624C] line-clamp-2 mt-1">{pr.description}</p>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {pr.techStack.slice(0, 3).map((t) => (
+                            <span key={t} className="px-1.5 py-0.5 rounded bg-black/5 text-[9px] font-mono font-bold">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Langues & Certifications */}
+              {(displayLanguages.length > 0 || displayCertifications.length > 0) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#E1D9C6]">
+                  {displayLanguages.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[#8A7D63] mb-1">Langues</p>
+                      <div className="space-y-1">
+                        {displayLanguages.map((l) => (
+                          <p key={l.id} className="text-[11px] font-semibold text-[#1A1815]">
+                            {l.flag} {l.name} — <span className="font-normal text-[#6D624C]">{l.level}</span>
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {displayCertifications.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[#8A7D63] mb-1">Certifications & Habilitations</p>
+                      <div className="space-y-1">
+                        {displayCertifications.map((c) => (
+                          <p key={c.id} className="text-[11px] font-semibold text-[#1A1815]">
+                            ✓ {c.title} — <span className="font-normal text-[#6D624C]">{c.issuer} ({c.year})</span>
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -9,6 +9,7 @@ import {
   saveMediaFile,
   deleteMediaFile,
 } from '@/lib/services/cvthequeService';
+import { uploadMediaFromPC } from '@/lib/utils/mediaUploadHelper';
 import { toast } from 'sonner';
 
 interface MediaGalleryProps {
@@ -18,7 +19,7 @@ interface MediaGalleryProps {
 export default function MediaGallery({ onCountChange }: MediaGalleryProps) {
   const [mediaItems, setMediaItems] = useState<MediaFileItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'image' | 'document'>('all');
+  const [filter, setFilter] = useState<'all' | 'image' | 'video' | 'document'>('all');
   const [selectedMedia, setSelectedMedia] = useState<MediaFileItem | null>(null);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -48,30 +49,18 @@ export default function MediaGallery({ onCountChange }: MediaGalleryProps) {
     if (!file) return;
 
     setUploading(true);
-    const toastId = toast.loading(`Import de "${file.name}"...`);
+    const toastId = toast.loading(`Import de "${file.name}" depuis votre PC...`);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const res = await fetch('/api/upload-image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        throw new Error(data.error || 'Erreur lors du téléversement');
-      }
-
-      const sizeStr = `${(file.size / 1024 / 1024).toFixed(1)} Mo`;
       const isImg = file.type.startsWith('image/');
+      const isVid = file.type.startsWith('video/');
+      const result = await uploadMediaFromPC(file);
 
       const newMedia = await saveMediaFile({
         fileName: file.name.replace(/\.[^/.]+$/, ''),
-        fileUrl: data.url,
-        mediaType: isImg ? 'image' : 'document',
-        fileSize: sizeStr,
+        fileUrl: result.url,
+        mediaType: isImg ? 'image' : isVid ? 'video' : 'document',
+        fileSize: result.fileSize,
         altText: file.name,
         project: 'CVthèque',
       });
@@ -114,6 +103,7 @@ export default function MediaGallery({ onCountChange }: MediaGalleryProps) {
 
   const filtered = filter === 'all' ? mediaItems : mediaItems.filter((m) => m.mediaType === filter);
   const imagesCount = mediaItems.filter((m) => m.mediaType === 'image').length;
+  const videosCount = mediaItems.filter((m) => m.mediaType === 'video').length;
   const docsCount = mediaItems.filter((m) => m.mediaType === 'document').length;
 
   return (
@@ -142,6 +132,16 @@ export default function MediaGallery({ onCountChange }: MediaGalleryProps) {
             Images ({imagesCount})
           </button>
           <button
+            onClick={() => setFilter('video')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-600 transition-all ${
+              filter === 'video'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Vidéos ({videosCount})
+          </button>
+          <button
             onClick={() => setFilter('document')}
             className={`px-3 py-1.5 rounded-lg text-xs font-600 transition-all ${
               filter === 'document'
@@ -168,14 +168,14 @@ export default function MediaGallery({ onCountChange }: MediaGalleryProps) {
             ) : (
               <>
                 <Icon name="ArrowUpTrayIcon" size={16} />
-                Importer un média
+                Importer photo/vidéo/doc
               </>
             )}
           </button>
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
+            accept="image/*,video/*,application/pdf"
             onChange={handleFileUpload}
             className="hidden"
           />
@@ -202,7 +202,7 @@ export default function MediaGallery({ onCountChange }: MediaGalleryProps) {
             Aucun média dans cette catégorie
           </h3>
           <p className="text-xs text-muted-foreground max-w-md mb-6 leading-relaxed">
-            Importez des captures d&apos;écran, schémas d&apos;architecture, photos de conférences ou justificatifs pour vos portfolios.
+            Importez des captures d&apos;écran, schémas d&apos;architecture, vidéos de démonstration ou justificatifs pour vos portfolios.
           </p>
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -230,6 +230,11 @@ export default function MediaGallery({ onCountChange }: MediaGalleryProps) {
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                     sizes="(max-width: 768px) 50vw, 25vw"
                   />
+                ) : item.mediaType === 'video' ? (
+                  <div className="h-full bg-slate-900 flex flex-col items-center justify-center text-white relative">
+                    <Icon name="PlayCircleIcon" size={36} className="text-primary mb-1" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-white/80">Vidéo</span>
+                  </div>
                 ) : (
                   <div className="h-full bg-muted flex items-center justify-center text-muted-foreground">
                     <Icon name="DocumentTextIcon" size={36} />

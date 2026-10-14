@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
+import AppImage from '@/components/ui/AppImage';
 import { toast } from 'sonner';
 import type {
   StudioPortfolio,
@@ -24,6 +25,8 @@ import type {
   MediaFileItem,
   UserProfileInfo,
 } from '@/lib/services/cvthequeService';
+import { saveUserProfileInfo } from '@/lib/services/cvthequeService';
+import { uploadMediaFromPC } from '@/lib/utils/mediaUploadHelper';
 import { useLanguage } from '@/lib/LanguageContext';
 
 interface PortfolioBuilderProps {
@@ -63,6 +66,10 @@ export default function PortfolioBuilder({
   const [activeTab, setActiveTab] = useState<'template' | 'sections' | 'content' | 'colors' | 'texts' | 'settings'>('sections');
   const [skillCategoryFilter, setSkillCategoryFilter] = useState<'all' | 'hard' | 'soft' | 'tools'>('all');
   const [projectCatFilter, setProjectCatFilter] = useState<string>('all');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCv, setUploadingCv] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const cvInputRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
 
   const enabledSections: StudioPortfolioSections = portfolio.enabledSections || { ...DEFAULT_STUDIO_SECTIONS };
@@ -1892,6 +1899,171 @@ export default function PortfolioBuilder({
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Configurez le lien unique à envoyer aux recruteurs, personnalisez le slug et suivez les entreprises ciblées.
                 </p>
+              </div>
+
+              {/* 0. Carte Photo de Profil & Document CV */}
+              <div className="p-4 bg-card border border-border rounded-xl space-y-4 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                    <Icon name="UserCircleIcon" size={15} className="text-primary" />
+                    Photo de Profil & Document CV
+                  </p>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                    Synchronisé
+                  </span>
+                </div>
+
+                {/* Avatar uploader */}
+                <div className="p-3 rounded-lg bg-muted/60 border border-border/80 flex items-center gap-3">
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-primary/30 bg-card flex-shrink-0 flex items-center justify-center shadow-xs">
+                    {(portfolio.authorAvatar || profile?.avatarUrl) ? (
+                      <AppImage
+                        src={portfolio.authorAvatar || profile?.avatarUrl || ''}
+                        alt="Photo de profil"
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <Icon name="UserIcon" size={20} className="text-muted-foreground" />
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-foreground">
+                      Photo de profil / Avatar
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      Affichée dans l&apos;en-tête, la couverture et le CV
+                    </p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <input
+                        ref={avatarInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploadingAvatar(true);
+                          const tid = toast.loading(`Import de "${file.name}"...`);
+                          try {
+                            const res = await uploadMediaFromPC(file);
+                            onUpdate({ ...portfolio, authorAvatar: res.url });
+                            if (profile) {
+                              saveUserProfileInfo({ ...profile, avatarUrl: res.url }).catch(() => {});
+                            }
+                            toast.success('Photo de profil mise à jour !', { id: tid });
+                          } catch (err: any) {
+                            toast.error(err?.message || 'Erreur d\'import', { id: tid });
+                          } finally {
+                            setUploadingAvatar(false);
+                            if (avatarInputRef.current) avatarInputRef.current.value = '';
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={uploadingAvatar}
+                        onClick={() => avatarInputRef.current?.click()}
+                        className="px-2.5 py-1 bg-primary text-primary-foreground text-[11px] font-bold rounded-md hover:opacity-90 flex items-center gap-1 transition-opacity btn-press"
+                      >
+                        {uploadingAvatar ? (
+                          <Icon name="ArrowPathIcon" size={12} className="animate-spin" />
+                        ) : (
+                          <Icon name="ArrowUpTrayIcon" size={12} />
+                        )}
+                        <span>Importer depuis mon PC</span>
+                      </button>
+
+                      {(portfolio.authorAvatar || profile?.avatarUrl) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onUpdate({ ...portfolio, authorAvatar: '' });
+                            if (profile) {
+                              saveUserProfileInfo({ ...profile, avatarUrl: '' }).catch(() => {});
+                            }
+                            toast.info('Photo de profil retirée.');
+                          }}
+                          className="px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:text-red-500 rounded-md transition-colors"
+                        >
+                          Supprimer
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* CV Document uploader */}
+                <div className="p-3 rounded-lg bg-muted/60 border border-border/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Icon name="DocumentTextIcon" size={13} className="text-primary" />
+                      Document CV (PDF)
+                    </p>
+                    {profile?.cvPdfUrl && (
+                      <span className="text-[10px] font-bold text-emerald-600">✓ CV prêt</span>
+                    )}
+                  </div>
+
+                  <input
+                    ref={cvInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,application/pdf"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploadingCv(true);
+                      const tid = toast.loading(`Import du CV "${file.name}"...`);
+                      try {
+                        const res = await uploadMediaFromPC(file);
+                        if (profile) {
+                          await saveUserProfileInfo({
+                            ...profile,
+                            cvPdfUrl: res.url,
+                            cvFileName: file.name,
+                            cvFileSize: res.fileSize,
+                          });
+                        }
+                        toast.success(`CV "${file.name}" importé et lié à vos portfolios !`, { id: tid });
+                      } catch (err: any) {
+                        toast.error(err?.message || 'Erreur d\'import du CV', { id: tid });
+                      } finally {
+                        setUploadingCv(false);
+                        if (cvInputRef.current) cvInputRef.current.value = '';
+                      }
+                    }}
+                  />
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={uploadingCv}
+                      onClick={() => cvInputRef.current?.click()}
+                      className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-colors btn-press"
+                    >
+                      {uploadingCv ? (
+                        <Icon name="ArrowPathIcon" size={12} className="animate-spin" />
+                      ) : (
+                        <Icon name="ArrowUpTrayIcon" size={12} />
+                      )}
+                      <span>Importer CV depuis mon PC (PDF)</span>
+                    </button>
+
+                    {profile?.cvPdfUrl && (
+                      <a
+                        href={profile.cvPdfUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2.5 py-1.5 bg-muted text-foreground hover:bg-muted/80 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-colors"
+                      >
+                        <Icon name="ArrowTopRightOnSquareIcon" size={12} />
+                        Visualiser
+                      </a>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* 1. Carte URL Personnalisée & Partage 1-Click */}

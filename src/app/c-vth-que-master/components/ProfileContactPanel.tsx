@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@/components/ui/AppIcon';
+import AppImage from '@/components/ui/AppImage';
 import { toast } from 'sonner';
 import {
   type UserProfileInfo,
@@ -9,13 +10,60 @@ import {
   saveUserProfileInfo,
   DEFAULT_USER_PROFILE,
 } from '@/lib/services/cvthequeService';
+import { uploadMediaFromPC } from '@/lib/utils/mediaUploadHelper';
 
 export default function ProfileContactPanel() {
   const [profile, setProfile] = useState<UserProfileInfo>(DEFAULT_USER_PROFILE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCv, setUploadingCv] = useState(false);
   const [newMethodology, setNewMethodology] = useState('');
   const [newHobby, setNewHobby] = useState('');
+
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const cvInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    const toastId = toast.loading(`Import de votre photo "${file.name}"...`);
+    try {
+      const result = await uploadMediaFromPC(file);
+      setProfile((prev) => ({ ...prev, avatarUrl: result.url }));
+      toast.success('Photo de profil mise à jour !', { id: toastId });
+    } catch (err: any) {
+      toast.error(err?.message || 'Erreur lors de l\'import de la photo.', { id: toastId });
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
+
+  const handleCvFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingCv(true);
+    const toastId = toast.loading(`Import du CV "${file.name}"...`);
+    try {
+      const result = await uploadMediaFromPC(file);
+      setProfile((prev) => ({
+        ...prev,
+        cvPdfUrl: result.url,
+        cvFileName: file.name,
+        cvFileSize: result.fileSize,
+      }));
+      toast.success(`CV "${file.name}" importé avec succès !`, { id: toastId });
+    } catch (err: any) {
+      toast.error(err?.message || 'Erreur lors de l\'import du CV.', { id: toastId });
+    } finally {
+      setUploadingCv(false);
+      if (cvInputRef.current) cvInputRef.current.value = '';
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -118,6 +166,66 @@ export default function ProfileContactPanel() {
               <Icon name="UserIcon" size={15} className="text-primary" />
               Identité & Titre Professionnel
             </h3>
+
+            {/* Photo de Profil / Avatar */}
+            <div className="p-3.5 rounded-xl bg-muted/60 border border-border/80 flex flex-col sm:flex-row items-center gap-4">
+              <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 bg-card flex-shrink-0 shadow-sm flex items-center justify-center">
+                {profile.avatarUrl ? (
+                  <AppImage
+                    src={profile.avatarUrl}
+                    alt={profile.fullName}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <span className="text-xl font-black text-primary">
+                    {profile.fullName.charAt(0)}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-1.5 text-center sm:text-left">
+                <p className="text-xs font-bold text-foreground">
+                  Photo de Profil (Avatar)
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  S&apos;affiche sur la page de garde, l&apos;en-tête du portfolio et auprès des recruteurs.
+                </p>
+
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarFileSelect}
+                  />
+                  <button
+                    type="button"
+                    disabled={uploadingAvatar}
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:opacity-90 flex items-center gap-1.5 transition-all btn-press shadow-2xs"
+                  >
+                    {uploadingAvatar ? (
+                      <Icon name="ArrowPathIcon" size={13} className="animate-spin" />
+                    ) : (
+                      <Icon name="ArrowUpTrayIcon" size={13} />
+                    )}
+                    <span>Importer depuis mon PC</span>
+                  </button>
+
+                  {profile.avatarUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setProfile((p) => ({ ...p, avatarUrl: '' }))}
+                      className="px-2.5 py-1.5 bg-muted text-muted-foreground hover:text-red-500 rounded-lg text-xs font-semibold transition-colors"
+                    >
+                      Supprimer
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
 
             <div>
               <label className="block text-xs font-700 text-muted-foreground mb-1">
@@ -279,17 +387,119 @@ export default function ProfileContactPanel() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-700 text-muted-foreground mb-1">
-                Lien de téléchargement CV PDF
-              </label>
+            {/* Document CV Professionnel */}
+            <div className="p-3.5 rounded-xl bg-muted/60 border border-border/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <Icon name="DocumentTextIcon" size={14} className="text-primary" />
+                  Document CV Professionnel (PDF)
+                </label>
+                {profile.cvPdfUrl && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    CV Attaché
+                  </span>
+                )}
+              </div>
+
               <input
-                type="text"
-                value={profile.cvPdfUrl || ''}
-                onChange={(e) => setProfile({ ...profile, cvPdfUrl: e.target.value })}
-                placeholder="Ex: /uploads/cv-kokou-dussey.pdf"
-                className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary font-mono"
+                ref={cvInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,application/pdf"
+                className="hidden"
+                onChange={handleCvFileSelect}
               />
+
+              {profile.cvPdfUrl ? (
+                <div className="p-3 rounded-lg bg-card border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-lg bg-red-500/10 text-red-600 flex items-center justify-center flex-shrink-0 font-bold text-xs">
+                      PDF
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-foreground truncate">
+                        {profile.cvFileName || 'Mon_Curriculum_Vitae.pdf'}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {profile.cvFileSize || 'Document PDF synchronisé'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
+                    <a
+                      href={profile.cvPdfUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-2.5 py-1.5 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                      title="Ouvrir le document CV"
+                    >
+                      <Icon name="ArrowTopRightOnSquareIcon" size={13} />
+                      Visualiser
+                    </a>
+
+                    <button
+                      type="button"
+                      disabled={uploadingCv}
+                      onClick={() => cvInputRef.current?.click()}
+                      className="px-2.5 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                      title="Remplacer le document par un nouveau fichier"
+                    >
+                      <Icon name="ArrowPathIcon" size={13} />
+                      Remplacer
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setProfile((prev) => ({
+                          ...prev,
+                          cvPdfUrl: '',
+                          cvFileName: '',
+                          cvFileSize: '',
+                        }))
+                      }
+                      className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                      title="Détacher ce CV"
+                    >
+                      <Icon name="TrashIcon" size={14} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    disabled={uploadingCv}
+                    onClick={() => cvInputRef.current?.click()}
+                    className="w-full py-2.5 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity btn-press shadow-2xs"
+                  >
+                    {uploadingCv ? (
+                      <Icon name="ArrowPathIcon" size={14} className="animate-spin" />
+                    ) : (
+                      <Icon name="ArrowUpTrayIcon" size={14} />
+                    )}
+                    <span>Importer mon CV depuis mon PC (PDF)</span>
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                      ou lien web :
+                    </span>
+                    <input
+                      type="text"
+                      value={profile.cvPdfUrl || ''}
+                      onChange={(e) => setProfile({ ...profile, cvPdfUrl: e.target.value })}
+                      placeholder="https://.../mon-cv.pdf"
+                      className="flex-1 px-2.5 py-1 bg-background border border-border rounded text-xs text-foreground focus:outline-none focus:border-primary font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                ℹ Ce CV sera automatiquement lié au bouton <strong>« Télécharger CV »</strong> de tous vos portfolios et téléchargeable par les recruteurs.
+              </p>
             </div>
           </div>
 
