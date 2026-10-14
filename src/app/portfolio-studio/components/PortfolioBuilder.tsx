@@ -26,7 +26,7 @@ import type {
   UserProfileInfo,
 } from '@/lib/services/cvthequeService';
 import { saveUserProfileInfo } from '@/lib/services/cvthequeService';
-import { uploadMediaFromPC } from '@/lib/utils/mediaUploadHelper';
+import { uploadMediaFromPC, openDocumentSafe, downloadDocumentSafe } from '@/lib/utils/mediaUploadHelper';
 import { useLanguage } from '@/lib/LanguageContext';
 
 interface PortfolioBuilderProps {
@@ -42,6 +42,7 @@ interface PortfolioBuilderProps {
   certifications?: CertificationItem[];
   media?: MediaFileItem[];
   profile?: UserProfileInfo;
+  onProfileUpdate?: (profile: UserProfileInfo) => void;
   previewVisible: boolean;
   onTogglePreview: () => void;
 }
@@ -59,6 +60,7 @@ export default function PortfolioBuilder({
   certifications = [],
   media = [],
   profile,
+  onProfileUpdate,
   previewVisible,
   onTogglePreview,
 }: PortfolioBuilderProps) {
@@ -263,65 +265,76 @@ export default function PortfolioBuilder({
 
   return (
     <div className="bg-card border border-border rounded-xl shadow-card flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex-1 min-w-0 mr-3">
-          <div className="flex items-center gap-2">
+      {/* Header with clean 2-tier layout to prevent button collisions */}
+      <div className="p-4 border-b border-border space-y-3">
+        {/* Tier 1: Title, Status and Action Buttons */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-            <p className="text-sm font-bold text-foreground truncate">
+            <h2 className="text-sm font-bold text-foreground truncate" title={portfolio.name}>
               {portfolio.name}
-            </p>
-            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/25 flex-shrink-0">
+            </h2>
+            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/25 flex-shrink-0 whitespace-nowrap">
               En cours d&apos;édition
             </span>
           </div>
-          <div className="flex items-center gap-2 mt-1 min-w-0">
-            <span className="text-primary font-semibold text-xs flex-shrink-0">Lien :</span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={onTogglePreview}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted text-muted-foreground rounded-lg text-xs font-semibold hover:text-foreground hover:bg-muted/80 transition-all cursor-pointer whitespace-nowrap"
+            >
+              <Icon name={previewVisible ? 'EyeOffIcon' : 'EyeIcon'} size={13} />
+              <span>{previewVisible ? t.studio.builder.togglePreview : t.studio.builder.showPreview}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:opacity-90 disabled:opacity-60 transition-all btn-press shadow-xs cursor-pointer whitespace-nowrap"
+            >
+              {saving ? (
+                <Icon name="Loader2Icon" size={13} className="animate-spin" />
+              ) : (
+                <Icon name="SaveIcon" size={13} />
+              )}
+              <span>{saving ? t.common.loading : t.studio.builder.save}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tier 2: Dedicated Public URL Bar with 1-Click Copy */}
+        <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-muted/60 border border-border/70 text-xs">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="text-primary font-bold text-[11px] uppercase tracking-wider flex-shrink-0 flex items-center gap-1">
+              <Icon name="LinkIcon" size={12} />
+              Lien public :
+            </span>
             <a
               href={`/p/${portfolio.slug || portfolio.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-mono text-primary hover:underline font-bold truncate max-w-[200px] sm:max-w-[280px] flex items-center gap-1"
+              className="font-mono text-xs text-primary hover:underline font-bold truncate flex items-center gap-1 min-w-0"
               title="Ouvrir ce portfolio en public dans un nouvel onglet"
             >
               <span className="truncate">portfoliogen.net/p/{portfolio.slug || portfolio.id}</span>
-              <Icon name="ArrowTopRightOnSquareIcon" size={12} className="flex-shrink-0 opacity-80" />
+              <Icon name="ArrowTopRightOnSquareIcon" size={11} className="flex-shrink-0 opacity-80" />
             </a>
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                  const fullUrl = `https://portfoliogen.net/p/${portfolio.slug || portfolio.id}`;
-                  navigator.clipboard.writeText(fullUrl);
-                  toast.success(`Lien public copié : ${fullUrl}`);
-                }
-              }}
-              className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
-              title="Copier le lien public"
-            >
-              <Icon name="ShareIcon" size={13} />
-            </button>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
           <button
-            onClick={onTogglePreview}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted text-muted-foreground rounded-lg text-xs font-600 hover:text-foreground transition-all"
+            type="button"
+            onClick={() => {
+              if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                const fullUrl = `https://portfoliogen.net/p/${portfolio.slug || portfolio.id}`;
+                navigator.clipboard.writeText(fullUrl);
+                toast.success(`Lien public copié : ${fullUrl}`);
+              }
+            }}
+            className="px-2 py-1 rounded bg-card hover:bg-card/80 text-foreground border border-border/80 text-[11px] font-semibold flex items-center gap-1 transition-colors flex-shrink-0 cursor-pointer shadow-2xs"
+            title="Copier le lien public"
           >
-            <Icon name={previewVisible ? 'EyeOffIcon' : 'EyeIcon'} size={13} />
-            {previewVisible ? t.studio.builder.togglePreview : t.studio.builder.showPreview}
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-600 hover:opacity-90 disabled:opacity-60 transition-all btn-press shadow-xs"
-          >
-            {saving ? (
-              <Icon name="Loader2Icon" size={13} className="animate-spin" />
-            ) : (
-              <Icon name="SaveIcon" size={13} />
-            )}
-            {saving ? t.common.loading : t.studio.builder.save}
+            <Icon name="ShareIcon" size={12} className="text-primary" />
+            <span>Copier</span>
           </button>
         </div>
       </div>
@@ -1950,7 +1963,9 @@ export default function PortfolioBuilder({
                             const res = await uploadMediaFromPC(file);
                             onUpdate({ ...portfolio, authorAvatar: res.url });
                             if (profile) {
-                              saveUserProfileInfo({ ...profile, avatarUrl: res.url }).catch(() => {});
+                              const updatedProf = { ...profile, avatarUrl: res.url };
+                              saveUserProfileInfo(updatedProf).catch(() => {});
+                              onProfileUpdate?.(updatedProf);
                             }
                             toast.success('Photo de profil mise à jour !', { id: tid });
                           } catch (err: any) {
@@ -1965,7 +1980,7 @@ export default function PortfolioBuilder({
                         type="button"
                         disabled={uploadingAvatar}
                         onClick={() => avatarInputRef.current?.click()}
-                        className="px-2.5 py-1 bg-primary text-primary-foreground text-[11px] font-bold rounded-md hover:opacity-90 flex items-center gap-1 transition-opacity btn-press"
+                        className="px-2.5 py-1 bg-primary text-primary-foreground text-[11px] font-bold rounded-md hover:opacity-90 flex items-center gap-1 transition-opacity btn-press cursor-pointer"
                       >
                         {uploadingAvatar ? (
                           <Icon name="ArrowPathIcon" size={12} className="animate-spin" />
@@ -1981,11 +1996,13 @@ export default function PortfolioBuilder({
                           onClick={() => {
                             onUpdate({ ...portfolio, authorAvatar: '' });
                             if (profile) {
-                              saveUserProfileInfo({ ...profile, avatarUrl: '' }).catch(() => {});
+                              const updatedProf = { ...profile, avatarUrl: '' };
+                              saveUserProfileInfo(updatedProf).catch(() => {});
+                              onProfileUpdate?.(updatedProf);
                             }
                             toast.info('Photo de profil retirée.');
                           }}
-                          className="px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:text-red-500 rounded-md transition-colors"
+                          className="px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:text-red-500 rounded-md transition-colors cursor-pointer"
                         >
                           Supprimer
                         </button>
@@ -2019,12 +2036,14 @@ export default function PortfolioBuilder({
                       try {
                         const res = await uploadMediaFromPC(file);
                         if (profile) {
-                          await saveUserProfileInfo({
+                          const updatedProf = {
                             ...profile,
                             cvPdfUrl: res.url,
                             cvFileName: file.name,
                             cvFileSize: res.fileSize,
-                          });
+                          };
+                          await saveUserProfileInfo(updatedProf);
+                          onProfileUpdate?.(updatedProf);
                         }
                         toast.success(`CV "${file.name}" importé et lié à vos portfolios !`, { id: tid });
                       } catch (err: any) {
@@ -2036,12 +2055,12 @@ export default function PortfolioBuilder({
                     }}
                   />
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
                       disabled={uploadingCv}
                       onClick={() => cvInputRef.current?.click()}
-                      className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-colors btn-press"
+                      className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-colors btn-press cursor-pointer"
                     >
                       {uploadingCv ? (
                         <Icon name="ArrowPathIcon" size={12} className="animate-spin" />
@@ -2052,15 +2071,26 @@ export default function PortfolioBuilder({
                     </button>
 
                     {profile?.cvPdfUrl && (
-                      <a
-                        href={profile.cvPdfUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-2.5 py-1.5 bg-muted text-foreground hover:bg-muted/80 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-colors"
-                      >
-                        <Icon name="ArrowTopRightOnSquareIcon" size={12} />
-                        Visualiser
-                      </a>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => openDocumentSafe(profile.cvPdfUrl!, `CV_${(portfolio.authorName || profile?.fullName || 'Candidat').replace(/\s+/g, '_')}.pdf`)}
+                          className="px-2.5 py-1.5 bg-muted text-foreground hover:bg-muted/80 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Visualiser le CV dans un nouvel onglet"
+                        >
+                          <Icon name="ArrowTopRightOnSquareIcon" size={12} />
+                          Visualiser
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => downloadDocumentSafe(profile.cvPdfUrl!, `CV_${(portfolio.authorName || profile?.fullName || 'Candidat').replace(/\s+/g, '_')}.pdf`)}
+                          className="px-2.5 py-1.5 bg-muted text-foreground hover:bg-muted/80 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Télécharger le document CV sur votre ordinateur"
+                        >
+                          <Icon name="ArrowDownTrayIcon" size={12} />
+                          Télécharger
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

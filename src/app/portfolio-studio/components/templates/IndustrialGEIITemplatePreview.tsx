@@ -16,6 +16,7 @@ import type {
   MediaFileItem,
   VideoMediaItem,
 } from '@/lib/services/cvthequeService';
+import { openDocumentSafe, downloadDocumentSafe } from '@/lib/utils/mediaUploadHelper';
 
 interface IndustrialGEIITemplatePreviewProps {
   portfolio: StudioPortfolio;
@@ -491,7 +492,7 @@ export default function IndustrialGEIITemplatePreview({
                 type="button"
                 onClick={() => {
                   if (profile?.cvPdfUrl) {
-                    window.open(profile.cvPdfUrl, '_blank');
+                    downloadDocumentSafe(profile.cvPdfUrl, `CV_${authorName.replace(/\s+/g, '_')}.pdf`);
                   } else {
                     setShowCvModal(true);
                   }
@@ -1716,16 +1717,14 @@ export default function IndustrialGEIITemplatePreview({
 
               <div className="flex items-center gap-2">
                 {profile?.cvPdfUrl && (
-                  <a
-                    href={profile.cvPdfUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    download
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold flex items-center gap-1.5 hover:bg-emerald-700 transition-colors shadow-2xs"
+                  <button
+                    type="button"
+                    onClick={() => downloadDocumentSafe(profile.cvPdfUrl!, `CV_${authorName.replace(/\s+/g, '_')}.pdf`)}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold flex items-center gap-1.5 hover:bg-emerald-700 transition-colors shadow-2xs cursor-pointer"
                   >
                     <Icon name="ArrowDownTrayIcon" size={12} />
                     <span>Télécharger PDF</span>
-                  </a>
+                  </button>
                 )}
 
                 <button

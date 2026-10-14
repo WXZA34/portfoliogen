@@ -38,6 +38,7 @@ import {
   DEFAULT_STARTER_MEDIA,
 } from '@/lib/services/cvthequeService';
 import IndustrialGEIITemplatePreview from '@/app/portfolio-studio/components/templates/IndustrialGEIITemplatePreview';
+import { downloadDocumentSafe } from '@/lib/utils/mediaUploadHelper';
 import CanvasEditor from '@/app/portfolio-editor/components/CanvasEditor';
 import { PortfolioDesign } from '@/app/portfolio-editor/components/PortfolioEditorContent';
 import { createClient } from '@/lib/supabase/client';
@@ -209,7 +210,7 @@ export default function PublicPortfolioViewer({
 
   const handleDownloadCV = () => {
     if (profile?.cvPdfUrl) {
-      window.open(profile.cvPdfUrl, '_blank');
+      downloadDocumentSafe(profile.cvPdfUrl, `CV_${(profile.fullName || 'Candidat').replace(/\s+/g, '_')}.pdf`);
     } else {
       window.print();
     }

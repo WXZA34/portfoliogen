@@ -10,7 +10,7 @@ import {
   saveUserProfileInfo,
   DEFAULT_USER_PROFILE,
 } from '@/lib/services/cvthequeService';
-import { uploadMediaFromPC } from '@/lib/utils/mediaUploadHelper';
+import { uploadMediaFromPC, openDocumentSafe, downloadDocumentSafe } from '@/lib/utils/mediaUploadHelper';
 
 export default function ProfileContactPanel() {
   const [profile, setProfile] = useState<UserProfileInfo>(DEFAULT_USER_PROFILE);
@@ -426,17 +426,26 @@ export default function ProfileContactPanel() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
-                    <a
-                      href={profile.cvPdfUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-2.5 py-1.5 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
-                      title="Ouvrir le document CV"
+                  <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => openDocumentSafe(profile.cvPdfUrl!, `CV_${(profile.fullName || 'Candidat').replace(/\s+/g, '_')}.pdf`)}
+                      className="px-2.5 py-1.5 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                      title="Ouvrir le document CV sans blocage"
                     >
                       <Icon name="ArrowTopRightOnSquareIcon" size={13} />
                       Visualiser
-                    </a>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => downloadDocumentSafe(profile.cvPdfUrl!, `CV_${(profile.fullName || 'Candidat').replace(/\s+/g, '_')}.pdf`)}
+                      className="px-2.5 py-1.5 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                      title="Télécharger le document CV sur votre ordinateur"
+                    >
+                      <Icon name="ArrowDownTrayIcon" size={13} />
+                      Télécharger
+                    </button>
 
                     <button
                       type="button"

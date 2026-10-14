@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import Image from 'next/image';
 
 interface AppImageProps {
@@ -44,8 +44,18 @@ const AppImage = memo(function AppImage({
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
 
-    const isExternalUrl = useMemo(() => typeof imageSrc === 'string' && imageSrc.startsWith('http'), [imageSrc]);
-    const resolvedUnoptimized = unoptimized || isExternalUrl;
+    // Sync imageSrc when src prop changes (e.g. avatar uploaded or selected)
+    useEffect(() => {
+        setImageSrc(src);
+        setHasError(false);
+        setIsLoading(true);
+    }, [src]);
+
+    const isSpecialUrl = useMemo(
+        () => typeof imageSrc === 'string' && (imageSrc.startsWith('http') || imageSrc.startsWith('data:') || imageSrc.startsWith('blob:')),
+        [imageSrc]
+    );
+    const resolvedUnoptimized = unoptimized || isSpecialUrl;
 
     const handleError = useCallback(() => {
         if (!hasError && imageSrc !== fallbackSrc) {

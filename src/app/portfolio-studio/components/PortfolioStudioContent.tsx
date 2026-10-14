@@ -326,6 +326,7 @@ export default function PortfolioStudioContent() {
           certifications={certifications}
           media={media}
           profile={profile}
+          onProfileUpdate={setProfile}
           previewVisible={previewVisible}
           onTogglePreview={() => setPreviewVisible(!previewVisible)}
         />
