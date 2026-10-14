@@ -23,6 +23,7 @@ export default function CRMContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
 
   // Available portfolios from candidate's Studio
   const [availablePortfolios, setAvailablePortfolios] = useState<Array<{ id: string; name: string; slug: string }>>([]);
@@ -340,7 +341,7 @@ export default function CRMContent() {
       {/* Main Content: Applications List & Detail Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Applications List (2 cols on lg) */}
-        <div className="lg:col-span-2 space-y-3">
+        <div className={`${mobileView === 'detail' ? 'hidden lg:block' : 'block'} lg:col-span-2 space-y-3`}>
           <div className="flex items-center justify-between px-1">
             <h3 className="font-bold text-foreground text-sm">
               {filtered.length} candidature{filtered.length > 1 ? 's' : ''}
@@ -388,7 +389,10 @@ export default function CRMContent() {
               return (
                 <div
                   key={app.id}
-                  onClick={() => setSelectedApp(app)}
+                  onClick={() => {
+                    setSelectedApp(app);
+                    setMobileView('detail');
+                  }}
                   className={`bg-card border rounded-xl p-4 cursor-pointer transition-all hover:border-primary/40 shadow-xs ${
                     isSelected ? 'border-primary bg-primary/5 ring-1 ring-primary/30' : 'border-border'
                   }`}
@@ -486,9 +490,22 @@ export default function CRMContent() {
         </div>
 
         {/* Right Column: Application Detail Panel (1 col on lg) */}
-        <div className="lg:col-span-1">
+        <div className={`${mobileView === 'list' ? 'hidden lg:block' : 'block'} lg:col-span-1`}>
           {selectedApp ? (
             <div className="bg-card border border-border rounded-2xl p-5 sticky top-4 space-y-5 shadow-xs">
+              {/* Mobile Back Button */}
+              <div className="lg:hidden flex items-center justify-between pb-3 border-b border-border">
+                <button
+                  type="button"
+                  onClick={() => setMobileView('list')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <Icon name="ArrowLeftIcon" size={14} />
+                  <span>Retour aux candidatures</span>
+                </button>
+                <span className="text-xs text-muted-foreground font-semibold">Fiche détail</span>
+              </div>
+
               {/* Header with Logo & Title */}
               <div className="flex items-start justify-between gap-3 pb-3 border-b border-border">
                 <div className="flex items-center gap-3">

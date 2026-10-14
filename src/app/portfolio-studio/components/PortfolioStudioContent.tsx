@@ -43,6 +43,7 @@ export default function PortfolioStudioContent() {
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>(DEFAULT_STARTER_PORTFOLIOS[0].id);
   const [previewVisible, setPreviewVisible] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [mobileTab, setMobileTab] = useState<'builder' | 'list' | 'preview'>('builder');
 
   // CVthèque Master data
   const [projects, setProjects] = useState<ProjectItem[]>([]);
@@ -222,6 +223,7 @@ export default function PortfolioStudioContent() {
 
   const handleSelectPortfolio = (id: string) => {
     setSelectedPortfolioId(id);
+    setMobileTab('builder');
     const chosen = portfolios.find((p) => p.id === id);
     if (chosen && typeof window !== 'undefined') {
       localStorage.setItem('portfoliogen_current_active_portfolio_id', id);
@@ -325,56 +327,100 @@ export default function PortfolioStudioContent() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[calc(100vh-160px)]">
-      {/* Left: Portfolio List */}
-      <div className="lg:col-span-3">
-        <PortfolioList
-          portfolios={portfolios}
-          selectedId={selectedPortfolioId}
-          onSelect={handleSelectPortfolio}
-          onCreateNew={handleCreateNew}
-          onDelete={handleDelete}
-        />
+    <div className="space-y-4">
+      {/* Mobile Tab Switcher */}
+      <div className="lg:hidden sticky top-[var(--topbar-height)] z-20 bg-background/95 backdrop-blur-md pb-2 pt-1">
+        <div className="grid grid-cols-3 gap-1 bg-muted p-1 rounded-xl border border-border">
+          <button
+            type="button"
+            onClick={() => setMobileTab('list')}
+            className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              mobileTab === 'list'
+                ? 'bg-card text-foreground shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Icon name="FolderIcon" size={14} />
+            <span>Portfolios</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('builder')}
+            className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              mobileTab === 'builder'
+                ? 'bg-card text-foreground shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Icon name="PencilSquareIcon" size={14} />
+            <span>Éditeur</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('preview')}
+            className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              mobileTab === 'preview'
+                ? 'bg-card text-foreground shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Icon name="EyeIcon" size={14} />
+            <span>Aperçu</span>
+          </button>
+        </div>
       </div>
 
-      {/* Center: Builder */}
-      <div className={`${previewVisible ? 'lg:col-span-4' : 'lg:col-span-9'}`}>
-        <PortfolioBuilder
-          portfolio={selectedPortfolio}
-          onUpdate={handleUpdate}
-          projects={projects}
-          personalProjects={personalProjects}
-          creativeStudio={creativeStudio}
-          skills={skills}
-          parcours={parcours}
-          personas={personas}
-          languages={languages}
-          certifications={certifications}
-          media={media}
-          profile={profile}
-          onProfileUpdate={setProfile}
-          previewVisible={previewVisible}
-          onTogglePreview={() => setPreviewVisible(!previewVisible)}
-        />
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[calc(100vh-160px)]">
+        {/* Left: Portfolio List */}
+        <div className={`${mobileTab === 'list' ? 'block' : 'hidden lg:block'} lg:col-span-3`}>
+          <PortfolioList
+            portfolios={portfolios}
+            selectedId={selectedPortfolioId}
+            onSelect={handleSelectPortfolio}
+            onCreateNew={handleCreateNew}
+            onDelete={handleDelete}
+          />
+        </div>
 
-      {/* Right: Live Preview */}
-      {previewVisible && (
-        <div className="lg:col-span-5">
-          <PortfolioPreview
+        {/* Center: Builder */}
+        <div className={`${mobileTab === 'builder' ? 'block' : 'hidden lg:block'} ${previewVisible ? 'lg:col-span-4' : 'lg:col-span-9'}`}>
+          <PortfolioBuilder
             portfolio={selectedPortfolio}
+            onUpdate={handleUpdate}
             projects={projects}
             personalProjects={personalProjects}
             creativeStudio={creativeStudio}
             skills={skills}
             parcours={parcours}
-            profile={profile}
+            personas={personas}
             languages={languages}
             certifications={certifications}
             media={media}
+            profile={profile}
+            onProfileUpdate={setProfile}
+            previewVisible={previewVisible}
+            onTogglePreview={() => setPreviewVisible(!previewVisible)}
           />
         </div>
-      )}
+
+        {/* Right: Live Preview */}
+        {previewVisible && (
+          <div className={`${mobileTab === 'preview' ? 'block' : 'hidden lg:block'} lg:col-span-5`}>
+            <PortfolioPreview
+              portfolio={selectedPortfolio}
+              projects={projects}
+              personalProjects={personalProjects}
+              creativeStudio={creativeStudio}
+              skills={skills}
+              parcours={parcours}
+              profile={profile}
+              languages={languages}
+              certifications={certifications}
+              media={media}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

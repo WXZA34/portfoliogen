@@ -9,9 +9,15 @@ interface TopbarProps {
   sidebarCollapsed: boolean;
   pageTitle: string;
   pageSubtitle?: string;
+  onOpenMobileSidebar?: () => void;
 }
 
-export default function Topbar({ sidebarCollapsed, pageTitle, pageSubtitle }: TopbarProps) {
+export default function Topbar({
+  sidebarCollapsed,
+  pageTitle,
+  pageSubtitle,
+  onOpenMobileSidebar,
+}: TopbarProps) {
   const [showNotifs, setShowNotifs] = useState(false);
   const { t, language, setLanguage } = useLanguage();
 
@@ -27,73 +33,83 @@ export default function Topbar({ sidebarCollapsed, pageTitle, pageSubtitle }: To
 
   return (
     <header
-      className="fixed top-0 right-0 z-30 bg-card border-b border-border flex items-center justify-between px-6 content-transition"
+      className={`fixed top-0 right-0 z-30 bg-card border-b border-border flex items-center justify-between px-3 sm:px-6 content-transition left-0 ${
+        sidebarCollapsed ? 'lg:left-[var(--sidebar-collapsed)]' : 'lg:left-[var(--sidebar-width)]'
+      }`}
       style={{
-        left: sidebarCollapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)',
         height: 'var(--topbar-height)',
       }}
     >
-      <div>
-        <h1 className="text-lg font-700 text-foreground leading-tight">{pageTitle}</h1>
-        {pageSubtitle && <p className="text-xs text-muted-foreground">{pageSubtitle}</p>}
+      {/* Left: Mobile hamburger & Titles */}
+      <div className="flex items-center gap-2 min-w-0">
+        <button
+          type="button"
+          onClick={onOpenMobileSidebar}
+          className="lg:hidden p-2 -ml-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors cursor-pointer flex-shrink-0"
+          aria-label="Ouvrir le menu de navigation"
+        >
+          <Icon name="Bars3Icon" size={20} />
+        </button>
+
+        <div className="min-w-0">
+          <h1 className="text-sm sm:text-base lg:text-lg font-bold text-foreground leading-tight truncate">
+            {pageTitle}
+          </h1>
+          {pageSubtitle && (
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate hidden xs:block sm:block">
+              {pageSubtitle}
+            </p>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        {/* Search */}
-        <button className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-muted-foreground hover:bg-border transition-all duration-150 text-sm">
-          <Icon name="SearchIcon" size={14} />
-          <span className="hidden md:block">{t.topbar.search}</span>
-          <span className="hidden md:flex items-center gap-1 ml-2 px-1.5 py-0.5 bg-card border border-border rounded text-xs font-mono-data">
-            ⌘K
-          </span>
-        </button>
-
-        {/* Quick Create */}
+      {/* Right: Actions */}
+      <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+        {/* Quick Create Link */}
         <Link
           href="/portfolio-studio"
-          className="flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-600 hover:opacity-90 transition-all duration-150 btn-press"
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:opacity-90 transition-all btn-press shadow-xs"
         >
           <Icon name="PlusIcon" size={14} />
-          <span className="hidden md:block">{t.topbar.newPortfolio}</span>
+          <span className="hidden sm:inline">{t.topbar.newPortfolio}</span>
         </Link>
-
-        {/* Language Quick Toggle */}
-        <button
-          onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted rounded-lg text-xs font-700 text-muted-foreground hover:bg-border hover:text-foreground transition-all duration-150"
-          title={language === 'fr' ? 'Switch to English' : 'Passer en Français'}
-        >
-          <span>{language === 'fr' ? '🇫🇷' : '🇬🇧'}</span>
-          <span className="uppercase tracking-wide">{language}</span>
-          <Icon name="ArrowLeftRightIcon" size={11} />
-        </button>
 
         {/* Notifications */}
         <div className="relative">
           <button
             onClick={() => setShowNotifs(!showNotifs)}
-            className="relative p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors relative cursor-pointer"
+            aria-label="Notifications"
           >
-            <Icon name="BellIcon" size={18} />
+            <Icon name="BellIcon" size={17} />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-negative rounded-full" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-negative rounded-full animate-pulse" />
             )}
           </button>
 
           {showNotifs && (
-            <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-modal animate-scale-in z-50">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                <span className="font-600 text-sm text-foreground">{t.topbar.notifications}</span>
-                <span className="text-xs text-primary font-600 cursor-pointer hover:underline">{t.topbar.markAllRead}</span>
+            <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-card border border-border rounded-2xl shadow-modal z-50 overflow-hidden">
+              <div className="flex items-center justify-between p-3.5 border-b border-border bg-muted/30">
+                <p className="text-xs font-bold text-foreground">{t.topbar.notifications}</p>
+                {unreadCount > 0 && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                    {unreadCount} {language === 'fr' ? 'nouveaux' : 'new'}
+                  </span>
+                )}
               </div>
-              <div className="max-h-80 overflow-y-auto">
-                {notifications.map((notif) => (
+              <div className="max-h-72 overflow-y-auto divide-y divide-border/60">
+                {notifications.map((n) => (
                   <div
-                    key={notif.id}
-                    className={`px-4 py-3 border-b border-border last:border-0 cursor-pointer hover:bg-muted transition-colors ${!notif.read ? 'bg-secondary/30' : ''}`}
+                    key={n.id}
+                    className={`p-3 text-xs flex items-start gap-2.5 transition-colors hover:bg-muted/40 ${
+                      !n.read ? 'bg-primary/5' : ''
+                    }`}
                   >
-                    <p className="text-sm text-foreground leading-snug">{notif.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{notif.time}</p>
+                    <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-foreground font-medium leading-snug">{n.message}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{n.time}</p>
+                    </div>
                   </div>
                 ))}
               </div>
