@@ -5,7 +5,7 @@ import Icon from '@/components/ui/AppIcon';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://portfoliog1369.builtwithrocket.new';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://portfoliogen.net';
 
 const portfolios = [
   { id: '1', name: 'Dev Full-Stack', slug: 'dev-fullstack', views: 342 },

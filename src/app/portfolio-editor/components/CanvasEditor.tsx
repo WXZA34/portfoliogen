@@ -85,7 +85,7 @@ export default function CanvasEditor({
             <div className="w-3 h-3 rounded-full bg-green-400" />
           </div>
           <div className="flex-1 bg-white rounded-md px-3 py-1 text-xs text-gray-500 font-mono">
-            portfoliogen.io/{design.name.toLowerCase().replace(/\s+/g, '-')}
+            portfoliogen.net/{design.name.toLowerCase().replace(/\s+/g, '-')}
           </div>
         </div>
         )}

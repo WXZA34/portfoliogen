@@ -25,7 +25,11 @@ export default function PortfolioList({
   const { t } = useLanguage();
 
   const handleCopyLink = (slug: string) => {
-    toast.success(`Lien copié : portfoliogen.io/${slug}`);
+    const fullUrl = `https://portfoliogen.net/p/${slug}`;
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(fullUrl);
+    }
+    toast.success(`Lien copié : ${fullUrl}`);
   };
 
   const getTemplateBadge = (tpl: string) => {

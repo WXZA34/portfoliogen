@@ -101,7 +101,7 @@ export default function PortfolioPreview({
             <div className="w-3 h-3 rounded-full bg-warning/60" />
             <div className="w-3 h-3 rounded-full bg-positive/60" />
             <span className="ml-2 text-xs font-mono-data text-muted-foreground truncate max-w-[200px]">
-              portfoliogen.io/{portfolio.slug}
+              portfoliogen.net/p/{portfolio.slug}
             </span>
           </div>
           <div className="flex items-center gap-1">

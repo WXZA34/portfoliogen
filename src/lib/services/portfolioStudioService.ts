@@ -470,3 +470,96 @@ export async function deleteStudioPortfolio(id: string): Promise<boolean> {
 
   return true;
 }
+
+export async function fetchPublicStudioPortfolio(
+  slugOrId: string
+): Promise<StudioPortfolio | null> {
+  const raw = slugOrId ? decodeURIComponent(slugOrId).trim() : '';
+  const normalized = raw.replace(/^\/+|\/+$/g, '').toLowerCase();
+
+  // 1. Try to search in localStorage first (if same browser or user session)
+  if (typeof window !== 'undefined') {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(LOCAL_STORAGE_STUDIO_PREFIX)) {
+          const item = localStorage.getItem(key);
+          if (item) {
+            const list: StudioPortfolio[] = JSON.parse(item);
+            const found = list.find(
+              (p) =>
+                p.id.toLowerCase() === normalized ||
+                p.slug.toLowerCase() === normalized ||
+                p.slug.toLowerCase().endsWith(normalized) ||
+                normalized.endsWith(p.slug.toLowerCase()) ||
+                (normalized && p.slug.toLowerCase().includes(normalized))
+            );
+            if (found) return found;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('LocalStorage studio portfolio lookup error:', e);
+    }
+  }
+
+  // 2. Try fetching from Supabase with anon key (public access)
+  try {
+    const supabase = createClient();
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(normalized);
+
+    let query = supabase.from('portfolios').select('*');
+    if (isUUID) {
+      query = query.eq('id', normalized);
+    } else {
+      query = query.or(`slug.ilike.%${normalized}%,name.ilike.%${normalized}%`);
+    }
+
+    const { data, error } = await query.limit(1).maybeSingle();
+
+    if (!error && data) {
+      return {
+        id: data.id,
+        userId: data.user_id,
+        name: data.name,
+        persona: data.persona || 'Recruteur Industriel & AII',
+        template: (data.template as any) || 'IndustrialGEII',
+        syncMode: data.sync_mode || 'live',
+        status: data.status || 'active',
+        slug: data.slug || normalized,
+        views: (data.views_count ?? 0) + 1,
+        lastUpdated: data.updated_at ? new Date(data.updated_at).toLocaleDateString('fr-FR') : 'Récemment',
+        selectedProjects: Array.isArray(data.selected_projects) ? data.selected_projects : ['proj-sae-001', 'proj-sae-002', 'proj-001'],
+        selectedPersonalProjects: ['perso-001', 'perso-002', 'perso-003'],
+        selectedCreativeStudio: ['creat-001', 'creat-002', 'creat-003'],
+        selectedSkills: Array.isArray(data.selected_skills) ? data.selected_skills : ['sk-001', 'sk-005', 'sk-006', 'sk-009'],
+        enabledSections: { ...DEFAULT_STUDIO_SECTIONS },
+        themeColors: { ...DEFAULT_STARTER_PORTFOLIOS[0].themeColors },
+        sectionTexts: { ...DEFAULT_STARTER_PORTFOLIOS[0].sectionTexts },
+        customIntro: data.custom_intro || 'Concevoir la logique. Piloter le système.',
+        createdAt: data.created_at,
+      };
+    }
+  } catch (err) {
+    console.warn('Supabase public portfolio lookup error:', err);
+  }
+
+  // 3. Match against DEFAULT_STARTER_PORTFOLIOS
+  const starter = DEFAULT_STARTER_PORTFOLIOS.find(
+    (p) =>
+      p.id.toLowerCase() === normalized ||
+      p.slug.toLowerCase() === normalized ||
+      p.slug.toLowerCase().endsWith(normalized) ||
+      normalized.endsWith(p.slug.toLowerCase()) ||
+      (normalized.includes('geii') && p.template === 'IndustrialGEII') ||
+      (normalized.includes('dussey') && p.template === 'IndustrialGEII') ||
+      normalized === 'portfolio-but'
+  );
+
+  if (starter) {
+    return starter;
+  }
+
+  // 4. Default: return the full IndustrialGEII starter portfolio
+  return DEFAULT_STARTER_PORTFOLIOS[0];
+}

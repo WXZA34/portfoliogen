@@ -66,6 +66,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAuthPage = pathname === '/login' || pathname === '/register';
   const isPublicPage =
+    pathname.startsWith('/p/') ||
+    pathname === '/p' ||
     pathname.startsWith('/public-portfolio-view') ||
     pathname.startsWith('/auth/') ||
     pathname === '/login' ||

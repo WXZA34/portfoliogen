@@ -259,7 +259,7 @@ export default function PortfolioBuilder({
             {portfolio.name}
           </p>
           <p className="text-xs text-muted-foreground font-mono-data truncate max-w-[180px]">
-            portfoliogen.io/{portfolio.slug}
+            portfoliogen.net/{portfolio.slug}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -861,7 +861,7 @@ export default function PortfolioBuilder({
               </label>
               <div className="flex items-center">
                 <span className="text-xs text-muted-foreground font-mono-data px-3 py-2 bg-muted border border-border rounded-l-xl border-r-0">
-                  portfoliogen.io/
+                  portfoliogen.net/
                 </span>
                 <input
                   type="text"
@@ -1824,7 +1824,7 @@ export default function PortfolioBuilder({
             if (portfolio.customShareUrl && portfolio.customShareUrl.trim()) {
               return portfolio.customShareUrl.trim();
             }
-            const base = `https://portfoliogen.io/p/${portfolio.slug || 'portfolio-but'}`;
+            const base = `https://portfoliogen.net/p/${portfolio.slug || 'portfolio-but'}`;
             if (portfolio.recipientCompany && portfolio.recipientCompany.trim()) {
               return `${base}?for=${encodeURIComponent(portfolio.recipientCompany.trim().replace(/\s+/g, ''))}`;
             }
@@ -1862,7 +1862,7 @@ export default function PortfolioBuilder({
                   </label>
                   <div className="flex rounded-lg overflow-hidden border border-border bg-muted">
                     <span className="px-2.5 py-1.5 bg-muted/80 text-muted-foreground text-xs font-mono font-medium border-r border-border flex items-center select-none">
-                      portfoliogen.io/p/
+                      portfoliogen.net/p/
                     </span>
                     <input
                       type="text"
@@ -1943,7 +1943,10 @@ export default function PortfolioBuilder({
                     <button
                       type="button"
                       onClick={() => {
-                        window.open(computedShareUrl, '_blank');
+                        const testUrl = computedShareUrl.startsWith('https://portfoliogen.net')
+                          ? computedShareUrl.replace('https://portfoliogen.net', '')
+                          : computedShareUrl;
+                        window.open(testUrl, '_blank');
                       }}
                       className="py-2 px-3 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-xs font-bold flex items-center gap-1.5 border border-border transition-colors btn-press"
                       title="Ouvrir dans un nouvel onglet"

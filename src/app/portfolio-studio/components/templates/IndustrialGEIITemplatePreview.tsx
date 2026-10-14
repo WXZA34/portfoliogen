@@ -216,6 +216,12 @@ export default function IndustrialGEIITemplatePreview({
           <p className="text-[11px] text-[#6D624C] mt-1 font-semibold">
             {texts.coverHeadline || headline}
           </p>
+          {portfolio.recipientCompany && (
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/70 border border-black/5 text-[10px] font-bold text-[#4A4234] shadow-2xs">
+              <Icon name="BuildingOffice2Icon" size={12} className="text-[#8A7D63]" />
+              <span>Dossier préparé spécialement pour {portfolio.recipientCompany}</span>
+            </div>
+          )}
         </div>
 
         {/* Bottom footer & enter action */}
@@ -285,6 +291,12 @@ export default function IndustrialGEIITemplatePreview({
               {portfolio.name}
             </span>
           </div>
+          {portfolio.recipientCompany && (
+            <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E1D9C6]/70 text-[#4A4234] border border-[#E1D9C6]">
+              <Icon name="BuildingOffice2Icon" size={11} className="text-[#8A7D63]" />
+              {portfolio.recipientCompany}
+            </span>
+          )}
         </div>
 
         {/* Dynamic Anchor links */}
