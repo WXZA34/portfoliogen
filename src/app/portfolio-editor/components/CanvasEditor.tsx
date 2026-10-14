@@ -42,9 +42,10 @@ export default function CanvasEditor({
   
   const canvasWidth = isPresentationMode ? '' : CANVAS_WIDTHS[previewMode];
   
+  const allBlocks = Array.isArray(design?.blocks) ? design.blocks : [];
   const blocksToRender = isPresentationMode 
-    ? design.blocks.filter(b => b.id === selectedBlockId)
-    : design.blocks;
+    ? allBlocks.filter(b => b.id === selectedBlockId)
+    : allBlocks;
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -94,7 +95,7 @@ export default function CanvasEditor({
         <div id="portfolio-canvas-export" className="flex-1" style={{ backgroundColor: design.globalStyle.bgColor, height: isPresentationMode ? '100%' : 'auto' }}>
           {blocksToRender.map((block, index) => {
             // In presentation mode, we don't show drop zones above/below the single slide
-            const originalIndex = design.blocks.findIndex(b => b.id === block.id);
+            const originalIndex = allBlocks.findIndex(b => b.id === block.id);
             return (
             <div key={block.id}>
               {/* Drop zone */}
@@ -129,7 +130,7 @@ export default function CanvasEditor({
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, 'down'); }}
-                      disabled={index === design.blocks.length - 1}
+                      disabled={index === allBlocks.length - 1}
                       className="p-1.5 rounded-md hover:bg-gray-100 disabled:opacity-30 transition-colors"
                       title="Descendre"
                     >
@@ -173,14 +174,14 @@ export default function CanvasEditor({
           {/* Final drop zone */}
           {!isPresentationMode && (
           <div
-            onDragOver={(e) => { e.preventDefault(); onDragOver(design.blocks.length); }}
-            onDrop={() => onDrop(design.blocks.length)}
-            className={`h-1 transition-all ${dragOverIndex === design.blocks.length ? 'h-8 bg-primary/20 border-2 border-dashed border-primary rounded-lg mx-4 my-1' : ''}`}
+            onDragOver={(e) => { e.preventDefault(); onDragOver(allBlocks.length); }}
+            onDrop={() => onDrop(allBlocks.length)}
+            className={`h-1 transition-all ${dragOverIndex === allBlocks.length ? 'h-8 bg-primary/20 border-2 border-dashed border-primary rounded-lg mx-4 my-1' : ''}`}
           />
           )}
 
           {/* Empty state */}
-          {design.blocks.length === 0 && (
+          {allBlocks.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <Icon name="QueueListIcon" size={40} className="text-gray-300 mb-4" />
               <p className="text-sm font-600 text-gray-500">Canvas vide</p>

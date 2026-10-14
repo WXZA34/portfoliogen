@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Icon from '@/components/ui/AppIcon';
-import { extractTemplateSlides, type MarketplaceTemplateItem } from '@/lib/services/marketplaceService';
+import { extractTemplateSlides, isStudioPortfolioTemplate, type MarketplaceTemplateItem } from '@/lib/services/marketplaceService';
 import SlideRenderer from './SlideRenderer';
 
 interface TemplatePreviewModalProps {
@@ -203,8 +203,8 @@ export default function TemplatePreviewModal({
                     onClick={() => onUse(template)}
                     className="flex-1 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-600/20 hover:shadow-purple-600/30 transition-all"
                   >
-                    <Icon name="PencilSquareIcon" size={16} />
-                    Personnaliser ce modèle
+                    <Icon name={isStudioPortfolioTemplate(template) ? 'SwatchIcon' : 'PencilSquareIcon'} size={16} />
+                    {isStudioPortfolioTemplate(template) ? 'Ouvrir dans Portfolio Studio' : 'Personnaliser ce modèle'}
                   </button>
                   <button
                     onClick={() => setIsFavorite(!isFavorite)}

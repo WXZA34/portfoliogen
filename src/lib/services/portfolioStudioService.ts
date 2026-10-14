@@ -341,35 +341,43 @@ export async function fetchStudioPortfolios(): Promise<StudioPortfolio[]> {
     if (Array.isArray(data) && data.length > 0) {
       const mapped: StudioPortfolio[] = data.map((row: any) => {
         const localMatch = local.find((p) => p.id === row.id);
+
+        let customData: any = null;
+        if (typeof row.custom_intro === 'string' && row.custom_intro.startsWith('__STUDIO_DATA__:')) {
+          try {
+            customData = JSON.parse(row.custom_intro.replace('__STUDIO_DATA__:', ''));
+          } catch {}
+        }
+
         return {
           id: row.id,
           userId: row.user_id,
           name: row.name,
-          persona: row.persona || 'Recruteur Tech',
-          template: (localMatch?.template || (row.template as any) || 'IndustrialGEII') as StudioTemplateId,
-          syncMode: row.sync_mode || 'live',
-          status: row.status || 'active',
-          slug: row.slug || `portfolio-${row.id.slice(0, 6)}`,
-          views: row.views_count ?? 0,
+          persona: customData?.persona || row.persona || 'Recruteur Tech',
+          template: (customData?.template || localMatch?.template || (row.template as any) || 'IndustrialGEII') as StudioTemplateId,
+          syncMode: customData?.syncMode || row.sync_mode || 'live',
+          status: customData?.status || row.status || 'active',
+          slug: row.slug || customData?.slug || `portfolio-${row.id.slice(0, 6)}`,
+          views: row.views_count ?? customData?.views ?? 0,
           lastUpdated: row.updated_at ? new Date(row.updated_at).toLocaleDateString('fr-FR') : 'Récemment',
-          selectedProjects: Array.isArray(row.selected_projects) ? row.selected_projects : (localMatch?.selectedProjects || ['proj-sae-001', 'proj-sae-002', 'proj-001']),
-          selectedPersonalProjects: localMatch?.selectedPersonalProjects || ['perso-001', 'perso-002', 'perso-003'],
-          selectedCreativeStudio: localMatch?.selectedCreativeStudio || ['creat-001', 'creat-002', 'creat-003'],
-          selectedSkills: Array.isArray(row.selected_skills) ? row.selected_skills : (localMatch?.selectedSkills || []),
-          selectedParcours: localMatch?.selectedParcours || [],
-          selectedLanguages: localMatch?.selectedLanguages || ['lang-001', 'lang-002'],
-          selectedCertifications: localMatch?.selectedCertifications || ['cert-001', 'cert-002'],
-          selectedMedia: localMatch?.selectedMedia || [],
-          enabledSections: { ...DEFAULT_STUDIO_SECTIONS, ...(localMatch?.enabledSections || {}) },
-          sectionTitles: localMatch?.sectionTitles || {},
-          themeColors: localMatch?.themeColors || { ...DEFAULT_STARTER_PORTFOLIOS[0].themeColors },
-          sectionTexts: localMatch?.sectionTexts || { ...DEFAULT_STARTER_PORTFOLIOS[0].sectionTexts },
-          customIntro: row.custom_intro || localMatch?.customIntro || 'Concevoir la logique. Piloter le système.',
-          institution: localMatch?.institution || 'IUT SÉNART-FONTAINEBLEAU',
-          degree: localMatch?.degree || 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE',
-          subTitle: localMatch?.subTitle || 'Portfolio Semestre 2',
-          promotion: localMatch?.promotion || 'PROMOTION 2025–2026',
-          authorName: localMatch?.authorName || user.user_metadata?.full_name || 'KOKOU DUSSEY',
+          selectedProjects: customData?.selectedProjects || (Array.isArray(row.selected_projects) ? row.selected_projects : (localMatch?.selectedProjects || ['proj-sae-001', 'proj-sae-002', 'proj-001'])),
+          selectedPersonalProjects: customData?.selectedPersonalProjects || localMatch?.selectedPersonalProjects || ['perso-001', 'perso-002', 'perso-003'],
+          selectedCreativeStudio: customData?.selectedCreativeStudio || localMatch?.selectedCreativeStudio || ['creat-001', 'creat-002', 'creat-003'],
+          selectedSkills: customData?.selectedSkills || (Array.isArray(row.selected_skills) ? row.selected_skills : (localMatch?.selectedSkills || [])),
+          selectedParcours: customData?.selectedParcours || localMatch?.selectedParcours || [],
+          selectedLanguages: customData?.selectedLanguages || localMatch?.selectedLanguages || ['lang-001', 'lang-002'],
+          selectedCertifications: customData?.selectedCertifications || localMatch?.selectedCertifications || ['cert-001', 'cert-002'],
+          selectedMedia: customData?.selectedMedia || localMatch?.selectedMedia || [],
+          enabledSections: customData?.enabledSections || { ...DEFAULT_STUDIO_SECTIONS, ...(localMatch?.enabledSections || {}) },
+          sectionTitles: customData?.sectionTitles || localMatch?.sectionTitles || {},
+          themeColors: customData?.themeColors || localMatch?.themeColors || { ...DEFAULT_STARTER_PORTFOLIOS[0].themeColors },
+          sectionTexts: customData?.sectionTexts || localMatch?.sectionTexts || { ...DEFAULT_STARTER_PORTFOLIOS[0].sectionTexts },
+          customIntro: customData?.customIntro || (row.custom_intro?.startsWith('__STUDIO_DATA__:') ? 'Concevoir la logique. Piloter le système.' : row.custom_intro) || localMatch?.customIntro || 'Concevoir la logique. Piloter le système.',
+          institution: customData?.institution || localMatch?.institution || 'IUT SÉNART-FONTAINEBLEAU',
+          degree: customData?.degree || localMatch?.degree || 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE',
+          subTitle: customData?.subTitle || localMatch?.subTitle || 'Portfolio Semestre 2',
+          promotion: customData?.promotion || localMatch?.promotion || 'PROMOTION 2025–2026',
+          authorName: customData?.authorName || localMatch?.authorName || user.user_metadata?.full_name || 'KOKOU DUSSEY',
           createdAt: row.created_at,
         };
       });
@@ -595,10 +603,11 @@ export async function fetchPublicStudioPortfolio(
   // 2. Try fetching from Supabase marketplace_templates (universal public access, stores complete JSON)
   try {
     const supabase = createClient();
+    const cleanId = normalized.replace(/^studio_slug_/, '').replace(/^studio_pf_/, '');
     const { data: mktRow } = await supabase
       .from('marketplace_templates')
       .select('design_data')
-      .or(`id.eq.studio_slug_${normalized},id.eq.studio_pf_${normalized}`)
+      .or(`id.eq.${normalized},id.eq.studio_slug_${cleanId},id.eq.studio_pf_${cleanId},id.eq.${cleanId}`)
       .limit(1)
       .maybeSingle();
 

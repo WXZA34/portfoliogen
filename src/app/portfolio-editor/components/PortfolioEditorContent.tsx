@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
 import TemplateLibrary from './TemplateLibrary';
 import BlocksPanel from './BlocksPanel';
@@ -166,6 +167,7 @@ const initialDesign: PortfolioDesign = {
 type PanelView = 'templates' | 'blocks' | 'customize' | 'media' | 'saved';
 
 export default function PortfolioEditorContent() {
+  const router = useRouter();
   const { state: design, setState: setDesign, undo, redo, canUndo, canRedo } = useHistory<PortfolioDesign>(initialDesign);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>('block-1');
   const [panelView, setPanelView] = useState<PanelView>('blocks');
@@ -191,29 +193,41 @@ export default function PortfolioEditorContent() {
     const params = new URLSearchParams(window.location.search);
     const templateId = params.get('templateId');
     if (templateId) {
-      import('@/lib/services/marketplaceService').then(({ getMarketplaceTemplates }) => {
+      import('@/lib/services/marketplaceService').then(({ getMarketplaceTemplates, isStudioPortfolioTemplate }) => {
         getMarketplaceTemplates().then((tpls) => {
-          const match = tpls.find((t) => t.id === templateId);
-          if (match && match.designData) {
-            setDesign((prev) => ({
-              ...prev,
-              id: `design-${Date.now()}`,
-              name: match.name,
-              templateId: match.id,
-              blocks: match.designData.blocks,
-              globalStyle: match.designData.globalStyle || prev.globalStyle,
-            }));
-            if (match.designData.globalStyle?.presentationWidth) {
-              setPreviewMode('presentation');
+          const match = (tpls || []).find((t) => t.id === templateId);
+          if (match) {
+            // If it is a Studio portfolio, redirect directly to /portfolio-studio
+            if (isStudioPortfolioTemplate(match)) {
+              router.replace(`/portfolio-studio?templateId=${encodeURIComponent(templateId)}`);
+              return;
             }
-            if (match.designData.blocks?.[0]?.id) {
-              setSelectedBlockId(match.designData.blocks[0].id);
+            if (match.designData) {
+              const blocks = Array.isArray(match.designData.blocks) ? match.designData.blocks : [];
+              if (blocks.length === 0 && ((match.designData as any)?.themeColors || match.category === 'StudioPortfolio' || match.id.startsWith('studio_'))) {
+                router.replace(`/portfolio-studio?templateId=${encodeURIComponent(templateId)}`);
+                return;
+              }
+              setDesign((prev) => ({
+                ...prev,
+                id: `design-${Date.now()}`,
+                name: match.name,
+                templateId: match.id,
+                blocks: blocks.length > 0 ? blocks : (prev.blocks || []),
+                globalStyle: match.designData.globalStyle || prev.globalStyle,
+              }));
+              if (match.designData.globalStyle?.presentationWidth) {
+                setPreviewMode('presentation');
+              }
+              if (blocks[0]?.id) {
+                setSelectedBlockId(blocks[0].id);
+              }
             }
           }
         });
       });
     }
-  }, []);
+  }, [router, setDesign]);
 
   // ─── Keyboard shortcuts: Ctrl+Z / Ctrl+Y ───────────────────────────────
   useEffect(() => {
@@ -264,10 +278,10 @@ export default function PortfolioEditorContent() {
       style: { borderRadius: '8px' },
     };
     // Add to selected block if freeform, else create new freeform block
-    const targetBlock = design.blocks.find(b => b.id === selectedBlockId && b.layout?.type === 'freeform');
+    const targetBlock = (design?.blocks || []).find(b => b.id === selectedBlockId && b.layout?.type === 'freeform');
     if (targetBlock) {
       const updated = { ...targetBlock, layout: { ...targetBlock.layout!, elements: [...(targetBlock.layout!.elements || []), newEl] } };
-      setDesign(prev => ({ ...prev, blocks: prev.blocks.map(b => b.id === updated.id ? updated : b) }));
+      setDesign(prev => ({ ...prev, blocks: (prev.blocks || []).map(b => b.id === updated.id ? updated : b) }));
     } else {
       const block = {
         id: `block-img-${Date.now()}`,
@@ -276,10 +290,10 @@ export default function PortfolioEditorContent() {
         style: { bgColor: '#ffffff', textColor: '#000', accentColor: '#3b82f6', padding: 'none' as const, align: 'left' as const, fontFamily: 'Plus Jakarta Sans' },
         layout: { type: 'freeform' as const, elements: [newEl] },
       };
-      setDesign(prev => ({ ...prev, blocks: [block, ...prev.blocks] }));
+      setDesign(prev => ({ ...prev, blocks: [block, ...(prev.blocks || [])] }));
       setSelectedBlockId(block.id);
     }
-  }, [design.blocks, selectedBlockId]);
+  }, [design?.blocks, selectedBlockId, setDesign]);
 
   const [publishedTemplateIds, setPublishedTemplateIds] = useState<string[]>([]);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
@@ -348,7 +362,7 @@ export default function PortfolioEditorContent() {
         const storedActiveId = localStorage.getItem('portfoliogen_active_portfolio_id');
         const hasUrlParam = new URLSearchParams(window.location.search).has('templateId');
         if (!hasUrlParam && (design.id === 'design-1' || design.id.startsWith('design-'))) {
-          const match = storedActiveId ? data.find((t) => t.id === storedActiveId) : null;
+          const match = storedActiveId ? (data || []).find((t: any) => t.id === storedActiveId) : null;
           const candidate = match || data[0];
           if (candidate) {
             handleLoadSavedPortfolio(candidate, false);
@@ -361,7 +375,7 @@ export default function PortfolioEditorContent() {
     try {
       const { getMarketplaceTemplates } = await import('@/lib/services/marketplaceService');
       const mkt = await getMarketplaceTemplates();
-      const pubIdentifiers = mkt
+      const pubIdentifiers = (mkt || [])
         .filter(m => !user?.id || !m.userId || m.userId === user.id)
         .flatMap(m => [m.originalTemplateId, m.id])
         .filter(Boolean) as string[];
@@ -381,7 +395,7 @@ export default function PortfolioEditorContent() {
     if (!trimmed) return;
     try {
       const supabase = createClient();
-      const target = savedTemplates.find((s) => s.id === templateId);
+      const target = (savedTemplates || []).find((s) => s.id === templateId);
       const updatedModified = target?.modified_design ? { ...target.modified_design, name: trimmed } : undefined;
       const updatedOriginal = target?.original_design ? { ...target.original_design, name: trimmed } : undefined;
 
@@ -395,7 +409,7 @@ export default function PortfolioEditorContent() {
       try {
         const { getMarketplaceTemplates } = await import('@/lib/services/marketplaceService');
         const mkt = await getMarketplaceTemplates();
-        const mktMatch = mkt.find(m => m.originalTemplateId === templateId || m.id === templateId);
+        const mktMatch = (mkt || []).find(m => m.originalTemplateId === templateId || m.id === templateId);
         if (mktMatch) {
           await supabase.from('marketplace_templates').update({ name: trimmed }).eq('id', mktMatch.id);
         }
@@ -447,7 +461,7 @@ export default function PortfolioEditorContent() {
     if (panelView === 'saved') loadSavedTemplates();
   }, [panelView, loadSavedTemplates]);
 
-  const selectedBlock = design.blocks.find((b) => b.id === selectedBlockId) ?? null;
+  const selectedBlock = (design?.blocks || []).find((b) => b.id === selectedBlockId) ?? null;
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -545,7 +559,7 @@ export default function PortfolioEditorContent() {
       },
       layout: previewMode === 'presentation' && type === 'custom' ? { type: 'freeform', elements: [] } : { type: 'default' }
     };
-    setDesign((prev) => ({ ...prev, blocks: [...prev.blocks, newBlock] }));
+    setDesign((prev) => ({ ...prev, blocks: [...(prev.blocks || []), newBlock] }));
     setSelectedBlockId(newBlock.id);
     setPanelView('blocks');
   }, [design.globalStyle, previewMode]);
@@ -553,13 +567,13 @@ export default function PortfolioEditorContent() {
   const handleUpdateBlock = useCallback((updated: Block) => {
     setDesign((prev) => ({
       ...prev,
-      blocks: prev.blocks.map((b) => (b.id === updated.id ? updated : b)),
+      blocks: (prev.blocks || []).map((b) => (b.id === updated.id ? updated : b)),
     }));
   }, []);
 
   const handleDeleteBlock = useCallback((id: string) => {
     setDesign((prev) => {
-      const newBlocks = prev.blocks.filter((b) => b.id !== id);
+      const newBlocks = (prev.blocks || []).filter((b) => b.id !== id);
       return { ...prev, blocks: newBlocks };
     });
     setSelectedBlockId(null);
@@ -567,9 +581,9 @@ export default function PortfolioEditorContent() {
 
   const handleMoveBlock = useCallback((id: string, direction: 'up' | 'down') => {
     setDesign((prev) => {
-      const idx = prev.blocks.findIndex((b) => b.id === id);
+      const idx = (prev.blocks || []).findIndex((b) => b.id === id);
       if (idx === -1) return prev;
-      const newBlocks = [...prev.blocks];
+      const newBlocks = [...(prev.blocks || [])];
       const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
       if (swapIdx < 0 || swapIdx >= newBlocks.length) return prev;
       [newBlocks[idx], newBlocks[swapIdx]] = [newBlocks[swapIdx], newBlocks[idx]];
@@ -583,9 +597,9 @@ export default function PortfolioEditorContent() {
 
   const handleDrop = (targetIndex: number) => {
     if (!dragBlockId.current) return;
-    const fromIndex = design.blocks.findIndex((b) => b.id === dragBlockId.current);
+    const fromIndex = (design?.blocks || []).findIndex((b) => b.id === dragBlockId.current);
     if (fromIndex === -1 || fromIndex === targetIndex) return;
-    const newBlocks = [...design.blocks];
+    const newBlocks = [...(design?.blocks || [])];
     const [moved] = newBlocks.splice(fromIndex, 1);
     newBlocks.splice(targetIndex, 0, moved);
     setDesign((prev) => ({ ...prev, blocks: newBlocks }));
@@ -594,14 +608,15 @@ export default function PortfolioEditorContent() {
   };
 
   const handleApplyTemplate = (templateId: string, templateBlocks: Block[], globalStyle: PortfolioDesign['globalStyle']) => {
+    const validBlocks = Array.isArray(templateBlocks) && templateBlocks.length > 0 ? templateBlocks : (design?.blocks || []);
     setDesign((prev) => ({
       ...prev,
       id: `design-${Date.now()}`,
       templateId,
-      blocks: templateBlocks,
+      blocks: validBlocks,
       globalStyle,
     }));
-    setSelectedBlockId(templateBlocks[0]?.id ?? null);
+    setSelectedBlockId(validBlocks[0]?.id ?? null);
     if (templateId.startsWith('blank-')) {
       setPreviewMode('presentation');
     }

@@ -29,8 +29,63 @@ export interface MarketplaceTemplateItem {
 
 const LOCAL_STORAGE_KEY = 'portfoliogen_marketplace_templates';
 
+// Helper to identify if a template is a Studio Portfolio (B.U.T. GEII, Bento, Classic, etc.)
+export function isStudioPortfolioTemplate(template: {
+  id?: string;
+  category?: string;
+  theme?: string;
+  designData?: any;
+} | null | undefined): boolean {
+  if (!template) return false;
+  if (template.category === 'StudioPortfolio') return true;
+  if (template.id?.startsWith('studio_')) return true;
+  if (['IndustrialGEII', 'BentoMinimal', 'ClassicCream', 'DarkTech', 'EditorialBold'].includes(template.theme || '')) return true;
+  if (template.designData?.template && ['IndustrialGEII', 'BentoMinimal', 'ClassicCream', 'DarkTech', 'EditorialBold'].includes(template.designData.template)) return true;
+  if (template.designData && !Array.isArray(template.designData.blocks) && (template.designData.themeColors || template.designData.sectionTexts || template.designData.authorName || template.designData.slug)) return true;
+  return false;
+}
+
 // Default starter templates in Marketplace
 export const DEFAULT_MARKETPLACE_TEMPLATES: MarketplaceTemplateItem[] = [
+  {
+    id: 'studio_pf_geii_starter',
+    name: 'B.U.T. GEII & Automatisme (Portfolify)',
+    author: 'Kokou Dussey',
+    category: 'Tech',
+    theme: 'IndustrialGEII',
+    description: 'Portfolio académique et industriel pour étudiants en Génie Électrique & Informatique Industrielle (SAÉ, compétences, sas d\'accueil).',
+    downloads: 3840,
+    rating: 5.0,
+    previewThumbnail: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?q=80&w=1200&auto=format&fit=crop',
+    previewSlides: [
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1200&auto=format&fit=crop',
+    ],
+    previewColor: '#FAF8F3',
+    tags: ['B.U.T.', 'GEII', 'Automatisme', 'IUT', 'Portfolify'],
+    isPremium: false,
+    isNew: true,
+    createdAt: new Date().toISOString(),
+    designData: {
+      templateId: 'IndustrialGEII',
+      blocks: [],
+      globalStyle: {
+        primaryColor: '#8A7D63',
+        secondaryColor: '#C2B59C',
+        bgColor: '#FAF8F3',
+        fontHeading: 'Plus Jakarta Sans',
+        fontBody: 'DM Sans',
+        borderRadius: 'md',
+        darkMode: false,
+      },
+      ...({
+        id: 'pf-001',
+        template: 'IndustrialGEII',
+        slug: 'dussey-larry/geii-automatisme',
+      } as any),
+    },
+  },
   {
     id: 'mkt-dark-pro',
     name: 'Meet My Team • Dark Executive',
@@ -361,7 +416,10 @@ export function extractTemplateSlides(template: Partial<MarketplaceTemplateItem>
     return [template.previewThumbnail];
   }
 
-  return [];
+  // Fallback for studio or custom templates: generate a clean procedural slide
+  const title = template.name || 'Portfolio';
+  const subtitle = template.description || 'Portfolio Professionnel • PortfolioGen';
+  return [createSlideSvg(title, subtitle, globalBg, globalAccent, 1)];
 }
 
 function createSlideSvg(title: string, subtitle: string, bgColor: string, accentColor: string, slideNum: number): string {

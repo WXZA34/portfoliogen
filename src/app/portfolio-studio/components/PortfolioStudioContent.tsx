@@ -7,6 +7,7 @@ import PortfolioPreview from './PortfolioPreview';
 import {
   type StudioPortfolio,
   fetchStudioPortfolios,
+  fetchPublicStudioPortfolio,
   saveStudioPortfolio,
   deleteStudioPortfolio,
   DEFAULT_STARTER_PORTFOLIOS,
@@ -88,18 +89,92 @@ export default function PortfolioStudioContent() {
 
         if (!mounted) return;
 
-        if (pList && pList.length > 0) {
-          setPortfolios(pList);
+        let finalPortfolios: StudioPortfolio[] = pList && pList.length > 0 ? [...pList] : [...DEFAULT_STARTER_PORTFOLIOS];
+
+        // 1. Check URL parameters for ?templateId=, ?portfolioId=, ?id=, ?slug=, ?loadTemplate=
+        const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+        const requestedId =
+          urlParams?.get('templateId') ||
+          urlParams?.get('portfolioId') ||
+          urlParams?.get('id') ||
+          urlParams?.get('slug') ||
+          urlParams?.get('loadTemplate');
+
+        let selectedItem: StudioPortfolio | null = null;
+
+        if (requestedId) {
+          const reqLower = decodeURIComponent(requestedId).trim().toLowerCase();
+          const cleanReq = reqLower.replace(/^studio_slug_/, '').replace(/^studio_pf_/, '');
+
+          // Check if already in current list
+          selectedItem =
+            finalPortfolios.find(
+              (p) =>
+                p.id.toLowerCase() === reqLower ||
+                p.id.toLowerCase() === cleanReq ||
+                p.slug.toLowerCase() === reqLower ||
+                p.slug.toLowerCase() === cleanReq ||
+                p.template.toLowerCase() === reqLower ||
+                p.template.toLowerCase() === cleanReq ||
+                `studio_slug_${p.slug.toLowerCase()}` === reqLower
+            ) || null;
+
+          // If not in current list, try fetching from Supabase / public studio storage
+          if (!selectedItem) {
+            try {
+              const fetched = await fetchPublicStudioPortfolio(requestedId);
+              if (fetched) {
+                selectedItem = fetched;
+                if (!finalPortfolios.some((p) => p.id === fetched.id || p.slug === fetched.slug)) {
+                  finalPortfolios = [fetched, ...finalPortfolios];
+                }
+              }
+            } catch (err) {
+              console.warn('Error fetching requested studio portfolio:', err);
+            }
+          }
+
+          // If still not found, check default starter portfolios
+          if (!selectedItem) {
+            const starterMatch = DEFAULT_STARTER_PORTFOLIOS.find(
+              (s) =>
+                s.id.toLowerCase() === reqLower ||
+                s.template.toLowerCase() === reqLower ||
+                s.name.toLowerCase().includes(reqLower) ||
+                s.slug.toLowerCase().includes(reqLower)
+            );
+            if (starterMatch) {
+              selectedItem = {
+                ...starterMatch,
+                id: `pf-${Date.now()}`,
+                name: `${starterMatch.name} (Modèle)`,
+                slug: `portfolio-${Date.now().toString().slice(-6)}`,
+              };
+              finalPortfolios = [selectedItem, ...finalPortfolios];
+            }
+          }
+
+          if (selectedItem) {
+            toast.success(`Portfolio "${selectedItem.name}" ouvert dans le Studio`);
+          }
+        }
+
+        // 2. If no requested template from URL, fall back to saved active portfolio
+        if (!selectedItem) {
           const savedActiveId =
             typeof window !== 'undefined'
               ? localStorage.getItem('portfoliogen_current_active_portfolio_id')
               : null;
-          const matched = pList.find((p) => p.id === savedActiveId);
-          const activeItem = matched || pList[0];
-          setSelectedPortfolioId(activeItem.id);
+          const matched = finalPortfolios.find((p) => p.id === savedActiveId);
+          selectedItem = matched || finalPortfolios[0];
+        }
+
+        setPortfolios(finalPortfolios);
+        if (selectedItem) {
+          setSelectedPortfolioId(selectedItem.id);
           if (typeof window !== 'undefined') {
-            localStorage.setItem('portfoliogen_current_active_portfolio_id', activeItem.id);
-            localStorage.setItem('portfoliogen_current_active_portfolio', JSON.stringify(activeItem));
+            localStorage.setItem('portfoliogen_current_active_portfolio_id', selectedItem.id);
+            localStorage.setItem('portfoliogen_current_active_portfolio', JSON.stringify(selectedItem));
           }
         }
         setProjects(projList || []);

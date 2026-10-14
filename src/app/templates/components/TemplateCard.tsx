@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@/components/ui/AppIcon';
-import { extractTemplateSlides, type MarketplaceTemplateItem } from '@/lib/services/marketplaceService';
+import { extractTemplateSlides, isStudioPortfolioTemplate, type MarketplaceTemplateItem } from '@/lib/services/marketplaceService';
 import SlideRenderer from './SlideRenderer';
 
 interface TemplateCardProps {
@@ -85,8 +85,13 @@ export default function TemplateCard({ template, onPreview, onUse, onRemove, isM
           </span>
         </div>
 
-        {/* Top Badges (New, Pro, Mon modèle, etc.) */}
+        {/* Top Badges (New, Pro, Mon modèle, Studio, etc.) */}
         <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-20">
+          {isStudioPortfolioTemplate(template) && (
+            <span className="px-2 py-0.5 bg-indigo-600 text-white text-[10px] font-bold rounded-md shadow-xs flex items-center gap-1">
+              <Icon name="SwatchIcon" size={11} /> Studio
+            </span>
+          )}
           {isMyTemplate && (
             <span className="px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-bold rounded-md shadow-xs flex items-center gap-1">
               <Icon name="CheckCircleIcon" size={11} /> Mon Modèle

@@ -24,7 +24,11 @@ export default function ActivePortfoliosPanel() {
       </div>
       <div className="space-y-3">
         {portfolios?.map((pf) => (
-          <div key={pf?.id} className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted transition-colors cursor-pointer group">
+          <Link
+            key={pf?.id}
+            href={`/portfolio-studio?portfolioId=${pf?.id}`}
+            className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted transition-colors cursor-pointer group"
+          >
             <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
               <Icon name="LayoutTemplateIcon" size={16} className="text-primary" />
             </div>
@@ -36,7 +40,7 @@ export default function ActivePortfoliosPanel() {
               <StatusBadge variant={pf?.sync === 'live' ? 'live' : 'frozen'} size="sm" />
               <span className="text-xs font-mono-data text-muted-foreground">{pf?.views} {t?.dashboard?.activePortfolios?.views}</span>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

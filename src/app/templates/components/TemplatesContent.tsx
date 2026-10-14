@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { getMarketplaceTemplates, type MarketplaceTemplateItem } from '@/lib/services/marketplaceService';
+import { getMarketplaceTemplates, isStudioPortfolioTemplate, type MarketplaceTemplateItem } from '@/lib/services/marketplaceService';
 import TemplatePreviewModal from './TemplatePreviewModal';
 import TemplateCard from './TemplateCard';
 
-const categories = ['Tous', 'Tech', 'Design', 'Finance', 'Médecine', 'Journalisme', 'Architecture', 'Mode', 'Business'];
+const categories = ['Tous', 'Studio & B.U.T.', 'Tech', 'Design', 'Finance', 'Médecine', 'Journalisme', 'Architecture', 'Mode', 'Business'];
 const themes = ['Tous', 'Minimaliste', 'Bold', 'Dark', 'Coloré', 'Pitch Deck'];
 
 export default function TemplatesContent() {
@@ -76,7 +76,10 @@ export default function TemplatesContent() {
   }, []);
 
   const filtered = templatesList.filter((t) => {
-    const matchCat = selectedCategory === 'Tous' || t.category === selectedCategory;
+    const isStudio = isStudioPortfolioTemplate(t);
+    const matchCat =
+      selectedCategory === 'Tous' ||
+      (selectedCategory === 'Studio & B.U.T.' ? isStudio : t.category === selectedCategory);
     const matchTheme = selectedTheme === 'Tous' || t.theme === selectedTheme;
     const matchSearch =
       !search ||
@@ -87,6 +90,11 @@ export default function TemplatesContent() {
   });
 
   const handleUseTemplate = (template: MarketplaceTemplateItem) => {
+    if (isStudioPortfolioTemplate(template)) {
+      toast.success(`Ouverture de "${template.name}" dans Portfolio Studio...`);
+      router.push(`/portfolio-studio?templateId=${encodeURIComponent(template.id)}`);
+      return;
+    }
     toast.success(`Chargement du template "${template.name}" dans l'éditeur...`);
     router.push(`/portfolio-editor?templateId=${encodeURIComponent(template.id)}`);
   };
