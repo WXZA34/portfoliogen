@@ -91,18 +91,30 @@ export default function PublicPortfolioViewer({
     async function loadData() {
       setLoading(true);
       try {
-        // 1. Try checking if it's a Canvas Editor template from my_templates
-        const supabase = createClient();
-        const { data: templateRow } = await supabase
-          .from('my_templates')
-          .select('modified_design')
-          .eq('id', slug)
-          .maybeSingle();
+        // 1. Try checking if it's a Canvas Editor template from my_templates (only if slug is a valid UUID)
+        const isUuid =
+          Boolean(slug) &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            slug.trim()
+          );
 
-        if (templateRow?.modified_design) {
-          setCanvasDesign(templateRow.modified_design as PortfolioDesign);
-          setLoading(false);
-          return;
+        if (isUuid) {
+          try {
+            const supabase = createClient();
+            const { data: templateRow } = await supabase
+              .from('my_templates')
+              .select('modified_design')
+              .eq('id', slug)
+              .maybeSingle();
+
+            if (templateRow?.modified_design) {
+              setCanvasDesign(templateRow.modified_design as PortfolioDesign);
+              setLoading(false);
+              return;
+            }
+          } catch (e) {
+            // Ignore non-critical template lookup error
+          }
         }
 
         // 2. Fetch studio portfolio
@@ -158,6 +170,27 @@ export default function PublicPortfolioViewer({
 
     loadData();
   }, [slug, company]);
+
+  const activePortfolio = portfolio || DEFAULT_STARTER_PORTFOLIOS[0];
+
+  // ALWAYS call all hooks unconditionally before ANY early returns (Rule of Hooks / React Error #310)
+  const selectedProjects = useMemo(() => {
+    const list = activePortfolio.selectedProjects || [];
+    if (list.length === 0) {
+      return projects.slice(0, 3);
+    }
+    const filtered = projects.filter((p) => list.includes(p.id));
+    return filtered.length > 0 ? filtered : projects.slice(0, 3);
+  }, [activePortfolio.selectedProjects, projects]);
+
+  const selectedSkills = useMemo(() => {
+    const list = activePortfolio.selectedSkills || [];
+    if (list.length === 0) {
+      return skills.slice(0, 8);
+    }
+    const filtered = skills.filter((s) => list.includes(s.id));
+    return filtered.length > 0 ? filtered : skills.slice(0, 8);
+  }, [activePortfolio.selectedSkills, skills]);
 
   const candidateName =
     portfolio?.sectionTexts?.coverAuthorName ||
@@ -241,26 +274,6 @@ export default function PublicPortfolioViewer({
       </main>
     );
   }
-
-  const activePortfolio = portfolio || DEFAULT_STARTER_PORTFOLIOS[0];
-
-  const selectedProjects = useMemo(() => {
-    const list = activePortfolio.selectedProjects || [];
-    if (list.length === 0) {
-      return projects.slice(0, 3);
-    }
-    const filtered = projects.filter((p) => list.includes(p.id));
-    return filtered.length > 0 ? filtered : projects.slice(0, 3);
-  }, [activePortfolio.selectedProjects, projects]);
-
-  const selectedSkills = useMemo(() => {
-    const list = activePortfolio.selectedSkills || [];
-    if (list.length === 0) {
-      return skills.slice(0, 8);
-    }
-    const filtered = skills.filter((s) => list.includes(s.id));
-    return filtered.length > 0 ? filtered : skills.slice(0, 8);
-  }, [activePortfolio.selectedSkills, skills]);
 
   return (
     <main className="min-h-screen flex flex-col bg-[#FAF8F3] text-[#2C2720]">

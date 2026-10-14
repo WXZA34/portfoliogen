@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import AppImage from '@/components/ui/AppImage';
 import type { StudioPortfolio, SectionColors, SectionTexts } from '@/lib/services/portfolioStudioService';
@@ -121,6 +121,17 @@ export default function IndustrialGEIITemplatePreview({
   const [activeSection, setActiveSection] = useState<string>('accueil');
   const [selectedDetailItem, setSelectedDetailItem] = useState<DetailModalItem | null>(null);
   const [modalActiveImageIdx, setModalActiveImageIdx] = useState<number>(0);
+
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedDetailItem) {
+        setSelectedDetailItem(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedDetailItem]);
 
   // Filter items based on portfolio selections
   const displayProjects = projects.filter((p) =>
@@ -1358,18 +1369,35 @@ export default function IndustrialGEIITemplatePreview({
       {/* INTERACTIVE DETAIL MODAL */}
       {/* =================================================================== */}
       {selectedDetailItem && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedDetailItem(null);
+          }}
+        >
           <div
-            className="rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-black/10 relative"
+            className="rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl border border-black/15 overflow-hidden relative"
             style={{ backgroundColor: cardBg }}
           >
-            <button
-              onClick={() => setSelectedDetailItem(null)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center text-foreground transition-colors"
-              title="Fermer"
-            >
-              <Icon name="XMarkIcon" size={16} />
-            </button>
+            {/* STICKY TOP HEADER WITH PROMINENT CLOSE BUTTON */}
+            <div className="sticky top-0 z-40 flex items-center justify-between px-5 py-3 border-b border-black/10 bg-inherit/95 backdrop-blur-md">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A7D63] flex items-center gap-1.5">
+                <Icon name="InformationCircleIcon" size={15} />
+                Détails du projet
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedDetailItem(null)}
+                className="w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 text-[#1A1815] flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-2xs"
+                title="Fermer la fenêtre (ou Échap)"
+                aria-label="Fermer"
+              >
+                <Icon name="XMarkIcon" size={18} className="stroke-[2.5]" />
+              </button>
+            </div>
+
+            {/* SCROLLABLE MODAL CONTENT */}
+            <div className="overflow-y-auto p-5 sm:p-6 space-y-4">
 
             {(() => {
               const modalImages: string[] =
@@ -1583,25 +1611,38 @@ export default function IndustrialGEIITemplatePreview({
               </div>
             )}
 
-            {selectedDetailItem.links && selectedDetailItem.links.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-3 border-t border-black/10">
-                {selectedDetailItem.links.map((link, lIdx) => (
-                  <a
-                    key={lIdx}
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: selectedDetailItem.accentColor || '#1A1815' }}
-                  >
-                    <Icon name={(link.icon as any) || 'ArrowTopRightOnSquareIcon'} size={14} />
-                    {link.label}
-                  </a>
-                ))}
-              </div>
-            )}
+            {/* Bottom Actions Bar with explicit Fermer button */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-black/10 mt-4">
+              <button
+                type="button"
+                onClick={() => setSelectedDetailItem(null)}
+                className="px-4 py-2 rounded-xl bg-black/10 hover:bg-black/20 text-[#2C2720] text-xs font-bold transition-all flex items-center gap-1.5 hover:scale-102 active:scale-98"
+              >
+                <Icon name="XMarkIcon" size={15} />
+                <span>Fermer</span>
+              </button>
+
+              {selectedDetailItem.links && selectedDetailItem.links.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedDetailItem.links.map((link, lIdx) => (
+                    <a
+                      key={lIdx}
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-opacity"
+                      style={{ backgroundColor: selectedDetailItem.accentColor || '#1A1815' }}
+                    >
+                      <Icon name={(link.icon as any) || 'ArrowTopRightOnSquareIcon'} size={14} />
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
+      </div>
       )}
     </div>
   );
