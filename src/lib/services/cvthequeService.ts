@@ -5,6 +5,8 @@ export interface ProjectKPI {
   value: string;
 }
 
+export type ProjectCategory = 'academic' | 'mini' | 'personal' | 'soft' | 'other';
+
 export interface ProjectItem {
   id: string;
   userId?: string;
@@ -20,6 +22,7 @@ export interface ProjectItem {
   imageUrl?: string;
   imageAlt?: string;
   status: 'published' | 'draft';
+  category?: ProjectCategory;
   kpis?: ProjectKPI[];
   isFeatured?: boolean;
   createdAt?: string;
@@ -1158,6 +1161,255 @@ export async function deletePersona(id: string): Promise<boolean> {
   const filtered = local.filter((p) => p.id !== id);
   setLocalPersonas(filtered, userId);
 
+  return true;
+}
+
+// ============================================================================
+// USER PROFILE & CONTACT INFO SERVICE (RUBRIQUE PROFIL & OBJECTIFS)
+// ============================================================================
+
+export interface UserProfileInfo {
+  id?: string;
+  userId?: string;
+  fullName: string;
+  headline: string;
+  slogan: string;
+  bio: string;
+  objective: string;
+  email: string;
+  phone: string;
+  location: string;
+  linkedin: string;
+  github: string;
+  website: string;
+  cvPdfUrl?: string;
+  hobbies: string[];
+  methodologies: string[];
+  availability: string;
+  updatedAt?: string;
+}
+
+const LOCAL_STORAGE_PROFILE_PREFIX = 'portfoliogen_cvtheque_profile_';
+
+export const DEFAULT_USER_PROFILE: UserProfileInfo = {
+  fullName: 'KOKOU DUSSEY',
+  headline: 'Étudiant B.U.T. Génie Électrique & Informatique Industrielle (GEII)',
+  slogan: 'Concevoir la logique. Piloter le système.',
+  bio: "Actuellement en formation B.U.T. GEII à l'IUT Sénart-Fontainebleau, je développe une solide expertise en automatisme industriel, programmation de microcontrôleurs et conception de cartes électroniques. Mon objectif est d'allier rigueur méthodologique et créativité technique pour bâtir des systèmes fiables et performants.",
+  objective: "Recherche d'une alternance de 2 ans dès la rentrée 2026 dans les secteurs de l'automatisme, de la robotique industrielle ou des systèmes embarqués.",
+  email: 'kokou.dussey@etu.u-pec.fr',
+  phone: '+33 6 12 34 56 78',
+  location: 'Île-de-France, France',
+  linkedin: 'https://linkedin.com/in/kokou-dussey',
+  github: 'https://github.com/kokou-dussey',
+  website: 'https://my-portfolify.vercel.app/#/dussey%20larry',
+  cvPdfUrl: '',
+  availability: 'Disponible pour alternance 2026–2028',
+  hobbies: ['Robotique autonome', 'Impression 3D', 'Aéromodélisme', 'Course à pied'],
+  methodologies: [
+    'Cycle en V & Validation fonctionnelle',
+    'Normes NF C 15-100 & Sécurité électrique',
+    'Automates Programmables Industriels (API)',
+    'Gestion de version Git & Documentation technique',
+    'Travail en équipe & Gestion de projet SAÉ',
+  ],
+};
+
+export async function fetchUserProfileInfo(): Promise<UserProfileInfo> {
+  if (typeof window === 'undefined') return DEFAULT_USER_PROFILE;
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || 'guest';
+
+    const raw = localStorage.getItem(`${LOCAL_STORAGE_PROFILE_PREFIX}${userId}`);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+    return DEFAULT_USER_PROFILE;
+  } catch {
+    return DEFAULT_USER_PROFILE;
+  }
+}
+
+export async function saveUserProfileInfo(info: UserProfileInfo): Promise<UserProfileInfo> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const updated: UserProfileInfo = {
+    ...info,
+    userId: user?.id,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(`${LOCAL_STORAGE_PROFILE_PREFIX}${userId}`, JSON.stringify(updated));
+  }
+
+  return updated;
+}
+
+// ============================================================================
+// LANGUAGES SERVICE (RUBRIQUE LANGUES)
+// ============================================================================
+
+export interface LanguageItem {
+  id: string;
+  userId?: string;
+  name: string;
+  level: string;
+  flag?: string;
+  detail?: string;
+  createdAt?: string;
+}
+
+const LOCAL_STORAGE_LANGUAGES_PREFIX = 'portfoliogen_cvtheque_languages_';
+
+export const DEFAULT_STARTER_LANGUAGES: LanguageItem[] = [
+  { id: 'lang-001', name: 'Français', level: 'Langue maternelle', flag: '🇫🇷', detail: 'Expression écrite et orale soignée' },
+  { id: 'lang-002', name: 'Anglais', level: 'Niveau B2 (Technique)', flag: '🇬🇧', detail: 'Lecture de documentations techniques et datasheets' },
+  { id: 'lang-003', name: 'Espagnol', level: 'Niveau A2 (Notions)', flag: '🇪🇸', detail: 'Communication basique' },
+];
+
+function getLocalLanguages(userId: string = 'guest'): LanguageItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${LOCAL_STORAGE_LANGUAGES_PREFIX}${userId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function setLocalLanguages(items: LanguageItem[], userId: string = 'guest') {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${LOCAL_STORAGE_LANGUAGES_PREFIX}${userId}`, JSON.stringify(items));
+  } catch {}
+}
+
+export async function fetchUserLanguages(): Promise<LanguageItem[]> {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || 'guest';
+    const local = getLocalLanguages(userId);
+    return local.length > 0 ? local : DEFAULT_STARTER_LANGUAGES;
+  } catch {
+    return DEFAULT_STARTER_LANGUAGES;
+  }
+}
+
+export async function saveUserLanguage(item: Omit<LanguageItem, 'id' | 'createdAt'>, existingId?: string): Promise<LanguageItem> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const newId = existingId || `lang-${Date.now()}`;
+  const langItem: LanguageItem = {
+    ...item,
+    id: newId,
+    userId: user?.id,
+    createdAt: new Date().toISOString(),
+  };
+
+  const local = getLocalLanguages(userId);
+  const filtered = local.filter((l) => l.id !== langItem.id && l.id !== existingId);
+  const updated = [langItem, ...filtered];
+  setLocalLanguages(updated, userId);
+  return langItem;
+}
+
+export async function deleteUserLanguage(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const local = getLocalLanguages(userId);
+  const filtered = local.filter((l) => l.id !== id);
+  setLocalLanguages(filtered, userId);
+  return true;
+}
+
+// ============================================================================
+// CERTIFICATIONS SERVICE (RUBRIQUE CERTIFICATIONS & HABILITATIONS)
+// ============================================================================
+
+export interface CertificationItem {
+  id: string;
+  userId?: string;
+  title: string;
+  issuer: string;
+  year: string;
+  credentialUrl?: string;
+  badge?: string;
+  createdAt?: string;
+}
+
+const LOCAL_STORAGE_CERTIF_PREFIX = 'portfoliogen_cvtheque_certifications_';
+
+export const DEFAULT_STARTER_CERTIFICATIONS: CertificationItem[] = [
+  { id: 'cert-001', title: 'Habilitation Électrique B1V / BR', issuer: 'IUT Sénart-Fontainebleau', year: '2025', badge: '⚡ Norme NF C 18-510' },
+  { id: 'cert-002', title: 'Certification TIA Portal Automates S7', issuer: 'Siemens Industrial Academy', year: '2025', badge: '🤖 Automatisme' },
+  { id: 'cert-003', title: 'TOEIC Listening & Reading (Score: 840)', issuer: 'ETS Global', year: '2024', badge: '🇬🇧 B2 Avancé' },
+];
+
+function getLocalCertifications(userId: string = 'guest'): CertificationItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${LOCAL_STORAGE_CERTIF_PREFIX}${userId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function setLocalCertifications(items: CertificationItem[], userId: string = 'guest') {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${LOCAL_STORAGE_CERTIF_PREFIX}${userId}`, JSON.stringify(items));
+  } catch {}
+}
+
+export async function fetchUserCertifications(): Promise<CertificationItem[]> {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || 'guest';
+    const local = getLocalCertifications(userId);
+    return local.length > 0 ? local : DEFAULT_STARTER_CERTIFICATIONS;
+  } catch {
+    return DEFAULT_STARTER_CERTIFICATIONS;
+  }
+}
+
+export async function saveUserCertification(item: Omit<CertificationItem, 'id' | 'createdAt'>, existingId?: string): Promise<CertificationItem> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const newId = existingId || `cert-${Date.now()}`;
+  const certItem: CertificationItem = {
+    ...item,
+    id: newId,
+    userId: user?.id,
+    createdAt: new Date().toISOString(),
+  };
+
+  const local = getLocalCertifications(userId);
+  const filtered = local.filter((c) => c.id !== certItem.id && c.id !== existingId);
+  const updated = [certItem, ...filtered];
+  setLocalCertifications(updated, userId);
+  return certItem;
+}
+
+export async function deleteUserCertification(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const local = getLocalCertifications(userId);
+  const filtered = local.filter((c) => c.id !== id);
+  setLocalCertifications(filtered, userId);
   return true;
 }
 

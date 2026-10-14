@@ -3,7 +3,15 @@
 import React, { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import type { StudioPortfolio } from '@/lib/services/portfolioStudioService';
-import type { ProjectItem, SkillItem, ParcoursItem } from '@/lib/services/cvthequeService';
+import type {
+  ProjectItem,
+  SkillItem,
+  ParcoursItem,
+  UserProfileInfo,
+  LanguageItem,
+  CertificationItem,
+  MediaFileItem,
+} from '@/lib/services/cvthequeService';
 import IndustrialGEIITemplatePreview from './templates/IndustrialGEIITemplatePreview';
 
 interface PortfolioPreviewProps {
@@ -11,6 +19,10 @@ interface PortfolioPreviewProps {
   projects?: ProjectItem[];
   skills?: SkillItem[];
   parcours?: ParcoursItem[];
+  profile?: UserProfileInfo;
+  languages?: LanguageItem[];
+  certifications?: CertificationItem[];
+  media?: MediaFileItem[];
 }
 
 export default function PortfolioPreview({
@@ -18,6 +30,10 @@ export default function PortfolioPreview({
   projects = [],
   skills = [],
   parcours = [],
+  profile,
+  languages = [],
+  certifications = [],
+  media = [],
 }: PortfolioPreviewProps) {
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -39,6 +55,10 @@ export default function PortfolioPreview({
           projects={projects}
           skills={skills}
           parcours={parcours}
+          profile={profile}
+          languages={languages}
+          certifications={certifications}
+          media={media}
         />
       );
     }

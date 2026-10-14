@@ -137,9 +137,11 @@ const translations = {
       title: 'CVthèque Master',
       subtitle: 'Votre base de données personnelle centralisée — la source unique de vérité',
       tabs: {
+        profile: 'Profil & Contact',
         projects: 'Projets',
         skills: 'Matrice de compétences',
         parcours: 'Parcours & Formations',
+        languages: 'Langues & Certif.',
         media: 'Galerie médias',
         personas: 'Personas',
       },
@@ -481,9 +483,11 @@ const translations = {
       title: 'Master CV Library',
       subtitle: 'Your centralized personal database — the single source of truth',
       tabs: {
+        profile: 'Profile & Contact',
         projects: 'Projects',
         skills: 'Skills Matrix',
         parcours: 'Career & Education',
+        languages: 'Languages & Certif.',
         media: 'Media Gallery',
         personas: 'Personas',
       },

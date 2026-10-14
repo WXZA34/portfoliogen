@@ -15,6 +15,32 @@ export type StudioTemplateId =
   | 'DarkTech'
   | 'EditorialBold';
 
+export interface StudioPortfolioSections {
+  cover: boolean;       // 0. Page de garde (Sas d'accueil)
+  hero: boolean;        // 1. Section Accueil (Hero & Slogan)
+  about: boolean;       // 2. Profil & Objectifs (À propos)
+  projects: boolean;    // 3. Mes Réalisations & SAÉ
+  skills: boolean;      // 4. Compétences Techniques (Jauges %)
+  tools: boolean;       // 5. Outils & Matériel Industriel
+  parcours: boolean;    // 6. Parcours & Formations (Timeline)
+  languages: boolean;   // 7. Langues & Certifications
+  gallery: boolean;     // 8. Galerie Médias
+  contact: boolean;     // 9. Coordonnées & Contact
+}
+
+export const DEFAULT_STUDIO_SECTIONS: StudioPortfolioSections = {
+  cover: true,
+  hero: true,
+  about: true,
+  projects: true,
+  skills: true,
+  tools: true,
+  parcours: true,
+  languages: true,
+  gallery: true,
+  contact: true,
+};
+
 export interface StudioPortfolio {
   id: string;
   userId?: string;
@@ -26,9 +52,14 @@ export interface StudioPortfolio {
   slug: string;
   views: number;
   lastUpdated: string;
+  enabledSections?: StudioPortfolioSections;
+  sectionTitles?: Record<string, string>;
   selectedProjects: string[];
   selectedSkills: string[];
   selectedParcours?: string[];
+  selectedLanguages?: string[];
+  selectedCertifications?: string[];
+  selectedMedia?: string[];
   customIntro?: string;
   // Metadata for Splash Screen (especially for IndustrialGEII template)
   institution?: string;
@@ -52,9 +83,12 @@ export const DEFAULT_STARTER_PORTFOLIOS: StudioPortfolio[] = [
     slug: 'dussey-larry/geii-automatisme',
     views: 487,
     lastUpdated: '13 oct. 2026',
+    enabledSections: { ...DEFAULT_STUDIO_SECTIONS },
     selectedProjects: ['proj-001', 'proj-002', 'proj-003'],
     selectedSkills: ['sk-001', 'sk-005', 'sk-006', 'sk-009'],
     selectedParcours: ['par-001', 'par-004'],
+    selectedLanguages: ['lang-001', 'lang-002'],
+    selectedCertifications: ['cert-001', 'cert-002'],
     customIntro: 'Concevoir la logique. Piloter le système.',
     institution: 'IUT SÉNART-FONTAINEBLEAU',
     degree: 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE',
@@ -149,6 +183,11 @@ export async function fetchStudioPortfolios(): Promise<StudioPortfolio[]> {
           selectedProjects: Array.isArray(row.selected_projects) ? row.selected_projects : (localMatch?.selectedProjects || []),
           selectedSkills: Array.isArray(row.selected_skills) ? row.selected_skills : (localMatch?.selectedSkills || []),
           selectedParcours: localMatch?.selectedParcours || [],
+          selectedLanguages: localMatch?.selectedLanguages || ['lang-001', 'lang-002'],
+          selectedCertifications: localMatch?.selectedCertifications || ['cert-001', 'cert-002'],
+          selectedMedia: localMatch?.selectedMedia || [],
+          enabledSections: localMatch?.enabledSections || { ...DEFAULT_STUDIO_SECTIONS },
+          sectionTitles: localMatch?.sectionTitles || {},
           customIntro: row.custom_intro || localMatch?.customIntro || 'Concevoir la logique. Piloter le système.',
           institution: localMatch?.institution || 'IUT SÉNART-FONTAINEBLEAU',
           degree: localMatch?.degree || 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE',

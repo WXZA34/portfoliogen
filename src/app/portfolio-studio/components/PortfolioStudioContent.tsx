@@ -10,16 +10,25 @@ import {
   saveStudioPortfolio,
   deleteStudioPortfolio,
   DEFAULT_STARTER_PORTFOLIOS,
+  DEFAULT_STUDIO_SECTIONS,
 } from '@/lib/services/portfolioStudioService';
 import {
   type ProjectItem,
   type SkillItem,
   type ParcoursItem,
   type PersonaItem,
+  type LanguageItem,
+  type CertificationItem,
+  type MediaFileItem,
+  type UserProfileInfo,
   fetchUserProjects,
   fetchUserSkills,
   fetchUserParcours,
   fetchUserPersonas,
+  fetchUserProfileInfo,
+  fetchUserLanguages,
+  fetchUserCertifications,
+  fetchUserMediaFiles,
 } from '@/lib/services/cvthequeService';
 import Icon from '@/components/ui/AppIcon';
 import { toast } from 'sonner';
@@ -35,18 +44,36 @@ export default function PortfolioStudioContent() {
   const [skills, setSkills] = useState<SkillItem[]>([]);
   const [parcours, setParcours] = useState<ParcoursItem[]>([]);
   const [personas, setPersonas] = useState<PersonaItem[]>([]);
+  const [profile, setProfile] = useState<UserProfileInfo | undefined>(undefined);
+  const [languages, setLanguages] = useState<LanguageItem[]>([]);
+  const [certifications, setCertifications] = useState<CertificationItem[]>([]);
+  const [media, setMedia] = useState<MediaFileItem[]>([]);
 
-  // Load portfolios and CVthèque Master data on mount
+  // Load portfolios and all CVthèque Master rubriques on mount
   useEffect(() => {
     let mounted = true;
     async function loadAllData() {
       try {
-        const [pList, projList, skList, parcList, perList] = await Promise.all([
+        const [
+          pList,
+          projList,
+          skList,
+          parcList,
+          perList,
+          profData,
+          langList,
+          certList,
+          mediaList,
+        ] = await Promise.all([
           fetchStudioPortfolios(),
           fetchUserProjects(),
           fetchUserSkills(),
           fetchUserParcours(),
           fetchUserPersonas(),
+          fetchUserProfileInfo(),
+          fetchUserLanguages(),
+          fetchUserCertifications(),
+          fetchUserMediaFiles(),
         ]);
 
         if (!mounted) return;
@@ -59,6 +86,10 @@ export default function PortfolioStudioContent() {
         setSkills(skList || []);
         setParcours(parcList || []);
         setPersonas(perList || []);
+        setProfile(profData);
+        setLanguages(langList || []);
+        setCertifications(certList || []);
+        setMedia(mediaList || []);
       } catch (err) {
         console.warn('Error loading studio data:', err);
       } finally {
@@ -98,21 +129,24 @@ export default function PortfolioStudioContent() {
       slug: `portfolio-${Date.now().toString().slice(-5)}`,
       views: 0,
       lastUpdated: 'À l\'instant',
-      selectedProjects: projects.slice(0, 3).map((p) => p.id),
-      selectedSkills: skills.slice(0, 6).map((s) => s.id),
-      selectedParcours: parcours.slice(0, 2).map((p) => p.id),
-      customIntro: 'Concevoir la logique. Piloter le système.',
+      enabledSections: { ...DEFAULT_STUDIO_SECTIONS },
+      selectedProjects: projects.slice(0, 4).map((p) => p.id),
+      selectedSkills: skills.slice(0, 8).map((s) => s.id),
+      selectedParcours: parcours.slice(0, 3).map((p) => p.id),
+      selectedLanguages: languages.slice(0, 3).map((l) => l.id),
+      selectedCertifications: certifications.slice(0, 3).map((c) => c.id),
+      customIntro: profile?.slogan || 'Concevoir la logique. Piloter le système.',
       institution: 'IUT SÉNART-FONTAINEBLEAU',
       degree: 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE',
       subTitle: 'Portfolio Semestre 2',
       promotion: 'PROMOTION 2025–2026',
-      authorName: 'KOKOU DUSSEY',
+      authorName: profile?.fullName || 'KOKOU DUSSEY',
     };
 
     setPortfolios((prev) => [newPortfolio, ...prev]);
     setSelectedPortfolioId(newId);
     await saveStudioPortfolio(newPortfolio);
-    toast.success('Nouveau portfolio créé avec le template B.U.T. GEII !');
+    toast.success('Nouveau portfolio créé !');
   };
 
   const handleDelete = async (id: string) => {
@@ -156,6 +190,10 @@ export default function PortfolioStudioContent() {
           skills={skills}
           parcours={parcours}
           personas={personas}
+          languages={languages}
+          certifications={certifications}
+          media={media}
+          profile={profile}
           previewVisible={previewVisible}
           onTogglePreview={() => setPreviewVisible(!previewVisible)}
         />
@@ -169,6 +207,10 @@ export default function PortfolioStudioContent() {
             projects={projects}
             skills={skills}
             parcours={parcours}
+            profile={profile}
+            languages={languages}
+            certifications={certifications}
+            media={media}
           />
         </div>
       )}
