@@ -27,6 +27,7 @@ import type {
 } from '@/lib/services/cvthequeService';
 import { saveUserProfileInfo } from '@/lib/services/cvthequeService';
 import { uploadMediaFromPC, openDocumentSafe, downloadDocumentSafe } from '@/lib/utils/mediaUploadHelper';
+import { crmService } from '@/lib/services/crmService';
 import { useLanguage } from '@/lib/LanguageContext';
 
 interface PortfolioBuilderProps {
@@ -2312,6 +2313,39 @@ export default function PortfolioBuilder({
                       <Icon name="ArrowTopRightOnSquareIcon" size={14} />
                       Tester le lien
                     </button>
+                    {portfolio.recipientCompany && portfolio.recipientCompany.trim() && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const tid = toast.loading(`Enregistrement dans le CRM pour ${portfolio.recipientCompany}...`);
+                          try {
+                            const { createClient } = await import('@/lib/supabase/client');
+                            const user = (await createClient().auth.getUser()).data.user;
+                            await crmService.syncFromStudio(
+                              user?.id,
+                              portfolio,
+                              portfolio.recipientCompany || '',
+                              portfolio.persona || portfolio.name,
+                              portfolio.recipientName
+                            );
+                            toast.success(`Candidature pour "${portfolio.recipientCompany}" synchronisée dans votre CRM !`, {
+                              id: tid,
+                              action: {
+                                label: 'Ouvrir CRM',
+                                onClick: () => window.location.href = '/crm',
+                              },
+                            });
+                          } catch (err: any) {
+                            toast.error(err.message || 'Erreur lors de l\'enregistrement dans le CRM', { id: tid });
+                          }
+                        }}
+                        className="py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors btn-press shadow-xs cursor-pointer"
+                        title="Créer ou mettre à jour la candidature dans votre CRM Candidatures"
+                      >
+                        <Icon name="BriefcaseIcon" size={14} />
+                        <span>Ajouter au CRM</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleSave}
