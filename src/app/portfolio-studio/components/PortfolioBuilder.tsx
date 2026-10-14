@@ -268,12 +268,33 @@ export default function PortfolioBuilder({
               En cours d&apos;édition
             </span>
           </div>
-          <p className="text-xs text-muted-foreground font-mono truncate mt-0.5 flex items-center gap-1.5">
-            <span className="text-primary font-semibold">Lien :</span>
-            <span className="text-foreground/80 underline decoration-muted-foreground/30 font-medium">
-              portfoliogen.net/p/{portfolio.slug || portfolio.id}
-            </span>
-          </p>
+          <div className="flex items-center gap-2 mt-1 min-w-0">
+            <span className="text-primary font-semibold text-xs flex-shrink-0">Lien :</span>
+            <a
+              href={`/p/${portfolio.slug || portfolio.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-mono text-primary hover:underline font-bold truncate max-w-[200px] sm:max-w-[280px] flex items-center gap-1"
+              title="Ouvrir ce portfolio en public dans un nouvel onglet"
+            >
+              <span className="truncate">portfoliogen.net/p/{portfolio.slug || portfolio.id}</span>
+              <Icon name="ArrowTopRightOnSquareIcon" size={12} className="flex-shrink-0 opacity-80" />
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                  const fullUrl = `https://portfoliogen.net/p/${portfolio.slug || portfolio.id}`;
+                  navigator.clipboard.writeText(fullUrl);
+                  toast.success(`Lien public copié : ${fullUrl}`);
+                }
+              }}
+              className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
+              title="Copier le lien public"
+            >
+              <Icon name="ShareIcon" size={13} />
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button

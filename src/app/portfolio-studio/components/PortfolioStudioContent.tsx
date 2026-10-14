@@ -140,17 +140,23 @@ export default function PortfolioStudioContent() {
   };
 
   const handleUpdate = async (updated: StudioPortfolio) => {
+    // 1. Optimistic state update
     setPortfolios((prev) =>
       prev.map((p) => (p.id === updated.id ? updated : p))
     );
     if (typeof window !== 'undefined') {
       localStorage.setItem('portfoliogen_current_active_portfolio_id', updated.id);
       localStorage.setItem('portfoliogen_current_active_portfolio', JSON.stringify(updated));
-      localStorage.setItem(`portfoliogen_portfolio_${updated.slug.toLowerCase()}`, JSON.stringify(updated));
-      localStorage.setItem(`portfoliogen_portfolio_${updated.id.toLowerCase()}`, JSON.stringify(updated));
+      localStorage.setItem(`portfoliogen_portfolio_${updated.slug.toLowerCase().trim()}`, JSON.stringify(updated));
+      localStorage.setItem(`portfoliogen_portfolio_${updated.id.toLowerCase().trim()}`, JSON.stringify(updated));
     }
+    // 2. Persist to database
     try {
-      await saveStudioPortfolio(updated);
+      const saved = await saveStudioPortfolio(updated);
+      if (saved && saved.id !== updated.id) {
+        setPortfolios((prev) => prev.map((p) => (p.id === updated.id ? saved : p)));
+        setSelectedPortfolioId(saved.id);
+      }
     } catch (err) {
       console.warn('Auto-save error:', err);
     }
@@ -159,7 +165,7 @@ export default function PortfolioStudioContent() {
   const handleCreateNew = async () => {
     const timestamp = Date.now().toString().slice(-4);
     const newId = `pf-${Date.now()}`;
-    const newSlug = `mon-portfolio-${timestamp}`;
+    const newSlug = `portfolio-${Date.now().toString().slice(-6)}`;
     const newPortfolio: StudioPortfolio = {
       id: newId,
       name: `Nouveau Portfolio (${timestamp})`,
@@ -191,10 +197,11 @@ export default function PortfolioStudioContent() {
       customShareUrl: '',
     };
 
-    setPortfolios((prev) => [newPortfolio, ...prev]);
-    handleSelectPortfolio(newId);
-    await saveStudioPortfolio(newPortfolio);
-    toast.success(`Nouveau portfolio "${newPortfolio.name}" créé et sélectionné !`);
+    const saved = await saveStudioPortfolio(newPortfolio);
+    const finalItem = saved || newPortfolio;
+    setPortfolios((prev) => [finalItem, ...prev.filter((p) => p.id !== finalItem.id)]);
+    handleSelectPortfolio(finalItem.id);
+    toast.success(`Nouveau portfolio "${finalItem.name}" créé avec son lien unique : /p/${finalItem.slug}`);
   };
 
   const handleDelete = async (id: string) => {

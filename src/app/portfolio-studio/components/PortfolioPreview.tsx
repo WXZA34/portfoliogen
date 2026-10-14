@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
+import { toast } from 'sonner';
 import type { StudioPortfolio } from '@/lib/services/portfolioStudioService';
 import type {
   ProjectItem,
@@ -91,18 +92,41 @@ export default function PortfolioPreview({
     );
   };
 
+  const publicUrl = `/p/${portfolio.slug || portfolio.id}`;
+  const fullPublicUrl = `https://portfoliogen.net/p/${portfolio.slug || portfolio.id}`;
+
   return (
     <>
       <div className="bg-card border border-border rounded-xl shadow-card h-full flex flex-col">
         {/* Preview Top bar */}
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-negative/60" />
-            <div className="w-3 h-3 rounded-full bg-warning/60" />
-            <div className="w-3 h-3 rounded-full bg-positive/60" />
-            <span className="ml-2 text-xs font-mono-data text-muted-foreground truncate max-w-[200px]">
-              portfoliogen.net/p/{portfolio.slug}
-            </span>
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-3 h-3 rounded-full bg-negative/60 flex-shrink-0" />
+            <div className="w-3 h-3 rounded-full bg-warning/60 flex-shrink-0" />
+            <div className="w-3 h-3 rounded-full bg-positive/60 flex-shrink-0" />
+            <a
+              href={publicUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 text-xs font-mono-data text-primary hover:underline truncate max-w-[200px] sm:max-w-[250px] flex items-center gap-1 font-bold"
+              title="Ouvrir le lien réel dans un nouvel onglet"
+            >
+              <span>portfoliogen.net/p/{portfolio.slug || portfolio.id}</span>
+              <Icon name="ArrowTopRightOnSquareIcon" size={12} className="flex-shrink-0 opacity-80" />
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                  navigator.clipboard.writeText(fullPublicUrl);
+                  toast.success(`Lien public copié : ${fullPublicUrl}`);
+                }
+              }}
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
+              title="Copier le lien public"
+            >
+              <Icon name="ShareIcon" size={13} />
+            </button>
           </div>
           <div className="flex items-center gap-1">
             <button

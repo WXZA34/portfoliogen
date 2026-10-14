@@ -396,19 +396,81 @@ export async function saveStudioPortfolio(
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id || 'guest';
 
+  // Ensure unique, clean slug
+  const cleanSlug =
+    (portfolio.slug && portfolio.slug.trim().toLowerCase().replace(/[^a-z0-9-_/]/g, '')) ||
+    `portfolio-${(portfolio.id || Date.now().toString()).slice(-6)}`;
+
   const item: StudioPortfolio = {
     ...portfolio,
-    userId: user?.id,
+    slug: cleanSlug,
+    userId: user?.id || portfolio.userId,
     lastUpdated: 'À l\'instant',
   };
 
+  // Full payload containing every customizable color, text, section and metadata
+  const fullPayload = {
+    version: 2,
+    id: item.id,
+    userId: user?.id || item.userId || null,
+    name: item.name.trim(),
+    persona: item.persona,
+    template: item.template,
+    syncMode: item.syncMode,
+    status: item.status,
+    slug: cleanSlug,
+    themeColors: item.themeColors || {},
+    sectionTexts: item.sectionTexts || {},
+    enabledSections: item.enabledSections || {},
+    sectionTitles: item.sectionTitles || {},
+    institution: item.institution || '',
+    degree: item.degree || '',
+    subTitle: item.subTitle || '',
+    promotion: item.promotion || '',
+    authorName: item.authorName || '',
+    selectedProjects: item.selectedProjects || [],
+    selectedPersonalProjects: item.selectedPersonalProjects || [],
+    selectedCreativeStudio: item.selectedCreativeStudio || [],
+    selectedSkills: item.selectedSkills || [],
+    selectedParcours: item.selectedParcours || [],
+    selectedLanguages: item.selectedLanguages || [],
+    selectedCertifications: item.selectedCertifications || [],
+    selectedMedia: item.selectedMedia || [],
+    customIntro: item.customIntro || '',
+    recipientCompany: item.recipientCompany || '',
+    recipientName: item.recipientName || '',
+    customShareUrl: item.customShareUrl || '',
+    updatedAt: new Date().toISOString(),
+  };
+
+  // 1. Save in Supabase marketplace_templates (universal public access, stores any text ID)
+  try {
+    const marketplaceRow = {
+      id: `studio_slug_${cleanSlug}`,
+      name: item.name.trim(),
+      category: 'StudioPortfolio',
+      theme: item.template || 'IndustrialGEII',
+      design_data: fullPayload,
+      description: item.persona || '',
+      updated_at: new Date().toISOString(),
+      user_id: user?.id || null,
+      is_verified: true,
+      is_premium: false,
+    };
+
+    await supabase
+      .from('marketplace_templates')
+      .upsert(marketplaceRow, { onConflict: 'id' });
+  } catch (err) {
+    console.warn('Marketplace studio upsert warning:', err);
+  }
+
+  // 2. Save in Supabase portfolios table if user is logged in
   if (user?.id) {
     try {
       const isUUID = !!item.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id);
-
-      // In Supabase portfolios table, template enum supports 'ClassicCream' | 'BentoMinimal'.
-      // If IndustrialGEII or other, map to ClassicCream for DB column constraint, while saving full template in local/metadata
       const dbTemplate = item.template === 'BentoMinimal' ? 'BentoMinimal' : 'ClassicCream';
+      const encodedStudioData = `__STUDIO_DATA__:${JSON.stringify(fullPayload)}`;
 
       const dbPayload = {
         ...(isUUID ? { id: item.id } : {}),
@@ -418,8 +480,8 @@ export async function saveStudioPortfolio(
         template: dbTemplate,
         sync_mode: item.syncMode,
         status: item.status,
-        slug: item.slug.trim(),
-        custom_intro: item.customIntro || '',
+        slug: cleanSlug,
+        custom_intro: encodedStudioData,
         updated_at: new Date().toISOString(),
       };
 
@@ -437,10 +499,11 @@ export async function saveStudioPortfolio(
         }
       }
     } catch (err) {
-      console.warn('Supabase portfolio save error, stored in local cache', err);
+      console.warn('Supabase portfolio save error:', err);
     }
   }
 
+  // 3. Save in LocalStorage for instantaneous client preview & cache
   const local = getLocalStudioPortfolios(userId);
   const filtered = local.filter((p) => p.id !== item.id && p.id !== portfolio.id);
   const updated = [item, ...filtered];
@@ -449,9 +512,7 @@ export async function saveStudioPortfolio(
   if (typeof window !== 'undefined') {
     localStorage.setItem('portfoliogen_current_active_portfolio', JSON.stringify(item));
     localStorage.setItem('portfoliogen_current_active_portfolio_id', item.id);
-    if (item.slug) {
-      localStorage.setItem(`portfoliogen_portfolio_${item.slug.toLowerCase().trim()}`, JSON.stringify(item));
-    }
+    localStorage.setItem(`portfoliogen_portfolio_${cleanSlug}`, JSON.stringify(item));
     localStorage.setItem(`portfoliogen_portfolio_${item.id.toLowerCase().trim()}`, JSON.stringify(item));
   }
 
@@ -489,20 +550,20 @@ export async function fetchPublicStudioPortfolio(
   // 1. Try to search in localStorage first (if same browser or user session)
   if (typeof window !== 'undefined') {
     try {
+      // Direct exact slug match
+      if (normalized) {
+        const directSlug = localStorage.getItem(`portfoliogen_portfolio_${normalized}`);
+        if (directSlug) {
+          const parsed: StudioPortfolio = JSON.parse(directSlug);
+          if (parsed) return parsed;
+        }
+      }
+
       // If no slug provided or asking for active, return the currently active portfolio
       if (!normalized || normalized === 'active' || normalized === 'current') {
         const activeRaw = localStorage.getItem('portfoliogen_current_active_portfolio');
         if (activeRaw) {
           const parsed = JSON.parse(activeRaw);
-          if (parsed) return parsed;
-        }
-      }
-
-      // Check direct exact lookup keys in localStorage
-      if (normalized) {
-        const directSlug = localStorage.getItem(`portfoliogen_portfolio_${normalized}`);
-        if (directSlug) {
-          const parsed: StudioPortfolio = JSON.parse(directSlug);
           if (parsed) return parsed;
         }
       }
@@ -531,7 +592,60 @@ export async function fetchPublicStudioPortfolio(
     }
   }
 
-  // 2. Try fetching from Supabase with anon key (public access)
+  // 2. Try fetching from Supabase marketplace_templates (universal public access, stores complete JSON)
+  try {
+    const supabase = createClient();
+    const { data: mktRow } = await supabase
+      .from('marketplace_templates')
+      .select('design_data')
+      .or(`id.eq.studio_slug_${normalized},id.eq.studio_pf_${normalized}`)
+      .limit(1)
+      .maybeSingle();
+
+    if (mktRow?.design_data) {
+      const dd = mktRow.design_data as any;
+      if (dd && dd.slug) {
+        return {
+          id: dd.id || normalized,
+          userId: dd.userId,
+          name: dd.name || 'Mon Portfolio',
+          persona: dd.persona || 'Recruteur Industriel & AII',
+          template: dd.template || 'IndustrialGEII',
+          syncMode: dd.syncMode || 'live',
+          status: dd.status || 'active',
+          slug: dd.slug,
+          views: 1,
+          lastUpdated: 'Synchronisé',
+          enabledSections: dd.enabledSections || { ...DEFAULT_STUDIO_SECTIONS },
+          sectionTitles: dd.sectionTitles || {},
+          themeColors: dd.themeColors || { ...DEFAULT_STARTER_PORTFOLIOS[0].themeColors },
+          sectionTexts: dd.sectionTexts || { ...DEFAULT_STARTER_PORTFOLIOS[0].sectionTexts },
+          customIntro: dd.customIntro || 'Concevoir la logique. Piloter le système.',
+          institution: dd.institution || 'IUT SÉNART-FONTAINEBLEAU',
+          degree: dd.degree || 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE',
+          subTitle: dd.subTitle || 'Portfolio Semestre 2',
+          promotion: dd.promotion || 'PROMOTION 2025–2026',
+          authorName: dd.authorName || 'KOKOU DUSSEY',
+          selectedProjects: dd.selectedProjects || ['proj-sae-001', 'proj-sae-002', 'proj-001'],
+          selectedPersonalProjects: dd.selectedPersonalProjects || ['perso-001', 'perso-002', 'perso-003'],
+          selectedCreativeStudio: dd.selectedCreativeStudio || ['creat-001', 'creat-002', 'creat-003'],
+          selectedSkills: dd.selectedSkills || ['sk-001', 'sk-005', 'sk-006', 'sk-009'],
+          selectedParcours: dd.selectedParcours || ['par-001', 'par-004'],
+          selectedLanguages: dd.selectedLanguages || ['lang-001', 'lang-002'],
+          selectedCertifications: dd.selectedCertifications || ['cert-001', 'cert-002'],
+          selectedMedia: dd.selectedMedia || [],
+          recipientCompany: dd.recipientCompany || '',
+          recipientName: dd.recipientName || '',
+          customShareUrl: dd.customShareUrl || '',
+          createdAt: dd.createdAt || new Date().toISOString(),
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('Marketplace studio lookup warning:', err);
+  }
+
+  // 3. Try fetching from Supabase portfolios table
   try {
     const supabase = createClient();
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(normalized);
@@ -540,31 +654,43 @@ export async function fetchPublicStudioPortfolio(
     if (isUUID) {
       query = query.eq('id', normalized);
     } else {
-      query = query.or(`slug.eq.${normalized},slug.ilike.%${normalized}%,name.ilike.%${normalized}%`);
+      query = query.or(`slug.eq.${normalized},slug.ilike.%${normalized}%`);
     }
 
     const { data, error } = await query.limit(1).maybeSingle();
 
     if (!error && data) {
+      let customData: any = null;
+      if (typeof data.custom_intro === 'string' && data.custom_intro.startsWith('__STUDIO_DATA__:')) {
+        try {
+          customData = JSON.parse(data.custom_intro.replace('__STUDIO_DATA__:', ''));
+        } catch {}
+      }
+
       return {
         id: data.id,
         userId: data.user_id,
         name: data.name,
         persona: data.persona || 'Recruteur Industriel & AII',
-        template: (data.template as any) || 'IndustrialGEII',
+        template: customData?.template || (data.template as any) || 'IndustrialGEII',
         syncMode: data.sync_mode || 'live',
         status: data.status || 'active',
         slug: data.slug || normalized,
         views: (data.views_count ?? 0) + 1,
         lastUpdated: data.updated_at ? new Date(data.updated_at).toLocaleDateString('fr-FR') : 'Récemment',
-        selectedProjects: Array.isArray(data.selected_projects) ? data.selected_projects : ['proj-sae-001', 'proj-sae-002', 'proj-001'],
-        selectedPersonalProjects: ['perso-001', 'perso-002', 'perso-003'],
-        selectedCreativeStudio: ['creat-001', 'creat-002', 'creat-003'],
-        selectedSkills: Array.isArray(data.selected_skills) ? data.selected_skills : ['sk-001', 'sk-005', 'sk-006', 'sk-009'],
-        enabledSections: { ...DEFAULT_STUDIO_SECTIONS },
-        themeColors: { ...DEFAULT_STARTER_PORTFOLIOS[0].themeColors },
-        sectionTexts: { ...DEFAULT_STARTER_PORTFOLIOS[0].sectionTexts },
-        customIntro: data.custom_intro || 'Concevoir la logique. Piloter le système.',
+        selectedProjects: customData?.selectedProjects || (Array.isArray(data.selected_projects) ? data.selected_projects : ['proj-sae-001', 'proj-sae-002', 'proj-001']),
+        selectedPersonalProjects: customData?.selectedPersonalProjects || ['perso-001', 'perso-002', 'perso-003'],
+        selectedCreativeStudio: customData?.selectedCreativeStudio || ['creat-001', 'creat-002', 'creat-003'],
+        selectedSkills: customData?.selectedSkills || (Array.isArray(data.selected_skills) ? data.selected_skills : ['sk-001', 'sk-005', 'sk-006', 'sk-009']),
+        enabledSections: customData?.enabledSections || { ...DEFAULT_STUDIO_SECTIONS },
+        themeColors: customData?.themeColors || { ...DEFAULT_STARTER_PORTFOLIOS[0].themeColors },
+        sectionTexts: customData?.sectionTexts || { ...DEFAULT_STARTER_PORTFOLIOS[0].sectionTexts },
+        customIntro: customData?.customIntro || 'Concevoir la logique. Piloter le système.',
+        institution: customData?.institution || 'IUT SÉNART-FONTAINEBLEAU',
+        degree: customData?.degree || 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE',
+        subTitle: customData?.subTitle || 'Portfolio Semestre 2',
+        promotion: customData?.promotion || 'PROMOTION 2025–2026',
+        authorName: customData?.authorName || 'KOKOU DUSSEY',
         createdAt: data.created_at,
       };
     }
@@ -572,7 +698,7 @@ export async function fetchPublicStudioPortfolio(
     console.warn('Supabase public portfolio lookup error:', err);
   }
 
-  // 3. Exact match against DEFAULT_STARTER_PORTFOLIOS
+  // 4. Exact match against DEFAULT_STARTER_PORTFOLIOS
   const starter = DEFAULT_STARTER_PORTFOLIOS.find(
     (p) =>
       p.id.toLowerCase() === normalized ||
@@ -582,17 +708,6 @@ export async function fetchPublicStudioPortfolio(
 
   if (starter) {
     return starter;
-  }
-
-  // 4. If current active portfolio is in localStorage, use it!
-  if (typeof window !== 'undefined') {
-    try {
-      const activeRaw = localStorage.getItem('portfoliogen_current_active_portfolio');
-      if (activeRaw) {
-        const parsed = JSON.parse(activeRaw);
-        if (parsed) return parsed;
-      }
-    } catch {}
   }
 
   // 5. Default: return the full IndustrialGEII starter portfolio

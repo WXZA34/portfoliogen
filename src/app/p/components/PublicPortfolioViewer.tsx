@@ -193,14 +193,14 @@ export default function PublicPortfolioViewer({
   }, [activePortfolio.selectedSkills, skills]);
 
   const candidateName =
-    portfolio?.sectionTexts?.coverAuthorName ||
-    portfolio?.authorName ||
+    activePortfolio?.sectionTexts?.coverAuthorName ||
+    activePortfolio?.authorName ||
     profile?.fullName ||
     'KOKOU DUSSEY';
 
   const candidateEmail = profile?.email || 'kokou.dussey@etu.u-pec.fr';
 
-  const publicUrl = `https://portfoliogen.net/p/${portfolio?.slug || slug}${
+  const publicUrl = `https://portfoliogen.net/p/${activePortfolio?.slug || slug}${
     company ? `?for=${encodeURIComponent(company)}` : ''
   }`;
 
