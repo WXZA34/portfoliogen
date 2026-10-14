@@ -5,6 +5,17 @@ export interface ProjectKPI {
   value: string;
 }
 
+export interface VideoMediaItem {
+  id?: string;
+  url: string;              // YouTube, Vimeo, MP4, Loom
+  title?: string;
+  durationSeconds?: number; // <= 120 (max 2 minutes)
+}
+
+export const MAX_PROJECT_IMAGES = 6;
+export const MAX_PROJECT_VIDEOS = 2;
+export const MAX_VIDEO_DURATION_SECONDS = 120; // 2 minutes max
+
 export type ProjectCategory = 'academic' | 'mini' | 'personal' | 'soft' | 'other';
 
 export interface ProjectItem {
@@ -21,6 +32,8 @@ export interface ProjectItem {
   github?: string;
   imageUrl?: string;
   imageAlt?: string;
+  images?: string[];          // Up to 6 images
+  videos?: VideoMediaItem[];  // Up to 2 videos (max 2 min each)
   status: 'published' | 'draft';
   category?: ProjectCategory;
   kpis?: ProjectKPI[];
@@ -1456,6 +1469,8 @@ export interface PersonalProjectItem {
   github?: string;
   url?: string;
   imageUrl?: string;
+  images?: string[];          // Up to 6 images
+  videos?: VideoMediaItem[];  // Up to 2 videos (max 2 min each)
   year?: string;
   status: 'published' | 'draft';
   createdAt?: string;
@@ -1581,6 +1596,8 @@ export interface CreativeStudioItem {
   mediaType: 'video' | 'image' | 'audio' | 'article';
   mediaUrl?: string;
   thumbnailUrl?: string;
+  images?: string[];          // Up to 6 images
+  videos?: VideoMediaItem[];  // Up to 2 videos (max 2 min each)
   role?: string;
   year?: string;
   status: 'published' | 'draft';

@@ -155,6 +155,11 @@ export default function PortfolioStudioContent() {
       subTitle: 'Portfolio Semestre 2',
       promotion: 'PROMOTION 2025–2026',
       authorName: profile?.fullName || 'KOKOU DUSSEY',
+      themeColors: { ...DEFAULT_STARTER_PORTFOLIOS[0].themeColors },
+      sectionTexts: { ...DEFAULT_STARTER_PORTFOLIOS[0].sectionTexts },
+      recipientCompany: '',
+      recipientName: '',
+      customShareUrl: '',
     };
 
     setPortfolios((prev) => [newPortfolio, ...prev]);

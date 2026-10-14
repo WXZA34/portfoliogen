@@ -7,10 +7,12 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import { toast } from 'sonner';
 import {
   type CreativeStudioItem,
+  type VideoMediaItem,
   fetchUserCreativeStudioItems,
   saveUserCreativeStudioItem,
   deleteUserCreativeStudioItem,
 } from '@/lib/services/cvthequeService';
+import MediaUploadManager from './MediaUploadManager';
 
 interface CreativeStudioPanelProps {
   onCountChange?: (count: number) => void;
@@ -31,6 +33,8 @@ export default function CreativeStudioPanel({ onCountChange }: CreativeStudioPan
   const [softSkillsInput, setSoftSkillsInput] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [videos, setVideos] = useState<VideoMediaItem[]>([]);
   const [status, setStatus] = useState<'published' | 'draft'>('published');
 
   useEffect(() => {
@@ -56,7 +60,10 @@ export default function CreativeStudioPanel({ onCountChange }: CreativeStudioPan
     setMediaType('video');
     setSoftSkillsInput('Travail en équipe, Vulgarisation technique, Storytelling, Montage vidéo');
     setMediaUrl('');
-    setThumbnailUrl('https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=600&q=80');
+    const defaultThumb = 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=600&q=80';
+    setThumbnailUrl(defaultThumb);
+    setImages([defaultThumb]);
+    setVideos([]);
     setStatus('published');
     setModalOpen(true);
   };
@@ -71,6 +78,9 @@ export default function CreativeStudioPanel({ onCountChange }: CreativeStudioPan
     setSoftSkillsInput(item.softSkills.join(', '));
     setMediaUrl(item.mediaUrl || '');
     setThumbnailUrl(item.thumbnailUrl || '');
+    const studioImages = item.images && item.images.length > 0 ? item.images : (item.thumbnailUrl ? [item.thumbnailUrl] : []);
+    setImages(studioImages);
+    setVideos(item.videos || (item.mediaUrl ? [{ url: item.mediaUrl, title: item.title, durationSeconds: 120 }] : []));
     setStatus(item.status);
     setModalOpen(true);
   };
@@ -84,6 +94,9 @@ export default function CreativeStudioPanel({ onCountChange }: CreativeStudioPan
       .map((s) => s.trim())
       .filter(Boolean);
 
+    const finalImages = images.length > 0 ? images.slice(0, 6) : (thumbnailUrl ? [thumbnailUrl] : []);
+    const finalVideos = videos.slice(0, 2);
+
     const saved = await saveUserCreativeStudioItem(
       {
         title: title.trim(),
@@ -92,8 +105,10 @@ export default function CreativeStudioPanel({ onCountChange }: CreativeStudioPan
         year: year.trim(),
         mediaType,
         softSkills: skillsList.length > 0 ? skillsList : ['Communication', 'Travail en équipe'],
-        mediaUrl: mediaUrl.trim(),
-        thumbnailUrl: thumbnailUrl.trim(),
+        mediaUrl: finalVideos[0]?.url || mediaUrl.trim(),
+        thumbnailUrl: finalImages[0] || thumbnailUrl.trim(),
+        images: finalImages,
+        videos: finalVideos,
         status,
       },
       editingItem?.id
@@ -365,31 +380,13 @@ export default function CreativeStudioPanel({ onCountChange }: CreativeStudioPan
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-700 text-muted-foreground mb-1">
-                  Vignette / Image URL d&apos;illustration
-                </label>
-                <input
-                  type="text"
-                  value={thumbnailUrl}
-                  onChange={(e) => setThumbnailUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-700 text-muted-foreground mb-1">
-                  Lien média (YouTube, Soundcloud, Drive, etc.)
-                </label>
-                <input
-                  type="text"
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                  placeholder="https://youtube.com/..."
-                  className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary font-mono"
-                />
-              </div>
+              {/* Media Manager (up to 6 images, up to 2 videos max 2 min) */}
+              <MediaUploadManager
+                images={images}
+                onChangeImages={setImages}
+                videos={videos}
+                onChangeVideos={setVideos}
+              />
 
               <div className="flex justify-end gap-2 pt-3 border-t border-border">
                 <button

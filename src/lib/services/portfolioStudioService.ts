@@ -62,34 +62,79 @@ export interface SectionColors {
 }
 
 export interface SectionTexts {
+  // Page de Garde / Sas d'Accueil
+  coverDepartment?: string;
+  coverMainTitle?: string;
+  coverDegree?: string;
+  coverSubtitle?: string;
+  coverRealiseParLabel?: string;
+  coverAuthorName?: string;
+  coverHeadline?: string;
+  coverInstitution?: string;
+  coverPromotion?: string;
+  coverSpeciality?: string;
+  coverButton?: string;
+
+  // Hero & Accueil
   heroGreeting?: string;
   heroHeadline?: string;
   heroSlogan?: string;
   heroAvailability?: string;
+  heroDownloadCv?: string;
+
+  // À propos & Profil
   aboutTitle?: string;
   aboutSubtitle?: string;
+  aboutBioTitle?: string;
   aboutBio?: string;
+  aboutObjectiveTitle?: string;
   aboutObjective?: string;
+
+  // SAÉ (Réalisations académiques)
   projectsTitle?: string;
   projectsSubtitle?: string;
+
+  // Projets Personnels (Savoir-Faire)
   personalProjectsTitle?: string;
   personalProjectsSubtitle?: string;
+
+  // Studio Créatif (Savoir-Être)
   creativeStudioTitle?: string;
   creativeStudioSubtitle?: string;
+  creativeStudioQuote?: string;
+
+  // Compétences & Outils
   skillsTitle?: string;
   skillsSubtitle?: string;
+  skillsHardTitle?: string;
   toolsTitle?: string;
   toolsSubtitle?: string;
+  toolsSoftTitle?: string;
+
+  // Parcours & Formations
   parcoursTitle?: string;
   parcoursSubtitle?: string;
+
+  // Langues & Certifications
   languagesTitle?: string;
   languagesSubtitle?: string;
+  languagesBlockTitle?: string;
+  certificationsBlockTitle?: string;
+
+  // Galerie Médias
   galleryTitle?: string;
   gallerySubtitle?: string;
+
+  // Contact & Coordonnées
   contactTitle?: string;
   contactSubtitle?: string;
   contactHeading?: string;
   contactDescription?: string;
+
+  // Cartes & Footer
+  learnMoreText?: string;
+  footerText?: string;
+
   [key: string]: string | undefined;
 }
 
@@ -102,6 +147,10 @@ export interface StudioPortfolio {
   syncMode: 'live' | 'frozen';
   status: 'active' | 'draft';
   slug: string;
+  customDomain?: string;
+  customShareUrl?: string;
+  recipientName?: string;
+  recipientCompany?: string;
   views: number;
   lastUpdated: string;
   enabledSections?: StudioPortfolioSections;
@@ -157,9 +206,15 @@ export const DEFAULT_STARTER_PORTFOLIOS: StudioPortfolio[] = [
     },
     sectionTexts: {
       coverDepartment: "DÉPARTEMENT GÉNIE ÉLECTRIQUE ET INFORMATIQUE INDUSTRIELLE",
+      coverMainTitle: "B.U.T.",
       coverDegree: "BACHELOR UNIVERSITAIRE DE TECHNOLOGIE",
       coverSubtitle: "Portfolio Semestre 2",
+      coverRealiseParLabel: "RÉALISÉ PAR",
+      coverAuthorName: "KOKOU DUSSEY",
+      coverHeadline: "Étudiant en B.U.T. GEII & Automatisme",
+      coverInstitution: "IUT SÉNART-FONTAINEBLEAU",
       coverPromotion: "PROMOTION 2025–2026",
+      coverSpeciality: "Spécialité Automatisme et Informatique Industrielle (AII)",
       coverButton: "Accéder au portfolio",
       heroHeadline: "Étudiant en B.U.T. GEII & Automatisme",
       heroSlogan: "Concevoir la logique. Piloter le système.",

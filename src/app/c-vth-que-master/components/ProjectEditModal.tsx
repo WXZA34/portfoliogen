@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import Modal from '@/components/ui/Modal';
-import { ProjectItem, ProjectKPI, saveProject } from '@/lib/services/cvthequeService';
+import { ProjectItem, ProjectKPI, VideoMediaItem, saveProject } from '@/lib/services/cvthequeService';
+import MediaUploadManager from './MediaUploadManager';
 import { toast } from 'sonner';
 
 interface ProjectEditModalProps {
@@ -74,6 +75,8 @@ export default function ProjectEditModal({
   const [url, setUrl] = useState('');
   const [github, setGithub] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [videos, setVideos] = useState<VideoMediaItem[]>([]);
   const [kpis, setKpis] = useState<ProjectKPI[]>([]);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -93,6 +96,14 @@ export default function ProjectEditModal({
       setUrl(initialProject.url || '');
       setGithub(initialProject.github || '');
       setImageUrl(initialProject.imageUrl || '');
+      const projImgs =
+        initialProject.images && initialProject.images.length > 0
+          ? initialProject.images
+          : initialProject.imageUrl
+          ? [initialProject.imageUrl]
+          : [];
+      setImages(projImgs);
+      setVideos(initialProject.videos || []);
       setKpis(initialProject.kpis ? [...initialProject.kpis] : []);
     } else {
       // Defaults for new project
@@ -107,6 +118,8 @@ export default function ProjectEditModal({
       setUrl('');
       setGithub('');
       setImageUrl(PRESET_COVERS[0].url);
+      setImages([PRESET_COVERS[0].url]);
+      setVideos([]);
       setKpis([
         { label: 'Utilisateurs', value: '1.5k+' },
         { label: 'Performance', value: '98%' },
@@ -187,6 +200,9 @@ export default function ProjectEditModal({
 
     setSaving(true);
     try {
+      const finalImages = images.length > 0 ? images.slice(0, 6) : (imageUrl ? [imageUrl] : []);
+      const finalVideos = videos.slice(0, 2);
+
       const projectPayload: Omit<ProjectItem, 'id' | 'createdAt'> = {
         title: title.trim(),
         role: role.trim(),
@@ -198,8 +214,10 @@ export default function ProjectEditModal({
         techStack,
         url: url.trim() || undefined,
         github: github.trim() || undefined,
-        imageUrl: imageUrl.trim() || undefined,
+        imageUrl: finalImages[0] || imageUrl.trim() || undefined,
         imageAlt: title.trim(),
+        images: finalImages,
+        videos: finalVideos,
         kpis: kpis.filter((k) => k.label.trim() && k.value.trim()),
       };
 
@@ -404,82 +422,45 @@ export default function ProjectEditModal({
         </div>
 
         {/* Row 5: Visuel & Image */}
+        {/* Row 5: Médias (Galerie max 6 images & Vidéos max 2, durée <= 2 min) */}
         <div className="space-y-2">
-          <label className="text-xs font-700 uppercase tracking-wider text-muted-foreground">
-            Image de présentation / Bannière
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-700 uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <span>Médias & Démonstrations du projet</span>
+            </label>
+            <span className="text-[10px] text-muted-foreground font-semibold">
+              Max 6 images · 2 vidéos (≤ 2 min)
+            </span>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-            {/* Preview Box */}
-            <div className="relative h-28 rounded-xl overflow-hidden border border-border bg-muted flex items-center justify-center group">
-              {imageUrl ? (
-                <>
-                  <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setImageUrl('')}
-                      className="px-2 py-1 bg-red-600 text-white rounded text-xs font-600 shadow"
-                    >
-                      Supprimer
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center p-3 text-muted-foreground">
-                  <Icon name="PhotoIcon" size={24} className="mx-auto mb-1 opacity-50" />
-                  <span className="text-[11px]">Aucune image</span>
-                </div>
-              )}
-            </div>
+          <MediaUploadManager
+            images={images}
+            onChangeImages={(newImgs) => {
+              setImages(newImgs);
+              if (newImgs[0]) setImageUrl(newImgs[0]);
+            }}
+            videos={videos}
+            onChangeVideos={setVideos}
+          />
 
-            {/* Upload & URL input */}
-            <div className="md:col-span-2 space-y-2">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="Collez une URL d'image (https://...)"
-                  className="flex-1 px-3 py-2 rounded-xl border border-border bg-background text-xs font-500 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
-                <button
-                  type="button"
-                  disabled={uploadingImage}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-xl text-xs font-600 transition-colors whitespace-nowrap"
-                >
-                  <Icon name="ArrowUpTrayIcon" size={14} />
-                  {uploadingImage ? 'Téléversement...' : 'Importer'}
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </div>
-
-              {/* Presets */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                <span className="text-[11px] text-muted-foreground flex-shrink-0">Préréglages :</span>
-                {PRESET_COVERS.map((preset) => (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    onClick={() => setImageUrl(preset.url)}
-                    className={`text-[10px] px-2 py-0.5 rounded-full border transition-all whitespace-nowrap ${
-                      imageUrl === preset.url
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-card text-muted-foreground border-border hover:text-foreground'
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* Presets rapides de couverture */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pt-1">
+            <span className="text-[10px] text-muted-foreground flex-shrink-0">Fonds suggérés :</span>
+            {PRESET_COVERS.map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => {
+                  if (!images.includes(preset.url) && images.length < 6) {
+                    setImages([...images, preset.url]);
+                  }
+                  setImageUrl(preset.url);
+                }}
+                className="text-[10px] px-2 py-0.5 rounded-full border border-border bg-card text-muted-foreground hover:text-foreground transition-all whitespace-nowrap"
+              >
+                + {preset.label}
+              </button>
+            ))}
           </div>
         </div>
 

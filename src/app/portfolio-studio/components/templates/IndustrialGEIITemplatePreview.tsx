@@ -14,6 +14,7 @@ import type {
   LanguageItem,
   CertificationItem,
   MediaFileItem,
+  VideoMediaItem,
 } from '@/lib/services/cvthequeService';
 
 interface IndustrialGEIITemplatePreviewProps {
@@ -34,12 +35,39 @@ interface DetailModalItem {
   category?: string;
   description: string;
   imageUrl?: string;
+  images?: string[];
+  videos?: VideoMediaItem[];
   tags?: string[];
   links?: { label: string; url: string; icon?: string }[];
   kpis?: { label: string; value: string }[];
   year?: string;
   role?: string;
   accentColor?: string;
+}
+
+function formatDuration(seconds?: number): string {
+  if (!seconds) return '≤ 2 min';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+function getEmbedUrl(url: string): string | null {
+  try {
+    if (url.includes('youtube.com/watch?v=')) {
+      const id = new URL(url).searchParams.get('v');
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    if (url.includes('youtu.be/')) {
+      const id = url.split('youtu.be/')[1]?.split('?')[0];
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    if (url.includes('vimeo.com/')) {
+      const id = url.split('vimeo.com/')[1]?.split('?')[0];
+      return id ? `https://player.vimeo.com/video/${id}` : null;
+    }
+  } catch {}
+  return null;
 }
 
 export default function IndustrialGEIITemplatePreview({
@@ -92,6 +120,7 @@ export default function IndustrialGEIITemplatePreview({
   const [splashEntered, setSplashEntered] = useState(!sections.cover);
   const [activeSection, setActiveSection] = useState<string>('accueil');
   const [selectedDetailItem, setSelectedDetailItem] = useState<DetailModalItem | null>(null);
+  const [modalActiveImageIdx, setModalActiveImageIdx] = useState<number>(0);
 
   // Filter items based on portfolio selections
   const displayProjects = projects.filter((p) =>
@@ -122,9 +151,9 @@ export default function IndustrialGEIITemplatePreview({
 
   const displayMedia = media.slice(0, 6);
 
-  const authorName = portfolio.authorName || profile?.fullName || 'KOKOU DUSSEY';
-  const headline = texts.heroHeadline || profile?.headline || 'Étudiant en B.U.T. GEII & Automatisme';
-  const institution = portfolio.institution || 'IUT SÉNART-FONTAINEBLEAU';
+  const authorName = texts.coverAuthorName || portfolio.authorName || profile?.fullName || 'KOKOU DUSSEY';
+  const headline = texts.coverHeadline || texts.heroHeadline || profile?.headline || 'Étudiant en B.U.T. GEII & Automatisme';
+  const institution = texts.coverInstitution || portfolio.institution || 'IUT SÉNART-FONTAINEBLEAU';
   const degree = texts.coverDegree || portfolio.degree || 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE';
   const subTitle = texts.coverSubtitle || portfolio.subTitle || 'Portfolio Semestre 2';
   const promotion = texts.coverPromotion || portfolio.promotion || 'PROMOTION 2025–2026';
@@ -159,14 +188,14 @@ export default function IndustrialGEIITemplatePreview({
             {texts.coverDepartment || titles.coverDepartment || 'DÉPARTEMENT GÉNIE ÉLECTRIQUE ET INFORMATIQUE INDUSTRIELLE'}
           </p>
           <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-[#1A1815]">
-            B.U.T.
+            {texts.coverMainTitle || 'B.U.T.'}
           </h2>
           <p className="text-xs sm:text-sm font-extrabold tracking-wide text-[#2C2720] uppercase">
-            {degree}
+            {texts.coverDegree || degree}
           </p>
           <div className="w-12 h-0.5 mx-auto my-3 opacity-60" style={{ backgroundColor: heroColor }} />
           <p className="text-xs italic text-[#6D624C]">
-            {subTitle}
+            {texts.coverSubtitle || subTitle}
           </p>
         </div>
 
@@ -179,13 +208,13 @@ export default function IndustrialGEIITemplatePreview({
             className="text-[10px] font-bold tracking-[0.2em] uppercase mb-1"
             style={{ color: heroColor }}
           >
-            RÉALISÉ PAR
+            {texts.coverRealiseParLabel || 'RÉALISÉ PAR'}
           </p>
           <h1 className="text-xl sm:text-2xl font-black tracking-wide text-[#1A1815] uppercase">
-            {authorName}
+            {texts.coverAuthorName || authorName}
           </h1>
           <p className="text-[11px] text-[#6D624C] mt-1 font-semibold">
-            {headline}
+            {texts.coverHeadline || headline}
           </p>
         </div>
 
@@ -193,14 +222,19 @@ export default function IndustrialGEIITemplatePreview({
         <div className="pb-6 w-full max-w-sm space-y-4">
           <div>
             <p className="text-xs font-extrabold tracking-wider text-[#4A4234] uppercase">
-              {institution}
+              {texts.coverInstitution || institution}
             </p>
             <p
               className="text-[10px] font-semibold tracking-widest uppercase mt-0.5"
               style={{ color: heroColor }}
             >
-              {promotion}
+              {texts.coverPromotion || promotion}
             </p>
+            {texts.coverSpeciality && (
+              <p className="text-[10px] font-semibold text-[#6D624C] tracking-wide mt-1 uppercase">
+                {texts.coverSpeciality}
+              </p>
+            )}
           </div>
 
           <button
@@ -540,7 +574,7 @@ export default function IndustrialGEIITemplatePreview({
                       style={{ backgroundColor: cardBg }}
                     >
                       <div>
-                        {/* Top Media Container with Centered Play Button */}
+                        {/* Top Media Container with Centered Play Button & Media Badges */}
                         <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-black/10 flex-shrink-0 mb-3.5">
                           {project.imageUrl ? (
                             <AppImage
@@ -552,6 +586,20 @@ export default function IndustrialGEIITemplatePreview({
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-[#E1D9C6] text-[#7A6E55]">
                               <Icon name="PhotoIcon" size={32} />
+                            </div>
+                          )}
+
+                          {/* Media count indicators (max 6 images, max 2 videos <= 2 min) */}
+                          {project.images && project.images.length > 1 && (
+                            <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1 z-10">
+                              <Icon name="PhotoIcon" size={11} />
+                              <span>{project.images.length}/6 photos</span>
+                            </div>
+                          )}
+                          {project.videos && project.videos.length > 0 && (
+                            <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1 z-10">
+                              <Icon name="PlayIcon" size={11} />
+                              <span>{project.videos.length}/2 vidéo{project.videos.length > 1 ? 's' : ''} (≤2m)</span>
                             </div>
                           )}
 
@@ -598,12 +646,14 @@ export default function IndustrialGEIITemplatePreview({
                       {/* Card Footer Link */}
                       <button
                         type="button"
-                        onClick={() =>
+                        onClick={() => {
                           setSelectedDetailItem({
                             title: project.title,
                             category: project.category || 'SAÉ Académique',
                             description: project.description,
                             imageUrl: project.imageUrl,
+                            images: project.images && project.images.length > 0 ? project.images : (project.imageUrl ? [project.imageUrl] : []),
+                            videos: project.videos || [],
                             tags: project.techStack,
                             year: project.year,
                             role: project.role,
@@ -613,8 +663,9 @@ export default function IndustrialGEIITemplatePreview({
                               ...(project.url ? [{ label: 'Démonstration', url: project.url, icon: 'GlobeAltIcon' }] : []),
                               ...(project.github ? [{ label: 'Code source', url: project.github.startsWith('http') ? project.github : `https://${project.github}`, icon: 'CodeBracketIcon' }] : []),
                             ],
-                          })
-                        }
+                          });
+                          setModalActiveImageIdx(0);
+                        }}
                         className="mt-auto pt-4 flex items-center gap-1.5 text-xs font-semibold text-[#8A7D63] hover:text-[#1A1815] transition-colors group-hover:translate-x-1 duration-150 text-left"
                       >
                         <span>{texts.learnMoreText || 'En savoir plus →'}</span>
@@ -692,6 +743,20 @@ export default function IndustrialGEIITemplatePreview({
                             </div>
                           )}
 
+                          {/* Media count indicators (max 6 images, max 2 videos <= 2 min) */}
+                          {p.images && p.images.length > 1 && (
+                            <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1 z-10">
+                              <Icon name="PhotoIcon" size={11} />
+                              <span>{p.images.length}/6 photos</span>
+                            </div>
+                          )}
+                          {p.videos && p.videos.length > 0 && (
+                            <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1 z-10">
+                              <Icon name="PlayIcon" size={11} />
+                              <span>{p.videos.length}/2 vidéo{p.videos.length > 1 ? 's' : ''} (≤2m)</span>
+                            </div>
+                          )}
+
                           {/* Center Play Overlay Icon matching screenshot */}
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="w-12 h-12 rounded-full bg-black/60 border border-white/80 backdrop-blur-xs flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
@@ -735,12 +800,14 @@ export default function IndustrialGEIITemplatePreview({
                       {/* Card Footer Link */}
                       <button
                         type="button"
-                        onClick={() =>
+                        onClick={() => {
                           setSelectedDetailItem({
                             title: p.title,
                             category: p.category || 'Projet Personnel',
                             description: p.description,
                             imageUrl: p.imageUrl,
+                            images: p.images && p.images.length > 0 ? p.images : (p.imageUrl ? [p.imageUrl] : []),
+                            videos: p.videos || [],
                             tags: p.techStack,
                             year: p.year,
                             accentColor: persoColor,
@@ -748,8 +815,9 @@ export default function IndustrialGEIITemplatePreview({
                               ...(p.url ? [{ label: 'Tester l\'application', url: p.url, icon: 'GlobeAltIcon' }] : []),
                               ...(p.github ? [{ label: 'Code source GitHub', url: p.github.startsWith('http') ? p.github : `https://${p.github}`, icon: 'CodeBracketIcon' }] : []),
                             ],
-                          })
-                        }
+                          });
+                          setModalActiveImageIdx(0);
+                        }}
                         className="mt-auto pt-4 flex items-center gap-1.5 text-xs font-semibold text-[#8A7D63] hover:text-[#1A1815] transition-colors group-hover:translate-x-1 duration-150 text-left"
                       >
                         <span>{texts.learnMoreText || 'En savoir plus →'}</span>
@@ -828,6 +896,20 @@ export default function IndustrialGEIITemplatePreview({
                             </div>
                           )}
 
+                          {/* Media count indicators (max 6 images, max 2 videos <= 2 min) */}
+                          {item.images && item.images.length > 1 && (
+                            <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1 z-10">
+                              <Icon name="PhotoIcon" size={11} />
+                              <span>{item.images.length}/6 photos</span>
+                            </div>
+                          )}
+                          {(item.videos && item.videos.length > 0) || item.mediaUrl ? (
+                            <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1 z-10">
+                              <Icon name="PlayIcon" size={11} />
+                              <span>{item.videos?.length || 1}/2 vidéo (≤2m)</span>
+                            </div>
+                          ) : null}
+
                           {/* Center Play Overlay Icon matching screenshot */}
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="w-12 h-12 rounded-full bg-black/60 border border-white/80 backdrop-blur-xs flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
@@ -871,12 +953,20 @@ export default function IndustrialGEIITemplatePreview({
                       {/* Card Footer Link */}
                       <button
                         type="button"
-                        onClick={() =>
+                        onClick={() => {
+                          const studioVideos: VideoMediaItem[] =
+                            item.videos && item.videos.length > 0
+                              ? item.videos
+                              : item.mediaUrl
+                              ? [{ url: item.mediaUrl, title: item.title, durationSeconds: 120 }]
+                              : [];
                           setSelectedDetailItem({
                             title: item.title,
                             category: item.category || 'Studio Créatif',
                             description: item.description,
                             imageUrl: item.thumbnailUrl,
+                            images: item.images && item.images.length > 0 ? item.images : (item.thumbnailUrl ? [item.thumbnailUrl] : []),
+                            videos: studioVideos,
                             tags: item.softSkills,
                             year: item.year,
                             role: item.role,
@@ -884,8 +974,9 @@ export default function IndustrialGEIITemplatePreview({
                             links: [
                               ...(item.mediaUrl ? [{ label: 'Visionner le média', url: item.mediaUrl, icon: 'PlayIcon' }] : []),
                             ],
-                          })
-                        }
+                          });
+                          setModalActiveImageIdx(0);
+                        }}
                         className="mt-auto pt-4 flex items-center gap-1.5 text-xs font-semibold text-[#8A7D63] hover:text-[#1A1815] transition-colors group-hover:translate-x-1 duration-150 text-left"
                       >
                         <span>{texts.learnMoreText || 'En savoir plus →'}</span>
@@ -1268,45 +1359,178 @@ export default function IndustrialGEIITemplatePreview({
               <Icon name="XMarkIcon" size={16} />
             </button>
 
-            {selectedDetailItem.imageUrl && (
-              <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden mb-4 bg-black/10">
-                <AppImage
-                  src={selectedDetailItem.imageUrl}
-                  alt={selectedDetailItem.title}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            )}
+            {(() => {
+              const modalImages: string[] =
+                selectedDetailItem.images && selectedDetailItem.images.length > 0
+                  ? selectedDetailItem.images.slice(0, 6)
+                  : selectedDetailItem.imageUrl
+                  ? [selectedDetailItem.imageUrl]
+                  : [];
+              const modalVideos: VideoMediaItem[] = (selectedDetailItem.videos || []).slice(0, 2);
+              const activeImg = modalImages[modalActiveImageIdx] || modalImages[0];
 
-            {selectedDetailItem.category && (
-              <span
-                className="inline-block px-3 py-1 rounded-full text-xs font-bold mb-2"
-                style={{
-                  backgroundColor: `${selectedDetailItem.accentColor || '#1A1815'}18`,
-                  color: selectedDetailItem.accentColor || '#1A1815',
-                }}
-              >
-                {selectedDetailItem.category}
-              </span>
-            )}
+              return (
+                <>
+                  {/* Multi-image Gallery (up to 6 images) */}
+                  {modalImages.length > 0 && (
+                    <div className="mb-4 space-y-2">
+                      <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-black/10 border border-black/5 group">
+                        <AppImage
+                          src={activeImg}
+                          alt={selectedDetailItem.title}
+                          fill
+                          className="object-cover"
+                        />
+                        {modalImages.length > 1 && (
+                          <>
+                            <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-xs text-white text-[11px] font-bold z-10">
+                              📷 {modalActiveImageIdx + 1} / {modalImages.length} (max 6)
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setModalActiveImageIdx((prev) => (prev > 0 ? prev - 1 : modalImages.length - 1))
+                              }
+                              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-colors z-10"
+                              title="Image précédente"
+                            >
+                              <Icon name="ChevronLeftIcon" size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setModalActiveImageIdx((prev) => (prev < modalImages.length - 1 ? prev + 1 : 0))
+                              }
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-colors z-10"
+                              title="Image suivante"
+                            >
+                              <Icon name="ChevronRightIcon" size={16} />
+                            </button>
+                          </>
+                        )}
+                      </div>
 
-            <h3
-              className="text-xl sm:text-2xl font-black tracking-tight mb-1"
-              style={{ color: selectedDetailItem.accentColor || '#1A1815' }}
-            >
-              {selectedDetailItem.title}
-            </h3>
+                      {/* Thumbnails row if more than 1 image */}
+                      {modalImages.length > 1 && (
+                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                          {modalImages.map((thumbUrl, idx) => (
+                            <button
+                              key={`modal-thumb-${idx}`}
+                              type="button"
+                              onClick={() => setModalActiveImageIdx(idx)}
+                              className={`relative w-14 h-11 rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all ${
+                                modalActiveImageIdx === idx
+                                  ? 'border-primary ring-2 ring-primary/40 scale-105'
+                                  : 'border-black/10 opacity-60 hover:opacity-100'
+                              }`}
+                            >
+                              <AppImage src={thumbUrl} alt={`Thumbnail ${idx + 1}`} fill className="object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-            {selectedDetailItem.role && (
-              <p className="text-xs font-semibold text-[#8A7D63] mb-3">
-                {selectedDetailItem.role} {selectedDetailItem.year && `· ${selectedDetailItem.year}`}
-              </p>
-            )}
+                  {/* Category Pill */}
+                  {selectedDetailItem.category && (
+                    <span
+                      className="inline-block px-3 py-1 rounded-full text-xs font-bold mb-2"
+                      style={{
+                        backgroundColor: `${selectedDetailItem.accentColor || '#1A1815'}18`,
+                        color: selectedDetailItem.accentColor || '#1A1815',
+                      }}
+                    >
+                      {selectedDetailItem.category}
+                    </span>
+                  )}
 
-            <p className="text-xs sm:text-sm text-[#4A4234] leading-relaxed mb-4 whitespace-pre-line font-normal">
-              {selectedDetailItem.description}
-            </p>
+                  <h3
+                    className="text-xl sm:text-2xl font-black tracking-tight mb-1"
+                    style={{ color: selectedDetailItem.accentColor || '#1A1815' }}
+                  >
+                    {selectedDetailItem.title}
+                  </h3>
+
+                  {selectedDetailItem.role && (
+                    <p className="text-xs font-semibold text-[#8A7D63] mb-3">
+                      {selectedDetailItem.role} {selectedDetailItem.year && `· ${selectedDetailItem.year}`}
+                    </p>
+                  )}
+
+                  <p className="text-xs sm:text-sm text-[#4A4234] leading-relaxed mb-4 whitespace-pre-line font-normal">
+                    {selectedDetailItem.description}
+                  </p>
+
+                  {/* Videos Section (Up to 2 videos, max 2 min) */}
+                  {modalVideos.length > 0 && (
+                    <div className="mb-4 space-y-3 p-3.5 rounded-2xl bg-black/5 border border-black/10">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#1A1815] flex items-center gap-1.5 uppercase tracking-wider">
+                          <Icon name="VideoCameraIcon" size={14} className="text-primary" />
+                          Vidéos ({modalVideos.length}/2 max)
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800">
+                          ⏱ Durée max 2 min
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {modalVideos.map((vid, vIdx) => {
+                          const embed = getEmbedUrl(vid.url);
+                          const durLabel = formatDuration(vid.durationSeconds);
+                          return (
+                            <div key={vIdx} className="rounded-xl overflow-hidden bg-black/10 border border-black/10">
+                              {embed ? (
+                                <div className="relative aspect-video w-full">
+                                  <iframe
+                                    src={embed}
+                                    title={vid.title || `Vidéo ${vIdx + 1}`}
+                                    className="w-full h-full border-0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                  />
+                                </div>
+                              ) : vid.url.endsWith('.mp4') ? (
+                                <video controls src={vid.url} className="w-full aspect-video rounded-t-xl bg-black" />
+                              ) : (
+                                <div className="p-3 flex items-center justify-between">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0">
+                                      <Icon name="PlayIcon" size={14} />
+                                    </div>
+                                    <span className="text-xs font-bold text-foreground truncate max-w-[200px]">
+                                      {vid.title || `Démonstration vidéo ${vIdx + 1}`}
+                                    </span>
+                                  </div>
+                                  <a
+                                    href={vid.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-3 py-1 rounded-lg bg-primary text-white text-[11px] font-bold flex items-center gap-1 hover:opacity-90 flex-shrink-0"
+                                  >
+                                    <span>Visionner</span>
+                                    <Icon name="ArrowTopRightOnSquareIcon" size={12} />
+                                  </a>
+                                </div>
+                              )}
+                              <div className="px-3 py-1.5 bg-black/5 flex items-center justify-between text-[10px] text-muted-foreground">
+                                <span className="font-semibold truncate max-w-[200px]">
+                                  {vid.title || `Vidéo #${vIdx + 1}`}
+                                </span>
+                                <span className="font-mono-data font-bold text-amber-700">
+                                  ⏱ {durLabel} (max 2m)
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
             {selectedDetailItem.tags && selectedDetailItem.tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-4">

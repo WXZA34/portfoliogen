@@ -7,10 +7,12 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import { toast } from 'sonner';
 import {
   type PersonalProjectItem,
+  type VideoMediaItem,
   fetchUserPersonalProjects,
   saveUserPersonalProject,
   deleteUserPersonalProject,
 } from '@/lib/services/cvthequeService';
+import MediaUploadManager from './MediaUploadManager';
 
 interface PersonalProjectsPanelProps {
   onCountChange?: (count: number) => void;
@@ -31,6 +33,8 @@ export default function PersonalProjectsPanel({ onCountChange }: PersonalProject
   const [github, setGithub] = useState('');
   const [url, setUrl] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [videos, setVideos] = useState<VideoMediaItem[]>([]);
   const [status, setStatus] = useState<'published' | 'draft'>('published');
 
   useEffect(() => {
@@ -56,7 +60,10 @@ export default function PersonalProjectsPanel({ onCountChange }: PersonalProject
     setTechStackInput('Java, Kotlin, Android');
     setGithub('');
     setUrl('');
-    setImageUrl('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80');
+    const defaultImg = 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80';
+    setImageUrl(defaultImg);
+    setImages([defaultImg]);
+    setVideos([]);
     setStatus('published');
     setModalOpen(true);
   };
@@ -71,6 +78,9 @@ export default function PersonalProjectsPanel({ onCountChange }: PersonalProject
     setGithub(item.github || '');
     setUrl(item.url || '');
     setImageUrl(item.imageUrl || '');
+    const projImages = item.images && item.images.length > 0 ? item.images : (item.imageUrl ? [item.imageUrl] : []);
+    setImages(projImages);
+    setVideos(item.videos || []);
     setStatus(item.status);
     setModalOpen(true);
   };
@@ -89,6 +99,9 @@ export default function PersonalProjectsPanel({ onCountChange }: PersonalProject
       .map((t) => t.trim())
       .filter(Boolean);
 
+    const finalImages = images.length > 0 ? images.slice(0, 6) : (imageUrl ? [imageUrl] : []);
+    const finalVideos = videos.slice(0, 2);
+
     const saved = await saveUserPersonalProject(
       {
         title: title.trim(),
@@ -98,7 +111,9 @@ export default function PersonalProjectsPanel({ onCountChange }: PersonalProject
         techStack: techList.length > 0 ? techList : ['Code'],
         github: github.trim(),
         url: url.trim(),
-        imageUrl: imageUrl.trim(),
+        imageUrl: finalImages[0] || imageUrl.trim(),
+        images: finalImages,
+        videos: finalVideos,
         status,
       },
       editingItem?.id
@@ -363,18 +378,13 @@ export default function PersonalProjectsPanel({ onCountChange }: PersonalProject
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-700 text-muted-foreground mb-1">
-                  Image URL d&apos;illustration
-                </label>
-                <input
-                  type="text"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary font-mono"
-                />
-              </div>
+              {/* Media Manager (up to 6 images, up to 2 videos max 2 min) */}
+              <MediaUploadManager
+                images={images}
+                onChangeImages={setImages}
+                videos={videos}
+                onChangeVideos={setVideos}
+              />
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

@@ -1221,10 +1221,15 @@ export default function PortfolioBuilder({
 
             {/* 1. Page de garde & Couverture */}
             <div className="p-4 bg-card border border-border rounded-xl space-y-3">
-              <p className="text-xs font-bold text-foreground flex items-center gap-2">
-                <Icon name="ShieldCheckIcon" size={14} className="text-primary" />
-                1. Page de Garde (Sas d&apos;accueil)
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                  <Icon name="ShieldCheckIcon" size={14} className="text-primary" />
+                  1. Page de Garde (Sas d&apos;accueil) - Tout Modifiable
+                </p>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                  100% Modifiable
+                </span>
+              </div>
               <div className="space-y-2.5">
                 <div>
                   <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
@@ -1235,36 +1240,108 @@ export default function PortfolioBuilder({
                     value={sectionTexts.coverDepartment || ''}
                     placeholder="DÉPARTEMENT GÉNIE ÉLECTRIQUE ET INFORMATIQUE INDUSTRIELLE"
                     onChange={(e) => updateSectionText('coverDepartment', e.target.value)}
-                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary uppercase"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
-                      Diplôme (Sous B.U.T.)
+                      Grand Titre Principal
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.coverMainTitle || ''}
+                      placeholder="B.U.T."
+                      onChange={(e) => updateSectionText('coverMainTitle', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary font-black uppercase"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Diplôme complet (Sous B.U.T.)
                     </label>
                     <input
                       type="text"
                       value={sectionTexts.coverDegree || ''}
                       placeholder="BACHELOR UNIVERSITAIRE DE TECHNOLOGIE"
                       onChange={(e) => updateSectionText('coverDegree', e.target.value)}
-                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
-                      Sous-titre / Semestre
-                    </label>
-                    <input
-                      type="text"
-                      value={sectionTexts.coverSubtitle || ''}
-                      placeholder="Portfolio Semestre 2"
-                      onChange={(e) => updateSectionText('coverSubtitle', e.target.value)}
-                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary uppercase font-bold"
                     />
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Sous-titre / Semestre
+                  </label>
+                  <input
+                    type="text"
+                    value={sectionTexts.coverSubtitle || ''}
+                    placeholder="Portfolio Semestre 2"
+                    onChange={(e) => updateSectionText('coverSubtitle', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary italic"
+                  />
+                </div>
+
+                {/* Bloc Auteur / Réalisé par */}
+                <div className="p-3 rounded-lg bg-muted/60 border border-border/80 space-y-2">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Encart Auteur Central
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
+                        Libellé encart
+                      </label>
+                      <input
+                        type="text"
+                        value={sectionTexts.coverRealiseParLabel || ''}
+                        placeholder="RÉALISÉ PAR"
+                        onChange={(e) => updateSectionText('coverRealiseParLabel', e.target.value)}
+                        className="w-full px-2.5 py-1 bg-background border border-border rounded text-xs text-foreground focus:outline-none focus:border-primary uppercase font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
+                        Nom de l&apos;étudiant / Auteur
+                      </label>
+                      <input
+                        type="text"
+                        value={sectionTexts.coverAuthorName || ''}
+                        placeholder="KOKOU DUSSEY"
+                        onChange={(e) => updateSectionText('coverAuthorName', e.target.value)}
+                        className="w-full px-2.5 py-1 bg-background border border-border rounded text-xs text-foreground focus:outline-none focus:border-primary uppercase font-black"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
+                      Spécialité / Sous-titre auteur
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.coverHeadline || ''}
+                      placeholder="Étudiant en B.U.T. GEII & Automatisme"
+                      onChange={(e) => updateSectionText('coverHeadline', e.target.value)}
+                      className="w-full px-2.5 py-1 bg-background border border-border rounded text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                {/* Bas de page et bouton */}
                 <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Établissement / Université
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.coverInstitution || ''}
+                      placeholder="IUT SÉNART-FONTAINEBLEAU"
+                      onChange={(e) => updateSectionText('coverInstitution', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary uppercase font-bold"
+                    />
+                  </div>
                   <div>
                     <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
                       Promotion
@@ -1274,21 +1351,35 @@ export default function PortfolioBuilder({
                       value={sectionTexts.coverPromotion || ''}
                       placeholder="PROMOTION 2025–2026"
                       onChange={(e) => updateSectionText('coverPromotion', e.target.value)}
-                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary uppercase"
                     />
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
-                      Libellé bouton d&apos;entrée
-                    </label>
-                    <input
-                      type="text"
-                      value={sectionTexts.coverButton || ''}
-                      placeholder="Accéder au portfolio"
-                      onChange={(e) => updateSectionText('coverButton', e.target.value)}
-                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary font-bold"
-                    />
-                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Mention de spécialité complémentaire (optionnelle)
+                  </label>
+                  <input
+                    type="text"
+                    value={sectionTexts.coverSpeciality || ''}
+                    placeholder="Spécialité Automatisme et Informatique Industrielle (AII)"
+                    onChange={(e) => updateSectionText('coverSpeciality', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Libellé du bouton d&apos;entrée vers le portfolio
+                  </label>
+                  <input
+                    type="text"
+                    value={sectionTexts.coverButton || ''}
+                    placeholder="Accéder au portfolio"
+                    onChange={(e) => updateSectionText('coverButton', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary font-bold"
+                  />
                 </div>
               </div>
             </div>
@@ -1724,6 +1815,233 @@ export default function PortfolioBuilder({
             </div>
           </div>
         )}
+
+        {/* =================================================================== */}
+        {/* TAB 6: RÉGLAGES & URL PERSONNALISÉE (CONFIGURATION D'ENVOI) */}
+        {/* =================================================================== */}
+        {activeTab === 'settings' && (() => {
+          const computedShareUrl = (() => {
+            if (portfolio.customShareUrl && portfolio.customShareUrl.trim()) {
+              return portfolio.customShareUrl.trim();
+            }
+            const base = `https://portfoliogen.io/p/${portfolio.slug || 'portfolio-but'}`;
+            if (portfolio.recipientCompany && portfolio.recipientCompany.trim()) {
+              return `${base}?for=${encodeURIComponent(portfolio.recipientCompany.trim().replace(/\s+/g, ''))}`;
+            }
+            return base;
+          })();
+
+          return (
+            <div className="space-y-6">
+              <div>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  Configuration de l&apos;URL Personnalisée & Partage
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Configurez le lien unique à envoyer aux recruteurs, personnalisez le slug et suivez les entreprises ciblées.
+                </p>
+              </div>
+
+              {/* 1. Carte URL Personnalisée & Partage 1-Click */}
+              <div className="p-4 bg-card border border-border rounded-xl space-y-4 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                    <Icon name="LinkIcon" size={14} className="text-primary" />
+                    Lien Personnalisé à Envoyer
+                  </p>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Prêt à envoyer
+                  </span>
+                </div>
+
+                {/* Slug personnalisé */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Identifiant d&apos;URL (Slug personnalisé)
+                  </label>
+                  <div className="flex rounded-lg overflow-hidden border border-border bg-muted">
+                    <span className="px-2.5 py-1.5 bg-muted/80 text-muted-foreground text-xs font-mono font-medium border-r border-border flex items-center select-none">
+                      portfoliogen.io/p/
+                    </span>
+                    <input
+                      type="text"
+                      value={portfolio.slug || ''}
+                      placeholder="mon-portfolio-geii"
+                      onChange={(e) =>
+                        onUpdate({
+                          ...portfolio,
+                          slug: e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''),
+                        })
+                      }
+                      className="flex-1 px-3 py-1.5 bg-background text-xs text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Lettres minuscules, chiffres et tirets uniquement.
+                  </p>
+                </div>
+
+                {/* Ciblage Recruteur / Entreprise */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Entreprise ciblée (Paramètre d&apos;URL)
+                    </label>
+                    <input
+                      type="text"
+                      value={portfolio.recipientCompany || ''}
+                      placeholder="ex: Schneider Electric, Alstom"
+                      onChange={(e) => onUpdate({ ...portfolio, recipientCompany: e.target.value })}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Nom ou titre du recruteur
+                    </label>
+                    <input
+                      type="text"
+                      value={portfolio.recipientName || ''}
+                      placeholder="ex: M. Dupont / DRH"
+                      onChange={(e) => onUpdate({ ...portfolio, recipientName: e.target.value })}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                {/* Computed Live URL Box */}
+                <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/20 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-primary flex items-center gap-1.5">
+                      <Icon name="SparklesIcon" size={13} />
+                      URL d&apos;envoi personnalisée générée
+                    </span>
+                    {portfolio.recipientCompany && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                        Pour : {portfolio.recipientCompany}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-2.5 bg-background rounded-lg border border-border font-mono text-xs text-foreground break-all select-all font-semibold">
+                    {computedShareUrl}
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(computedShareUrl);
+                        toast.success('Lien personnalisé copié dans le presse-papier !');
+                      }}
+                      className="flex-1 py-2 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity btn-press shadow-xs"
+                    >
+                      <Icon name="ClipboardDocumentCheckIcon" size={14} />
+                      Copier le lien personnalisé
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.open(computedShareUrl, '_blank');
+                      }}
+                      className="py-2 px-3 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-xs font-bold flex items-center gap-1.5 border border-border transition-colors btn-press"
+                      title="Ouvrir dans un nouvel onglet"
+                    >
+                      <Icon name="ArrowTopRightOnSquareIcon" size={14} />
+                      Tester le lien
+                    </button>
+                  </div>
+                </div>
+
+                {/* Surcharge URL ou Domaine Custom */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Domaine ou URL personnalisée propre (optionnel)
+                  </label>
+                  <input
+                    type="text"
+                    value={portfolio.customShareUrl || ''}
+                    placeholder="https://mon-domaine-perso.fr"
+                    onChange={(e) => onUpdate({ ...portfolio, customShareUrl: e.target.value })}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary font-mono"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Si renseigné, cette URL écrasera l&apos;URL par défaut lors du partage.
+                  </p>
+                </div>
+              </div>
+
+              {/* 2. Statut et Synchronisation */}
+              <div className="p-4 bg-card border border-border rounded-xl space-y-3">
+                <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                  <Icon name="Cog6ToothIcon" size={14} className="text-primary" />
+                  Statut & Synchronisation avec la CVthèque
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Statut de visibilité
+                    </label>
+                    <select
+                      value={portfolio.status}
+                      onChange={(e) => onUpdate({ ...portfolio, status: e.target.value as any })}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    >
+                      <option value="active">Actif (Lien accessible)</option>
+                      <option value="draft">Brouillon (Privé)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Mode de synchronisation
+                    </label>
+                    <select
+                      value={portfolio.syncMode}
+                      onChange={(e) => onUpdate({ ...portfolio, syncMode: e.target.value as any })}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    >
+                      <option value="live">Live (Synchronisé en direct)</option>
+                      <option value="frozen">Figé (Instantané figé)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Page de Garde (Sas d'accueil) - Raccourci Réglages */}
+              <div className="p-4 bg-card border border-border rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                    <Icon name="ShieldCheckIcon" size={14} className="text-primary" />
+                    Page de Garde (Sas d&apos;accueil B.U.T.)
+                  </p>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={enabledSections.cover !== false}
+                      onChange={(e) =>
+                        onUpdate({
+                          ...portfolio,
+                          enabledSections: {
+                            ...enabledSections,
+                            cover: e.target.checked,
+                          },
+                        })
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-8 h-4.5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary" />
+                  </label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Affiche la couverture style My-Portfolify avant l&apos;entrée dans le portfolio. Pour modifier chaque phrase individuellement, rendez-vous dans l&apos;onglet <strong>Textes</strong>.
+                </p>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
