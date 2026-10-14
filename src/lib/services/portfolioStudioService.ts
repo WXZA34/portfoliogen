@@ -489,9 +489,17 @@ export async function saveStudioPortfolio(
     (portfolio.slug && portfolio.slug.trim().toLowerCase().replace(/[^a-z0-9-_/]/g, '')) ||
     `portfolio-${(portfolio.id || Date.now().toString()).slice(-6)}`;
 
+  const companyQuery = portfolio.recipientCompany && portfolio.recipientCompany.trim()
+    ? `?for=${encodeURIComponent(portfolio.recipientCompany.trim().replace(/\s+/g, ''))}`
+    : '';
+  const canonicalUrl = `https://portfoliogen.net/p/${cleanSlug}${companyQuery}`;
+
   const item: StudioPortfolio = {
     ...portfolio,
     slug: cleanSlug,
+    customShareUrl: (!portfolio.customShareUrl || portfolio.customShareUrl.includes('portfoliogen.net/p/'))
+      ? canonicalUrl
+      : portfolio.customShareUrl.trim(),
     userId: user?.id || portfolio.userId,
     lastUpdated: 'À l\'instant',
   };
@@ -516,6 +524,7 @@ export async function saveStudioPortfolio(
     subTitle: item.subTitle || '',
     promotion: item.promotion || '',
     authorName: item.authorName || '',
+    authorAvatar: item.authorAvatar || '',
     selectedProjects: item.selectedProjects || [],
     selectedPersonalProjects: item.selectedPersonalProjects || [],
     selectedCreativeStudio: item.selectedCreativeStudio || [],
@@ -531,7 +540,7 @@ export async function saveStudioPortfolio(
     updatedAt: new Date().toISOString(),
   };
 
-  // 1. Save in Supabase marketplace_templates (universal public access, stores any text ID)
+  // 1. Save in Supabase marketplace_templates (universal public access, stores complete JSON)
   try {
     const marketplaceRow = {
       id: `studio_slug_${cleanSlug}`,
@@ -548,7 +557,11 @@ export async function saveStudioPortfolio(
 
     await supabase
       .from('marketplace_templates')
-      .upsert(marketplaceRow, { onConflict: 'id' });
+      .upsert([
+        { ...marketplaceRow, id: `studio_slug_${cleanSlug}` },
+        { ...marketplaceRow, id: `studio_pf_${item.id}` },
+        { ...marketplaceRow, id: cleanSlug },
+      ], { onConflict: 'id' });
   } catch (err) {
     console.warn('Marketplace studio upsert warning:', err);
   }
@@ -561,7 +574,6 @@ export async function saveStudioPortfolio(
       const encodedStudioData = `__STUDIO_DATA__:${JSON.stringify(fullPayload)}`;
 
       const dbPayload = {
-        ...(isUUID ? { id: item.id } : {}),
         user_id: user.id,
         name: item.name.trim(),
         persona: item.persona,
@@ -570,11 +582,29 @@ export async function saveStudioPortfolio(
         status: item.status,
         slug: cleanSlug,
         custom_intro: encodedStudioData,
+        selected_projects: item.selectedProjects || [],
+        selected_skills: item.selectedSkills || [],
         updated_at: new Date().toISOString(),
       };
 
-      if (isUUID) {
-        await supabase.from('portfolios').update(dbPayload).eq('id', item.id);
+      let existingRecordId: string | null = isUUID ? item.id : null;
+      if (!existingRecordId) {
+        const { data: existingRow } = await supabase
+          .from('portfolios')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('slug', cleanSlug)
+          .limit(1)
+          .maybeSingle();
+
+        if (existingRow?.id) {
+          existingRecordId = existingRow.id;
+        }
+      }
+
+      if (existingRecordId) {
+        await supabase.from('portfolios').update(dbPayload).eq('id', existingRecordId);
+        item.id = existingRecordId;
       } else {
         const { data: inserted, error: insertErr } = await supabase
           .from('portfolios')
@@ -715,6 +745,7 @@ export async function fetchPublicStudioPortfolio(
           subTitle: dd.subTitle || 'Portfolio Semestre 2',
           promotion: dd.promotion || 'PROMOTION 2025–2026',
           authorName: dd.authorName || 'KOKOU DUSSEY',
+          authorAvatar: dd.authorAvatar || '',
           selectedProjects: dd.selectedProjects || ['proj-sae-001', 'proj-sae-002', 'proj-001'],
           selectedPersonalProjects: dd.selectedPersonalProjects || ['perso-001', 'perso-002', 'perso-003'],
           selectedCreativeStudio: dd.selectedCreativeStudio || ['creat-001', 'creat-002', 'creat-003'],
@@ -771,6 +802,10 @@ export async function fetchPublicStudioPortfolio(
         selectedPersonalProjects: customData?.selectedPersonalProjects || ['perso-001', 'perso-002', 'perso-003'],
         selectedCreativeStudio: customData?.selectedCreativeStudio || ['creat-001', 'creat-002', 'creat-003'],
         selectedSkills: customData?.selectedSkills || (Array.isArray(data.selected_skills) ? data.selected_skills : ['sk-001', 'sk-005', 'sk-006', 'sk-009']),
+        selectedParcours: customData?.selectedParcours || ['par-001', 'par-004'],
+        selectedLanguages: customData?.selectedLanguages || ['lang-001', 'lang-002'],
+        selectedCertifications: customData?.selectedCertifications || ['cert-001', 'cert-002'],
+        selectedMedia: customData?.selectedMedia || [],
         enabledSections: customData?.enabledSections || { ...DEFAULT_STUDIO_SECTIONS },
         themeColors: customData?.themeColors || { ...DEFAULT_STARTER_PORTFOLIOS[0].themeColors },
         sectionTexts: customData?.sectionTexts || { ...DEFAULT_STARTER_PORTFOLIOS[0].sectionTexts },
@@ -780,6 +815,10 @@ export async function fetchPublicStudioPortfolio(
         subTitle: customData?.subTitle || 'Portfolio Semestre 2',
         promotion: customData?.promotion || 'PROMOTION 2025–2026',
         authorName: customData?.authorName || 'KOKOU DUSSEY',
+        authorAvatar: customData?.authorAvatar || '',
+        recipientCompany: customData?.recipientCompany || '',
+        recipientName: customData?.recipientName || '',
+        customShareUrl: customData?.customShareUrl || '',
         createdAt: data.created_at,
       };
     }

@@ -12,7 +12,7 @@ import type {
   SectionColors,
   SectionTexts,
 } from '@/lib/services/portfolioStudioService';
-import { DEFAULT_STUDIO_SECTIONS, DEFAULT_STARTER_PORTFOLIOS, TEMPLATE_COLOR_PRESETS } from '@/lib/services/portfolioStudioService';
+import { DEFAULT_STUDIO_SECTIONS, DEFAULT_STARTER_PORTFOLIOS, TEMPLATE_COLOR_PRESETS, saveStudioPortfolio } from '@/lib/services/portfolioStudioService';
 import type {
   ProjectItem,
   PersonalProjectItem,
@@ -142,9 +142,11 @@ export default function PortfolioBuilder({
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onUpdate(portfolio);
-      toast.success(`"${portfolio.name}" enregistré et synchronisé ✓`);
-    } catch {
+      const saved = await saveStudioPortfolio(portfolio);
+      onUpdate(saved || portfolio);
+      toast.success(`"${portfolio.name}" enregistré et synchronisé avec le lien public ✓`);
+    } catch (err: any) {
+      console.error('Error saving portfolio:', err);
       toast.error("Erreur lors de l'enregistrement");
     } finally {
       setTimeout(() => setSaving(false), 300);
@@ -304,39 +306,50 @@ export default function PortfolioBuilder({
         </div>
 
         {/* Tier 2: Dedicated Public URL Bar with 1-Click Copy */}
-        <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-muted/60 border border-border/70 text-xs">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <span className="text-primary font-bold text-[11px] uppercase tracking-wider flex-shrink-0 flex items-center gap-1">
-              <Icon name="LinkIcon" size={12} />
-              Lien public :
-            </span>
-            <a
-              href={`/p/${portfolio.slug || portfolio.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-xs text-primary hover:underline font-bold truncate flex items-center gap-1 min-w-0"
-              title="Ouvrir ce portfolio en public dans un nouvel onglet"
-            >
-              <span className="truncate">portfoliogen.net/p/{portfolio.slug || portfolio.id}</span>
-              <Icon name="ArrowTopRightOnSquareIcon" size={11} className="flex-shrink-0 opacity-80" />
-            </a>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                const fullUrl = `https://portfoliogen.net/p/${portfolio.slug || portfolio.id}`;
-                navigator.clipboard.writeText(fullUrl);
-                toast.success(`Lien public copié : ${fullUrl}`);
-              }
-            }}
-            className="px-2 py-1 rounded bg-card hover:bg-card/80 text-foreground border border-border/80 text-[11px] font-semibold flex items-center gap-1 transition-colors flex-shrink-0 cursor-pointer shadow-2xs"
-            title="Copier le lien public"
-          >
-            <Icon name="ShareIcon" size={12} className="text-primary" />
-            <span>Copier</span>
-          </button>
-        </div>
+        {(() => {
+          const activeSlug = (portfolio.slug && portfolio.slug.trim().toLowerCase().replace(/[^a-z0-9-_/]/g, '')) || portfolio.id;
+          const companyQuery = portfolio.recipientCompany && portfolio.recipientCompany.trim()
+            ? `?for=${encodeURIComponent(portfolio.recipientCompany.trim().replace(/\s+/g, ''))}`
+            : '';
+          const fullDisplayPath = `portfoliogen.net/p/${activeSlug}${companyQuery}`;
+          const fullClickableUrl = `/p/${activeSlug}${companyQuery}`;
+          const fullClipboardUrl = `https://portfoliogen.net/p/${activeSlug}${companyQuery}`;
+
+          return (
+            <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-muted/60 border border-border/70 text-xs">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <span className="text-primary font-bold text-[11px] uppercase tracking-wider flex-shrink-0 flex items-center gap-1">
+                  <Icon name="LinkIcon" size={12} />
+                  Lien public :
+                </span>
+                <a
+                  href={fullClickableUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-xs text-primary hover:underline font-bold truncate flex items-center gap-1 min-w-0"
+                  title="Ouvrir ce portfolio personnalisé en public dans un nouvel onglet"
+                >
+                  <span className="truncate">{fullDisplayPath}</span>
+                  <Icon name="ArrowTopRightOnSquareIcon" size={11} className="flex-shrink-0 opacity-80" />
+                </a>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                    navigator.clipboard.writeText(fullClipboardUrl);
+                    toast.success(`Lien personnalisé copié : ${fullClipboardUrl}`);
+                  }
+                }}
+                className="px-2 py-1 rounded bg-card hover:bg-card/80 text-foreground border border-border/80 text-[11px] font-semibold flex items-center gap-1 transition-colors flex-shrink-0 cursor-pointer shadow-2xs"
+                title="Copier le lien public personnalisé"
+              >
+                <Icon name="ShareIcon" size={12} className="text-primary" />
+                <span>Copier</span>
+              </button>
+            </div>
+          );
+        })()}
       </div>
 
       {/* 6 Tabs: Modèle | Sections | Contenu | Couleurs | Textes | Réglages */}
@@ -1891,16 +1904,15 @@ export default function PortfolioBuilder({
         {/* TAB 6: RÉGLAGES & URL PERSONNALISÉE (CONFIGURATION D'ENVOI) */}
         {/* =================================================================== */}
         {activeTab === 'settings' && (() => {
-          const activeSlug = (portfolio.slug && portfolio.slug.trim()) || portfolio.id;
+          const activeSlug = (portfolio.slug && portfolio.slug.trim().toLowerCase().replace(/[^a-z0-9-_/]/g, '')) || portfolio.id;
+          const companyQuery = portfolio.recipientCompany && portfolio.recipientCompany.trim()
+            ? `?for=${encodeURIComponent(portfolio.recipientCompany.trim().replace(/\s+/g, ''))}`
+            : '';
           const computedShareUrl = (() => {
-            if (portfolio.customShareUrl && portfolio.customShareUrl.trim()) {
+            if (portfolio.customShareUrl && portfolio.customShareUrl.trim() && !portfolio.customShareUrl.includes('portfoliogen.net/p/')) {
               return portfolio.customShareUrl.trim();
             }
-            const base = `https://portfoliogen.net/p/${activeSlug}`;
-            if (portfolio.recipientCompany && portfolio.recipientCompany.trim()) {
-              return `${base}?for=${encodeURIComponent(portfolio.recipientCompany.trim().replace(/\s+/g, ''))}`;
-            }
-            return base;
+            return `https://portfoliogen.net/p/${activeSlug}${companyQuery}`;
           })();
 
           return (
@@ -1927,8 +1939,8 @@ export default function PortfolioBuilder({
                 </div>
 
                 {/* Avatar uploader */}
-                <div className="p-3 rounded-lg bg-muted/60 border border-border/80 flex items-center gap-3">
-                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-primary/30 bg-card flex-shrink-0 flex items-center justify-center shadow-xs">
+                <div className="p-4 rounded-xl bg-muted/60 border border-border/80 flex flex-col sm:flex-row items-center gap-4">
+                  <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-3 border-primary/40 bg-card flex-shrink-0 flex items-center justify-center shadow-md ring-4 ring-primary/10">
                     {(portfolio.authorAvatar || profile?.avatarUrl) ? (
                       <AppImage
                         src={portfolio.authorAvatar || profile?.avatarUrl || ''}
@@ -1937,7 +1949,7 @@ export default function PortfolioBuilder({
                         className="object-cover"
                       />
                     ) : (
-                      <Icon name="UserIcon" size={20} className="text-muted-foreground" />
+                      <Icon name="UserIcon" size={44} className="text-muted-foreground" />
                     )}
                   </div>
 
@@ -2182,31 +2194,52 @@ export default function PortfolioBuilder({
                     {computedShareUrl}
                   </div>
 
-                  <div className="flex items-center gap-2 pt-1">
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
                     <button
                       type="button"
                       onClick={() => {
                         navigator.clipboard.writeText(computedShareUrl);
                         toast.success('Lien personnalisé copié dans le presse-papier !');
                       }}
-                      className="flex-1 py-2 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity btn-press shadow-xs"
+                      className="flex-1 py-2 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity btn-press shadow-xs cursor-pointer min-w-[170px]"
                     >
                       <Icon name="ClipboardDocumentCheckIcon" size={14} />
                       Copier le lien personnalisé
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
+                        const tid = toast.loading('Synchronisation du lien en cours...');
+                        try {
+                          await saveStudioPortfolio(portfolio);
+                          toast.success('Lien synchronisé ! Ouverture...', { id: tid });
+                        } catch {
+                          toast.dismiss(tid);
+                        }
                         const testUrl = computedShareUrl.startsWith('https://portfoliogen.net')
                           ? computedShareUrl.replace('https://portfoliogen.net', '')
                           : computedShareUrl;
                         window.open(testUrl, '_blank');
                       }}
-                      className="py-2 px-3 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-xs font-bold flex items-center gap-1.5 border border-border transition-colors btn-press"
-                      title="Ouvrir dans un nouvel onglet"
+                      className="py-2 px-3 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-xs font-bold flex items-center gap-1.5 border border-border transition-colors btn-press cursor-pointer"
+                      title="Enregistrer et ouvrir dans un nouvel onglet"
                     >
                       <Icon name="ArrowTopRightOnSquareIcon" size={14} />
                       Tester le lien
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors btn-press shadow-xs cursor-pointer min-w-[130px]"
+                      title="Enregistrer et synchroniser immédiatement"
+                    >
+                      {saving ? (
+                        <Icon name="Loader2Icon" size={14} className="animate-spin" />
+                      ) : (
+                        <Icon name="CheckCircleIcon" size={14} />
+                      )}
+                      <span>Enregistrer</span>
                     </button>
                   </div>
                 </div>

@@ -169,7 +169,7 @@ export default function ProfileContactPanel() {
 
             {/* Photo de Profil / Avatar */}
             <div className="p-3.5 rounded-xl bg-muted/60 border border-border/80 flex flex-col sm:flex-row items-center gap-4">
-              <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 bg-card flex-shrink-0 shadow-sm flex items-center justify-center">
+              <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-3 border-primary/40 bg-card flex-shrink-0 shadow-md ring-4 ring-primary/10 flex items-center justify-center">
                 {profile.avatarUrl ? (
                   <AppImage
                     src={profile.avatarUrl}
@@ -178,7 +178,7 @@ export default function ProfileContactPanel() {
                     className="object-cover"
                   />
                 ) : (
-                  <span className="text-xl font-black text-primary">
+                  <span className="text-3xl sm:text-4xl font-black text-primary">
                     {profile.fullName.charAt(0)}
                   </span>
                 )}

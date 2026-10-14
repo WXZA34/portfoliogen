@@ -71,8 +71,12 @@ export default function PortfolioPreview({
     );
   };
 
-  const publicUrl = `/p/${portfolio.slug || portfolio.id}`;
-  const fullPublicUrl = `https://portfoliogen.net/p/${portfolio.slug || portfolio.id}`;
+  const activeSlug = (portfolio.slug && portfolio.slug.trim().toLowerCase().replace(/[^a-z0-9-_/]/g, '')) || portfolio.id;
+  const companyQuery = portfolio.recipientCompany && portfolio.recipientCompany.trim()
+    ? `?for=${encodeURIComponent(portfolio.recipientCompany.trim().replace(/\s+/g, ''))}`
+    : '';
+  const publicUrl = `/p/${activeSlug}${companyQuery}`;
+  const fullPublicUrl = `https://portfoliogen.net/p/${activeSlug}${companyQuery}`;
 
   return (
     <>
@@ -87,10 +91,10 @@ export default function PortfolioPreview({
               href={publicUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-2 text-xs font-mono-data text-primary hover:underline truncate max-w-[200px] sm:max-w-[250px] flex items-center gap-1 font-bold"
-              title="Ouvrir le lien réel dans un nouvel onglet"
+              className="ml-2 text-xs font-mono-data text-primary hover:underline truncate max-w-[200px] sm:max-w-[280px] flex items-center gap-1 font-bold"
+              title="Ouvrir le lien personnalisé en public dans un nouvel onglet"
             >
-              <span>portfoliogen.net/p/{portfolio.slug || portfolio.id}</span>
+              <span>portfoliogen.net/p/{activeSlug}{companyQuery}</span>
               <Icon name="ArrowTopRightOnSquareIcon" size={12} className="flex-shrink-0 opacity-80" />
             </a>
             <button
@@ -98,11 +102,11 @@ export default function PortfolioPreview({
               onClick={() => {
                 if (typeof navigator !== 'undefined' && navigator.clipboard) {
                   navigator.clipboard.writeText(fullPublicUrl);
-                  toast.success(`Lien public copié : ${fullPublicUrl}`);
+                  toast.success(`Lien personnalisé copié : ${fullPublicUrl}`);
                 }
               }}
-              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
-              title="Copier le lien public"
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0 cursor-pointer"
+              title="Copier le lien personnalisé à envoyer"
             >
               <Icon name="ShareIcon" size={13} />
             </button>

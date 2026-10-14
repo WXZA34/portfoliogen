@@ -219,7 +219,7 @@ export default function IndustrialGEIITemplatePreview({
           style={{ backgroundColor: cardBg }}
         >
           {authorAvatar && (
-            <div className="relative w-20 h-20 rounded-full mx-auto mb-3 overflow-hidden border-2 border-white/80 shadow-md">
+            <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-full mx-auto mb-4 overflow-hidden border-4 border-white shadow-2xl ring-4 ring-black/10">
               <AppImage src={authorAvatar} alt={authorName} fill className="object-cover" />
             </div>
           )}
@@ -292,14 +292,14 @@ export default function IndustrialGEIITemplatePreview({
           {sections.cover && (
             <button
               onClick={() => setSplashEntered(false)}
-              className="w-7 h-7 rounded-lg overflow-hidden border border-black/10 flex items-center justify-center hover:opacity-90 transition-opacity relative flex-shrink-0"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden border-2 border-black/15 flex items-center justify-center hover:opacity-90 transition-opacity relative flex-shrink-0 shadow-xs"
               title="Revenir à la page de couverture"
             >
               {authorAvatar ? (
                 <AppImage src={authorAvatar} alt={authorName} fill className="object-cover" />
               ) : (
                 <div
-                  className="w-full h-full text-white flex items-center justify-center font-bold text-xs"
+                  className="w-full h-full text-white flex items-center justify-center font-bold text-sm"
                   style={{ backgroundColor: heroColor }}
                 >
                   {authorName.charAt(0)}
@@ -446,12 +446,12 @@ export default function IndustrialGEIITemplatePreview({
         <header className="px-5 py-10 border-b border-[#E1D9C6]/60">
           <div className="max-w-2xl mx-auto text-center space-y-3.5">
             {authorAvatar ? (
-              <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-3xl mx-auto overflow-hidden shadow-md border-3 border-white">
+              <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-3xl mx-auto overflow-hidden shadow-xl border-4 border-white ring-4 ring-black/5">
                 <AppImage src={authorAvatar} alt={authorName} fill className="object-cover" />
               </div>
             ) : (
               <div
-                className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-xl font-bold text-white shadow-sm"
+                className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl mx-auto flex items-center justify-center text-4xl sm:text-5xl font-black text-white shadow-xl ring-4 ring-black/5"
                 style={{ backgroundColor: heroColor }}
               >
                 {authorName.charAt(0)}
@@ -1751,12 +1751,12 @@ export default function IndustrialGEIITemplatePreview({
               {/* Header profile */}
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-6 border-b border-[#E1D9C6]">
                 {authorAvatar ? (
-                  <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-white shadow-md flex-shrink-0">
+                  <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-2xl overflow-hidden border-3 border-white shadow-lg flex-shrink-0">
                     <AppImage src={authorAvatar} alt={authorName} fill className="object-cover" />
                   </div>
                 ) : (
                   <div
-                    className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-md flex-shrink-0"
+                    className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl flex items-center justify-center text-3xl font-black text-white shadow-lg flex-shrink-0"
                     style={{ backgroundColor: heroColor }}
                   >
                     {authorName.charAt(0)}
