@@ -5,6 +5,8 @@ import Icon from '@/components/ui/AppIcon';
 import type { StudioPortfolio } from '@/lib/services/portfolioStudioService';
 import type {
   ProjectItem,
+  PersonalProjectItem,
+  CreativeStudioItem,
   SkillItem,
   ParcoursItem,
   UserProfileInfo,
@@ -17,6 +19,8 @@ import IndustrialGEIITemplatePreview from './templates/IndustrialGEIITemplatePre
 interface PortfolioPreviewProps {
   portfolio: StudioPortfolio;
   projects?: ProjectItem[];
+  personalProjects?: PersonalProjectItem[];
+  creativeStudio?: CreativeStudioItem[];
   skills?: SkillItem[];
   parcours?: ParcoursItem[];
   profile?: UserProfileInfo;
@@ -28,6 +32,8 @@ interface PortfolioPreviewProps {
 export default function PortfolioPreview({
   portfolio,
   projects = [],
+  personalProjects = [],
+  creativeStudio = [],
   skills = [],
   parcours = [],
   profile,
@@ -53,6 +59,8 @@ export default function PortfolioPreview({
         <IndustrialGEIITemplatePreview
           portfolio={portfolio}
           projects={projects}
+          personalProjects={personalProjects}
+          creativeStudio={creativeStudio}
           skills={skills}
           parcours={parcours}
           profile={profile}

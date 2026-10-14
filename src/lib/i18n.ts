@@ -138,7 +138,9 @@ const translations = {
       subtitle: 'Votre base de données personnelle centralisée — la source unique de vérité',
       tabs: {
         profile: 'Profil & Contact',
-        projects: 'Projets',
+        projects: 'SAÉ & Projets IUT',
+        personalProjects: 'Projets Perso (Savoir-Faire)',
+        creativeStudio: 'Studio Créatif (Savoir-Être)',
         skills: 'Matrice de compétences',
         parcours: 'Parcours & Formations',
         languages: 'Langues & Certif.',
@@ -484,7 +486,9 @@ const translations = {
       subtitle: 'Your centralized personal database — the single source of truth',
       tabs: {
         profile: 'Profile & Contact',
-        projects: 'Projects',
+        projects: 'SAÉ & IUT Projects',
+        personalProjects: 'Personal Projects (Savoir-Faire)',
+        creativeStudio: 'Creative Studio (Soft Skills)',
         skills: 'Skills Matrix',
         parcours: 'Career & Education',
         languages: 'Languages & Certif.',

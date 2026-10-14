@@ -19,7 +19,9 @@ export interface StudioPortfolioSections {
   cover: boolean;       // 0. Page de garde (Sas d'accueil)
   hero: boolean;        // 1. Section Accueil (Hero & Slogan)
   about: boolean;       // 2. Profil & Objectifs (À propos)
-  projects: boolean;    // 3. Mes Réalisations & SAÉ
+  projects: boolean;    // 3. Mes Réalisations & SAÉ (IUT / Académiques)
+  personalProjects: boolean; // 3b. Projets Personnels (Savoir-Faire)
+  creativeStudio: boolean;   // 3c. Studio Créatif (Savoir-Être)
   skills: boolean;      // 4. Compétences Techniques (Jauges %)
   tools: boolean;       // 5. Outils & Matériel Industriel
   parcours: boolean;    // 6. Parcours & Formations (Timeline)
@@ -33,6 +35,8 @@ export const DEFAULT_STUDIO_SECTIONS: StudioPortfolioSections = {
   hero: true,
   about: true,
   projects: true,
+  personalProjects: true,
+  creativeStudio: true,
   skills: true,
   tools: true,
   parcours: true,
@@ -55,6 +59,8 @@ export interface StudioPortfolio {
   enabledSections?: StudioPortfolioSections;
   sectionTitles?: Record<string, string>;
   selectedProjects: string[];
+  selectedPersonalProjects?: string[];
+  selectedCreativeStudio?: string[];
   selectedSkills: string[];
   selectedParcours?: string[];
   selectedLanguages?: string[];
@@ -82,9 +88,11 @@ export const DEFAULT_STARTER_PORTFOLIOS: StudioPortfolio[] = [
     status: 'active',
     slug: 'dussey-larry/geii-automatisme',
     views: 487,
-    lastUpdated: '13 oct. 2026',
+    lastUpdated: '14 oct. 2026',
     enabledSections: { ...DEFAULT_STUDIO_SECTIONS },
     selectedProjects: ['proj-001', 'proj-002', 'proj-003'],
+    selectedPersonalProjects: ['perso-001', 'perso-002', 'perso-003'],
+    selectedCreativeStudio: ['crea-001', 'crea-002', 'crea-003'],
     selectedSkills: ['sk-001', 'sk-005', 'sk-006', 'sk-009'],
     selectedParcours: ['par-001', 'par-004'],
     selectedLanguages: ['lang-001', 'lang-002'],
@@ -181,12 +189,14 @@ export async function fetchStudioPortfolios(): Promise<StudioPortfolio[]> {
           views: row.views_count ?? 0,
           lastUpdated: row.updated_at ? new Date(row.updated_at).toLocaleDateString('fr-FR') : 'Récemment',
           selectedProjects: Array.isArray(row.selected_projects) ? row.selected_projects : (localMatch?.selectedProjects || []),
+          selectedPersonalProjects: localMatch?.selectedPersonalProjects || ['perso-001', 'perso-002', 'perso-003'],
+          selectedCreativeStudio: localMatch?.selectedCreativeStudio || ['crea-001', 'crea-002', 'crea-003'],
           selectedSkills: Array.isArray(row.selected_skills) ? row.selected_skills : (localMatch?.selectedSkills || []),
           selectedParcours: localMatch?.selectedParcours || [],
           selectedLanguages: localMatch?.selectedLanguages || ['lang-001', 'lang-002'],
           selectedCertifications: localMatch?.selectedCertifications || ['cert-001', 'cert-002'],
           selectedMedia: localMatch?.selectedMedia || [],
-          enabledSections: localMatch?.enabledSections || { ...DEFAULT_STUDIO_SECTIONS },
+          enabledSections: { ...DEFAULT_STUDIO_SECTIONS, ...(localMatch?.enabledSections || {}) },
           sectionTitles: localMatch?.sectionTitles || {},
           customIntro: row.custom_intro || localMatch?.customIntro || 'Concevoir la logique. Piloter le système.',
           institution: localMatch?.institution || 'IUT SÉNART-FONTAINEBLEAU',

@@ -1413,5 +1413,257 @@ export async function deleteUserCertification(id: string): Promise<boolean> {
   return true;
 }
 
+// ============================================================================
+// PROJETS PERSONNELS (SAVOIR-FAIRE) SERVICE
+// ============================================================================
+
+export interface PersonalProjectItem {
+  id: string;
+  userId?: string;
+  title: string;
+  category?: string;
+  description: string;
+  savoirFaire: string[];
+  techStack: string[];
+  github?: string;
+  url?: string;
+  imageUrl?: string;
+  year?: string;
+  status: 'published' | 'draft';
+  createdAt?: string;
+}
+
+const LOCAL_STORAGE_PERSONAL_PROJ_PREFIX = 'portfoliogen_cvtheque_personal_proj_';
+
+export const DEFAULT_STARTER_PERSONAL_PROJECTS: PersonalProjectItem[] = [
+  {
+    id: 'perso-001',
+    title: 'App Sport & Performance (Android)',
+    category: 'Mobile / Android',
+    description: "Développement en autonomie d'une application mobile Android complète pour la planification d'entraînements, le chronométrage d'intervalles et le suivi des progrès athlétiques.",
+    savoirFaire: ['Développement mobile', 'Autonomie & Rigueur', 'Architecture logicielle'],
+    techStack: ['Java', 'Kotlin', 'Android Studio', 'SQLite'],
+    github: 'https://github.com/kokou-dussey/app-sport-android',
+    url: '',
+    imageUrl: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80',
+    year: '2025',
+    status: 'published',
+  },
+  {
+    id: 'perso-002',
+    title: 'Virtual Painter (Vision par Ordinateur & IA)',
+    category: 'IA / Vision',
+    description: "Expérimentation en Python permettant de dessiner en direct dans les airs avec les mouvements de la main via la webcam, exploitant les modèles de tracking MediaPipe.",
+    savoirFaire: ['Vision par ordinateur', 'Traitement du signal vidéo', 'Intégration d\'IA'],
+    techStack: ['Python', 'OpenCV', 'MediaPipe', 'NumPy'],
+    github: 'https://github.com/kokou-dussey/virtual-painter-ai',
+    url: '',
+    imageUrl: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=600&q=80',
+    year: '2025',
+    status: 'published',
+  },
+  {
+    id: 'perso-003',
+    title: 'Station Météo Connectée & Télémétrie ESP32',
+    category: 'IoT & Embarqué',
+    description: "Conception et programmation d'un module domotique sur microcontrôleur ESP32 relevant température, humidité et pression avec transmission MQTT et affichage OLED.",
+    savoirFaire: ['Systèmes embarqués', 'Protocoles IoT', 'Conception électronique'],
+    techStack: ['C++', 'ESP32', 'MQTT', 'Node-RED', 'FreeRTOS'],
+    github: 'https://github.com/kokou-dussey/esp32-weather-station',
+    url: '',
+    imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&q=80',
+    year: '2024',
+    status: 'published',
+  },
+];
+
+function getLocalPersonalProjects(userId: string = 'guest'): PersonalProjectItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${LOCAL_STORAGE_PERSONAL_PROJ_PREFIX}${userId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function setLocalPersonalProjects(items: PersonalProjectItem[], userId: string = 'guest') {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${LOCAL_STORAGE_PERSONAL_PROJ_PREFIX}${userId}`, JSON.stringify(items));
+  } catch {}
+}
+
+export async function fetchUserPersonalProjects(): Promise<PersonalProjectItem[]> {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || 'guest';
+    const local = getLocalPersonalProjects(userId);
+    return local.length > 0 ? local : DEFAULT_STARTER_PERSONAL_PROJECTS;
+  } catch {
+    return DEFAULT_STARTER_PERSONAL_PROJECTS;
+  }
+}
+
+export async function saveUserPersonalProject(
+  item: Omit<PersonalProjectItem, 'id' | 'createdAt'>,
+  existingId?: string
+): Promise<PersonalProjectItem> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const newId = existingId || `perso-${Date.now()}`;
+  const projItem: PersonalProjectItem = {
+    ...item,
+    id: newId,
+    userId: user?.id,
+    createdAt: new Date().toISOString(),
+  };
+
+  const local = getLocalPersonalProjects(userId);
+  const filtered = local.filter((p) => p.id !== projItem.id && p.id !== existingId);
+  const updated = [projItem, ...filtered];
+  setLocalPersonalProjects(updated, userId);
+  return projItem;
+}
+
+export async function deleteUserPersonalProject(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const local = getLocalPersonalProjects(userId);
+  const filtered = local.filter((p) => p.id !== id);
+  setLocalPersonalProjects(filtered, userId);
+  return true;
+}
+
+// ============================================================================
+// STUDIO CRÉATIF (SAVOIR-ÊTRE) SERVICE
+// ============================================================================
+
+export interface CreativeStudioItem {
+  id: string;
+  userId?: string;
+  title: string;
+  category?: string;
+  description: string;
+  softSkills: string[];
+  mediaType: 'video' | 'image' | 'audio' | 'article';
+  mediaUrl?: string;
+  thumbnailUrl?: string;
+  role?: string;
+  year?: string;
+  status: 'published' | 'draft';
+  createdAt?: string;
+}
+
+const LOCAL_STORAGE_CREATIVE_PREFIX = 'portfoliogen_cvtheque_creative_';
+
+export const DEFAULT_STARTER_CREATIVE_STUDIO: CreativeStudioItem[] = [
+  {
+    id: 'creat-001',
+    title: "Court-métrage & Pitch SAÉ : L'Impact de l'IA dans l'Industrie",
+    category: 'Vidéo & Pitch SAÉ',
+    description: "Production audiovisuelle complète en équipe pour le module Expression & Communication. Écriture du scénario, tournage en atelier et montage dynamique pour vulgariser les enjeux de l'automatisation auprès du grand public.",
+    softSkills: ['Travail en équipe', 'Vulgarisation technique', 'Scénarisation & Storytelling', 'Montage vidéo'],
+    mediaType: 'video',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=600&q=80',
+    mediaUrl: 'https://youtube.com',
+    role: 'Coordinateur de projet & Monteur',
+    year: '2025',
+    status: 'published',
+  },
+  {
+    id: 'creat-002',
+    title: 'Table Ronde & Podcast : Cybersécurité et Réseaux Industriels',
+    category: 'Podcast Audio & Débat',
+    description: "Animation d'un podcast de 25 minutes avec deux camarades de promotion, explorant les vulnérabilités courantes des automates programmables et les protocoles de défense en milieu industriel.",
+    softSkills: ['Prise de parole en public', 'Écoute active', 'Synthèse & Débat', 'Gestion du temps'],
+    mediaType: 'audio',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?auto=format&fit=crop&w=600&q=80',
+    mediaUrl: '',
+    role: 'Animateur & Preneur de son',
+    year: '2025',
+    status: 'published',
+  },
+  {
+    id: 'creat-003',
+    title: 'Guide Visuel & Infographie de Prévention des Risques Électriques',
+    category: 'Infographie & Pédagogie',
+    description: "Conception graphique d'une série de fiches pédagogiques claires et illustrées destinées aux étudiants découvrant les bancs d'essai haute tension en atelier de génie électrique.",
+    softSkills: ['Sens de la pédagogie', 'Communication visuelle', 'Rigueur normative', 'Empathie utilisateur'],
+    mediaType: 'image',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=600&q=80',
+    mediaUrl: '',
+    role: 'Concepteur visuel & Rédacteur',
+    year: '2024',
+    status: 'published',
+  },
+];
+
+function getLocalCreativeStudio(userId: string = 'guest'): CreativeStudioItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${LOCAL_STORAGE_CREATIVE_PREFIX}${userId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function setLocalCreativeStudio(items: CreativeStudioItem[], userId: string = 'guest') {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${LOCAL_STORAGE_CREATIVE_PREFIX}${userId}`, JSON.stringify(items));
+  } catch {}
+}
+
+export async function fetchUserCreativeStudioItems(): Promise<CreativeStudioItem[]> {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || 'guest';
+    const local = getLocalCreativeStudio(userId);
+    return local.length > 0 ? local : DEFAULT_STARTER_CREATIVE_STUDIO;
+  } catch {
+    return DEFAULT_STARTER_CREATIVE_STUDIO;
+  }
+}
+
+export async function saveUserCreativeStudioItem(
+  item: Omit<CreativeStudioItem, 'id' | 'createdAt'>,
+  existingId?: string
+): Promise<CreativeStudioItem> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const newId = existingId || `creat-${Date.now()}`;
+  const creatItem: CreativeStudioItem = {
+    ...item,
+    id: newId,
+    userId: user?.id,
+    createdAt: new Date().toISOString(),
+  };
+
+  const local = getLocalCreativeStudio(userId);
+  const filtered = local.filter((c) => c.id !== creatItem.id && c.id !== existingId);
+  const updated = [creatItem, ...filtered];
+  setLocalCreativeStudio(updated, userId);
+  return creatItem;
+}
+
+export async function deleteUserCreativeStudioItem(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || 'guest';
+
+  const local = getLocalCreativeStudio(userId);
+  const filtered = local.filter((c) => c.id !== id);
+  setLocalCreativeStudio(filtered, userId);
+  return true;
+}
+
 
 

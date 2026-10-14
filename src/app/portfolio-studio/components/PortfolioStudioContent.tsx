@@ -14,6 +14,8 @@ import {
 } from '@/lib/services/portfolioStudioService';
 import {
   type ProjectItem,
+  type PersonalProjectItem,
+  type CreativeStudioItem,
   type SkillItem,
   type ParcoursItem,
   type PersonaItem,
@@ -22,6 +24,8 @@ import {
   type MediaFileItem,
   type UserProfileInfo,
   fetchUserProjects,
+  fetchUserPersonalProjects,
+  fetchUserCreativeStudioItems,
   fetchUserSkills,
   fetchUserParcours,
   fetchUserPersonas,
@@ -41,6 +45,8 @@ export default function PortfolioStudioContent() {
 
   // CVthèque Master data
   const [projects, setProjects] = useState<ProjectItem[]>([]);
+  const [personalProjects, setPersonalProjects] = useState<PersonalProjectItem[]>([]);
+  const [creativeStudio, setCreativeStudio] = useState<CreativeStudioItem[]>([]);
   const [skills, setSkills] = useState<SkillItem[]>([]);
   const [parcours, setParcours] = useState<ParcoursItem[]>([]);
   const [personas, setPersonas] = useState<PersonaItem[]>([]);
@@ -57,6 +63,8 @@ export default function PortfolioStudioContent() {
         const [
           pList,
           projList,
+          persoList,
+          creaList,
           skList,
           parcList,
           perList,
@@ -67,6 +75,8 @@ export default function PortfolioStudioContent() {
         ] = await Promise.all([
           fetchStudioPortfolios(),
           fetchUserProjects(),
+          fetchUserPersonalProjects(),
+          fetchUserCreativeStudioItems(),
           fetchUserSkills(),
           fetchUserParcours(),
           fetchUserPersonas(),
@@ -83,6 +93,8 @@ export default function PortfolioStudioContent() {
           setSelectedPortfolioId(pList[0].id);
         }
         setProjects(projList || []);
+        setPersonalProjects(persoList || []);
+        setCreativeStudio(creaList || []);
         setSkills(skList || []);
         setParcours(parcList || []);
         setPersonas(perList || []);
@@ -131,6 +143,8 @@ export default function PortfolioStudioContent() {
       lastUpdated: 'À l\'instant',
       enabledSections: { ...DEFAULT_STUDIO_SECTIONS },
       selectedProjects: projects.slice(0, 4).map((p) => p.id),
+      selectedPersonalProjects: personalProjects.slice(0, 3).map((p) => p.id),
+      selectedCreativeStudio: creativeStudio.slice(0, 3).map((c) => c.id),
       selectedSkills: skills.slice(0, 8).map((s) => s.id),
       selectedParcours: parcours.slice(0, 3).map((p) => p.id),
       selectedLanguages: languages.slice(0, 3).map((l) => l.id),
@@ -187,6 +201,8 @@ export default function PortfolioStudioContent() {
           portfolio={selectedPortfolio}
           onUpdate={handleUpdate}
           projects={projects}
+          personalProjects={personalProjects}
+          creativeStudio={creativeStudio}
           skills={skills}
           parcours={parcours}
           personas={personas}
@@ -205,6 +221,8 @@ export default function PortfolioStudioContent() {
           <PortfolioPreview
             portfolio={selectedPortfolio}
             projects={projects}
+            personalProjects={personalProjects}
+            creativeStudio={creativeStudio}
             skills={skills}
             parcours={parcours}
             profile={profile}

@@ -6,6 +6,8 @@ import AppImage from '@/components/ui/AppImage';
 import type { StudioPortfolio } from '@/lib/services/portfolioStudioService';
 import type {
   ProjectItem,
+  PersonalProjectItem,
+  CreativeStudioItem,
   SkillItem,
   ParcoursItem,
   UserProfileInfo,
@@ -17,6 +19,8 @@ import type {
 interface IndustrialGEIITemplatePreviewProps {
   portfolio: StudioPortfolio;
   projects: ProjectItem[];
+  personalProjects?: PersonalProjectItem[];
+  creativeStudio?: CreativeStudioItem[];
   skills: SkillItem[];
   parcours: ParcoursItem[];
   profile?: UserProfileInfo;
@@ -28,6 +32,8 @@ interface IndustrialGEIITemplatePreviewProps {
 export default function IndustrialGEIITemplatePreview({
   portfolio,
   projects,
+  personalProjects = [],
+  creativeStudio = [],
   skills,
   parcours,
   profile,
@@ -40,6 +46,8 @@ export default function IndustrialGEIITemplatePreview({
     hero: true,
     about: true,
     projects: true,
+    personalProjects: true,
+    creativeStudio: true,
     skills: true,
     tools: true,
     parcours: true,
@@ -58,6 +66,14 @@ export default function IndustrialGEIITemplatePreview({
   // Filter items based on portfolio selections
   const displayProjects = projects.filter((p) =>
     portfolio.selectedProjects.includes(p.id)
+  );
+
+  const displayPersonalProjects = personalProjects.filter((p) =>
+    !portfolio.selectedPersonalProjects || portfolio.selectedPersonalProjects.includes(p.id)
+  );
+
+  const displayCreativeStudio = creativeStudio.filter((c) =>
+    !portfolio.selectedCreativeStudio || portfolio.selectedCreativeStudio.includes(c.id)
   );
 
   const displaySkills = skills.filter((s) =>
@@ -218,7 +234,29 @@ export default function IndustrialGEIITemplatePreview({
                 activeSection === 'projets' ? 'bg-[#E1D9C6] text-[#1A1815]' : 'hover:text-[#1A1815]'
               }`}
             >
-              SAÉ & Projets ({displayProjects.length})
+              SAÉ ({displayProjects.length})
+            </button>
+          )}
+
+          {sections.personalProjects && (
+            <button
+              onClick={() => setActiveSection('projets-perso')}
+              className={`px-2 py-1 rounded-md transition-colors ${
+                activeSection === 'projets-perso' ? 'bg-[#E1D9C6] text-[#1A1815]' : 'hover:text-[#1A1815]'
+              }`}
+            >
+              Projets Perso ({displayPersonalProjects.length})
+            </button>
+          )}
+
+          {sections.creativeStudio && (
+            <button
+              onClick={() => setActiveSection('studio-creatif')}
+              className={`px-2 py-1 rounded-md transition-colors ${
+                activeSection === 'studio-creatif' ? 'bg-[#E1D9C6] text-[#1A1815]' : 'hover:text-[#1A1815]'
+              }`}
+            >
+              Studio Créatif ({displayCreativeStudio.length})
             </button>
           )}
 
@@ -555,6 +593,280 @@ export default function IndustrialGEIITemplatePreview({
                                 Code source
                               </a>
                             )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* =================================================================== */}
+        {/* SECTION 3b : PROJETS PERSONNELS (SAVOIR-FAIRE) */}
+        {/* =================================================================== */}
+        {sections.personalProjects && (
+          <section id="projets-perso" className="scroll-mt-16">
+            <div className="flex items-center justify-between mb-3 border-b border-[#E1D9C6] pb-2">
+              <div>
+                <h2 className="text-sm font-800 text-[#1A1815] uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-purple-600 inline-block" />
+                  {titles.personalProjects || 'Projets Personnels (Savoir-Faire)'}
+                </h2>
+                <p className="text-[11px] text-[#8A7D63]">
+                  Développements autonomes, applications mobiles, vision par ordinateur et initiatives techniques
+                </p>
+              </div>
+              <span className="text-[11px] font-700 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                {displayPersonalProjects.length} projet{displayPersonalProjects.length > 1 ? 's' : ''}
+              </span>
+            </div>
+
+            {displayPersonalProjects.length === 0 ? (
+              <div className="p-6 rounded-2xl border border-dashed border-[#C2B59C] bg-[#F0EDE6]/50 text-center">
+                <Icon name="CommandLineIcon" size={24} className="mx-auto text-[#8A7D63] mb-2" />
+                <p className="text-xs font-700 text-[#4A4234]">
+                  Emplacement réservé à vos projets personnels (savoir-faire)
+                </p>
+                <p className="text-[11px] text-[#8A7D63] mt-1">
+                  Sélectionnez vos projets personnels dans l&apos;onglet <strong>Contenu</strong> du Studio.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {displayPersonalProjects.map((p) => (
+                  <article
+                    key={`personal-proj-${p.id}`}
+                    className="bg-white rounded-xl border border-purple-100 p-4 shadow-sm hover:border-purple-300 transition-all group"
+                  >
+                    <div className="flex flex-col sm:flex-row gap-4 items-start">
+                      {p.imageUrl && (
+                        <div className="w-full sm:w-28 h-24 rounded-lg overflow-hidden bg-purple-50/50 border border-purple-100 flex-shrink-0 relative">
+                          <AppImage
+                            src={p.imageUrl}
+                            alt={p.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <h3 className="text-xs sm:text-sm font-800 text-[#1A1815] leading-tight group-hover:text-purple-700 transition-colors">
+                              {p.title}
+                            </h3>
+                            {p.category && (
+                              <span className="inline-block mt-0.5 text-[10px] font-700 text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200/60">
+                                {p.category}
+                              </span>
+                            )}
+                          </div>
+                          {p.status && (
+                            <span className="text-[10px] font-mono font-600 text-[#8A7D63] bg-[#FAF8F3] px-1.5 py-0.5 rounded border border-[#E1D9C6]">
+                              {p.status}
+                            </span>
+                          )}
+                        </div>
+
+                        {p.savoirFaire && (
+                          <div className="mt-2 px-2.5 py-1 bg-purple-50/80 border border-purple-200/70 rounded-lg inline-flex items-center gap-1.5 text-[10px] text-purple-900 font-600">
+                            <Icon name="CheckCircleIcon" size={12} className="text-purple-600 flex-shrink-0" />
+                            <span>
+                              <strong className="text-purple-700">Savoir-faire clé :</strong>{' '}
+                              {Array.isArray(p.savoirFaire) ? p.savoirFaire.join(' · ') : p.savoirFaire}
+                            </span>
+                          </div>
+                        )}
+
+                        <p className="text-xs text-[#6D624C] leading-relaxed mt-2 line-clamp-3">
+                          {p.description}
+                        </p>
+
+                        {/* Tech Stack */}
+                        {p.techStack && p.techStack.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2.5">
+                            {p.techStack.map((tech) => (
+                              <span
+                                key={tech}
+                                className="px-2 py-0.5 bg-[#FAF8F3] border border-[#E1D9C6] rounded text-[10px] font-600 text-[#4A4234]"
+                              >
+                                {tech}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Links */}
+                        {(p.url || p.github) && (
+                          <div className="flex items-center gap-3 pt-2.5 mt-2.5 border-t border-[#F0EDE6] text-[10px]">
+                            {p.url && (
+                              <a
+                                href={p.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-purple-700 font-700 flex items-center gap-1 hover:underline"
+                              >
+                                <Icon name="GlobeAltIcon" size={11} />
+                                Démonstration
+                              </a>
+                            )}
+                            {p.github && (
+                              <a
+                                href={p.github.startsWith('http') ? p.github : `https://${p.github}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[#6D624C] font-600 flex items-center gap-1 hover:underline"
+                              >
+                                <Icon name="GithubIcon" size={11} />
+                                Code source
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* =================================================================== */}
+        {/* SECTION 3c : STUDIO CRÉATIF (SAVOIR-ÊTRE) */}
+        {/* =================================================================== */}
+        {sections.creativeStudio && (
+          <section id="studio-creatif" className="scroll-mt-16">
+            <div className="flex items-center justify-between mb-3 border-b border-[#E1D9C6] pb-2">
+              <div>
+                <h2 className="text-sm font-800 text-[#1A1815] uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+                  {titles.creativeStudio || 'Studio Créatif (Savoir-Être)'}
+                </h2>
+                <p className="text-[11px] text-[#8A7D63]">
+                  Productions audiovisuelles, communication d&apos;équipe, vulgarisation et démarche collective
+                </p>
+              </div>
+              <span className="text-[11px] font-700 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                {displayCreativeStudio.length} réalisation{displayCreativeStudio.length > 1 ? 's' : ''}
+              </span>
+            </div>
+
+            {/* Portfolify Reference Style Quote Banner */}
+            <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-l-4 border-amber-500 border-y border-r border-[#E1D9C6]/60 text-xs italic text-[#5C4F33] leading-relaxed mb-4">
+              « La technique c&apos;est bien, savoir la communiquer en équipe c&apos;est mieux. Voici quelques réalisations audiovisuelles et projets de vulgarisation produits en groupe lors de nos modules de communication et d&apos;expression. »
+            </div>
+
+            {displayCreativeStudio.length === 0 ? (
+              <div className="p-6 rounded-2xl border border-dashed border-[#C2B59C] bg-[#F0EDE6]/50 text-center">
+                <Icon name="SparklesIcon" size={24} className="mx-auto text-[#8A7D63] mb-2" />
+                <p className="text-xs font-700 text-[#4A4234]">
+                  Emplacement réservé au Studio Créatif (savoir-être)
+                </p>
+                <p className="text-[11px] text-[#8A7D63] mt-1">
+                  Sélectionnez vos réalisations audiovisuelles et de communication dans l&apos;onglet <strong>Contenu</strong> du Studio.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {displayCreativeStudio.map((item) => (
+                  <article
+                    key={`creative-item-${item.id}`}
+                    className="bg-white rounded-xl border border-amber-200/80 p-4 shadow-sm hover:border-amber-400 transition-all group"
+                  >
+                    <div className="flex flex-col sm:flex-row gap-4 items-start">
+                      {/* Media preview / Icon thumbnail */}
+                      <div className="w-full sm:w-28 h-24 rounded-lg overflow-hidden bg-amber-50 border border-amber-200/60 flex flex-col items-center justify-center flex-shrink-0 relative text-amber-700">
+                        {item.thumbnailUrl ? (
+                          <AppImage
+                            src={item.thumbnailUrl}
+                            alt={item.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <>
+                            <Icon
+                              name={
+                                item.mediaType === 'video'
+                                  ? 'VideoCameraIcon'
+                                  : item.mediaType === 'audio'
+                                  ? 'MicrophoneIcon'
+                                  : item.mediaType === 'image'
+                                  ? 'PhotoIcon'
+                                  : 'DocumentTextIcon'
+                              }
+                              size={28}
+                              className="text-amber-600 mb-1"
+                            />
+                            <span className="text-[9px] font-700 uppercase tracking-wider text-amber-800">
+                              {item.mediaType}
+                            </span>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <h3 className="text-xs sm:text-sm font-800 text-[#1A1815] leading-tight group-hover:text-amber-800 transition-colors">
+                              {item.title}
+                            </h3>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              {item.category && (
+                                <span className="text-[10px] font-700 text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60">
+                                  {item.category}
+                                </span>
+                              )}
+                              {item.role && (
+                                <span className="text-[10px] text-[#8A7D63]">
+                                  · {item.role}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {item.year && (
+                            <span className="text-[10px] font-mono font-600 text-[#8A7D63] bg-[#FAF8F3] px-1.5 py-0.5 rounded border border-[#E1D9C6]">
+                              {item.year}
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="text-xs text-[#6D624C] leading-relaxed mt-2 line-clamp-3">
+                          {item.description}
+                        </p>
+
+                        {/* Soft Skills Tags */}
+                        {item.softSkills && item.softSkills.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2.5">
+                            {item.softSkills.map((ss) => (
+                              <span
+                                key={ss}
+                                className="px-2 py-0.5 bg-amber-50/70 border border-amber-200/60 text-amber-900 rounded text-[10px] font-600 flex items-center gap-1"
+                              >
+                                <span className="w-1 h-1 rounded-full bg-amber-500" />
+                                {ss}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* View Link */}
+                        {(item.mediaUrl || (item as any).url) && (
+                          <div className="pt-2.5 mt-2.5 border-t border-[#F0EDE6]">
+                            <a
+                              href={item.mediaUrl || (item as any).url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-amber-800 font-700 text-[10px] flex items-center gap-1 hover:underline"
+                            >
+                              <Icon name="ArrowTopRightOnSquareIcon" size={11} />
+                              Visionner la réalisation ({item.mediaType || 'Média'})
+                            </a>
                           </div>
                         )}
                       </div>

@@ -8,6 +8,8 @@ import type { StudioPortfolio, StudioTemplateId, StudioPortfolioSections } from 
 import { DEFAULT_STUDIO_SECTIONS } from '@/lib/services/portfolioStudioService';
 import type {
   ProjectItem,
+  PersonalProjectItem,
+  CreativeStudioItem,
   SkillItem,
   ParcoursItem,
   PersonaItem,
@@ -22,6 +24,8 @@ interface PortfolioBuilderProps {
   portfolio: StudioPortfolio;
   onUpdate: (p: StudioPortfolio) => void;
   projects?: ProjectItem[];
+  personalProjects?: PersonalProjectItem[];
+  creativeStudio?: CreativeStudioItem[];
   skills?: SkillItem[];
   parcours?: ParcoursItem[];
   personas?: PersonaItem[];
@@ -37,12 +41,15 @@ export default function PortfolioBuilder({
   portfolio,
   onUpdate,
   projects = [],
+  personalProjects = [],
+  creativeStudio = [],
   skills = [],
   parcours = [],
   personas = [],
   languages = [],
   certifications = [],
   media = [],
+  profile,
   previewVisible,
   onTogglePreview,
 }: PortfolioBuilderProps) {
@@ -141,6 +148,22 @@ export default function PortfolioBuilder({
     onUpdate({ ...portfolio, selectedProjects: updated });
   };
 
+  const togglePersonalProject = (id: string) => {
+    const current = portfolio.selectedPersonalProjects || personalProjects.map((p) => p.id);
+    const updated = current.includes(id)
+      ? current.filter((item) => item !== id)
+      : [...current, id];
+    onUpdate({ ...portfolio, selectedPersonalProjects: updated });
+  };
+
+  const toggleCreativeStudio = (id: string) => {
+    const current = portfolio.selectedCreativeStudio || creativeStudio.map((c) => c.id);
+    const updated = current.includes(id)
+      ? current.filter((item) => item !== id)
+      : [...current, id];
+    onUpdate({ ...portfolio, selectedCreativeStudio: updated });
+  };
+
   const toggleSkill = (skillId: string) => {
     const current = portfolio.selectedSkills || [];
     const updated = current.includes(skillId)
@@ -185,7 +208,9 @@ export default function PortfolioBuilder({
     { key: 'cover', title: 'Page de garde (Sas d\'accueil)', subtitle: 'Couverture B.U.T. avec bouton d\'accès', icon: 'ShieldCheckIcon' },
     { key: 'hero', title: 'Section Accueil (Hero & Slogan)', subtitle: 'Phrase d\'accroche, avatar et badges contact', icon: 'SparklesIcon' },
     { key: 'about', title: 'Profil & Projet Professionnel (À propos)', subtitle: 'Bio détaillée, alternance recherchée et démarche', icon: 'UserIcon' },
-    { key: 'projects', title: 'Mes Réalisations & SAÉ', subtitle: 'Projets académiques IUT, TPs et développements', icon: 'FolderIcon' },
+    { key: 'projects', title: 'Mes Réalisations & SAÉ (IUT)', subtitle: 'Situations d\'apprentissage et travaux pratiques', icon: 'FolderIcon' },
+    { key: 'personalProjects', title: 'Projets Personnels (Savoir-Faire)', subtitle: 'Développements autonomes, applications mobiles et IoT', icon: 'CommandLineIcon' },
+    { key: 'creativeStudio', title: 'Studio Créatif (Savoir-Être)', subtitle: 'Audiovisuel, communication d\'équipe et vulgarisation', icon: 'SparklesIcon' },
     { key: 'skills', title: 'Compétences Techniques', subtitle: 'Groupes d\'expertise et jauges de niveau %', icon: 'BrainIcon' },
     { key: 'tools', title: 'Outils & Matériel Industriel', subtitle: 'Logiciels CAO, automates et équipements', icon: 'WrenchScrewdriverIcon' },
     { key: 'parcours', title: 'Parcours & Formations', subtitle: 'Timeline chronologique des diplômes et stages', icon: 'GraduationCapIcon' },
@@ -517,12 +542,176 @@ export default function PortfolioBuilder({
               )}
             </div>
 
+            {/* Projets Personnels (Savoir-Faire) */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-xs font-700 text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-purple-600 inline-block" />
+                    2. Projets Personnels (Savoir-Faire) ({(portfolio.selectedPersonalProjects || []).length}/{personalProjects.length})
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Développements personnels, applications et explorations techniques
+                  </p>
+                </div>
+                <Link
+                  href="/c-vth-que-master"
+                  className="text-[11px] text-primary hover:underline font-600 flex items-center gap-1"
+                >
+                  <Icon name="PlusIcon" size={11} />
+                  Gérer CVthèque
+                </Link>
+              </div>
+
+              {personalProjects.length === 0 ? (
+                <div className="p-4 rounded-xl border border-dashed border-border text-center text-xs text-muted-foreground">
+                  Aucun projet personnel dans la CVthèque Master.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {personalProjects.map((perso) => {
+                    const isSelected = (portfolio.selectedPersonalProjects || []).includes(perso.id);
+                    return (
+                      <label
+                        key={`perso-chk-${perso.id}`}
+                        className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-purple-300 bg-purple-50/20 shadow-2xs'
+                            : 'border-border hover:bg-muted/50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => togglePersonalProject(perso.id)}
+                          className="mt-1 accent-purple-600 rounded w-4 h-4"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <p className="text-xs font-700 text-foreground truncate">
+                              {perso.title}
+                            </p>
+                            {perso.category && (
+                              <span className="px-1.5 py-0.2 bg-purple-50 text-purple-700 border border-purple-200 text-[9px] font-700 rounded">
+                                {perso.category}
+                              </span>
+                            )}
+                          </div>
+                          {perso.savoirFaire && (
+                            <p className="text-[10px] text-purple-800 font-600 truncate mt-0.5">
+                              ⚡ {perso.savoirFaire}
+                            </p>
+                          )}
+                          <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                            {perso.description}
+                          </p>
+                          {perso.techStack && perso.techStack.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {perso.techStack.slice(0, 3).map((tech) => (
+                                <span
+                                  key={tech}
+                                  className="px-1.5 py-0.5 bg-muted text-muted-foreground text-[10px] font-500 rounded"
+                                >
+                                  {tech}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Studio Créatif (Savoir-Être) */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-xs font-700 text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
+                    3. Studio Créatif (Savoir-Être) ({(portfolio.selectedCreativeStudio || []).length}/{creativeStudio.length})
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Productions audiovisuelles, communication d&apos;équipe et pitch
+                  </p>
+                </div>
+                <Link
+                  href="/c-vth-que-master"
+                  className="text-[11px] text-primary hover:underline font-600 flex items-center gap-1"
+                >
+                  <Icon name="PlusIcon" size={11} />
+                  Gérer CVthèque
+                </Link>
+              </div>
+
+              {creativeStudio.length === 0 ? (
+                <div className="p-4 rounded-xl border border-dashed border-border text-center text-xs text-muted-foreground">
+                  Aucune réalisation créative dans la CVthèque Master.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {creativeStudio.map((crea) => {
+                    const isSelected = (portfolio.selectedCreativeStudio || []).includes(crea.id);
+                    return (
+                      <label
+                        key={`crea-chk-${crea.id}`}
+                        className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-amber-300 bg-amber-50/20 shadow-2xs'
+                            : 'border-border hover:bg-muted/50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleCreativeStudio(crea.id)}
+                          className="mt-1 accent-amber-600 rounded w-4 h-4"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <p className="text-xs font-700 text-foreground truncate">
+                              {crea.title}
+                            </p>
+                            <span className="px-1.5 py-0.2 bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-700 rounded capitalize">
+                              {crea.mediaType}
+                            </span>
+                          </div>
+                          {crea.role && (
+                            <p className="text-[10px] text-[#8A7D63] font-600 truncate mt-0.5">
+                              {crea.role}
+                            </p>
+                          )}
+                          <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                            {crea.description}
+                          </p>
+                          {crea.softSkills && crea.softSkills.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {crea.softSkills.slice(0, 3).map((ss) => (
+                                <span
+                                  key={ss}
+                                  className="px-1.5 py-0.5 bg-amber-50/60 text-amber-900 border border-amber-200/50 text-[10px] font-500 rounded"
+                                >
+                                  {ss}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             {/* Compétences de la CVthèque Master */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="text-xs font-700 text-foreground uppercase tracking-wider">
-                    2. Compétences & Outils ({portfolio.selectedSkills.length}/{skills.length})
+                    4. Compétences & Outils ({portfolio.selectedSkills.length}/{skills.length})
                   </p>
                   <p className="text-[11px] text-muted-foreground">
                     Alimentent la matrice technique et les jauges
@@ -574,7 +763,7 @@ export default function PortfolioBuilder({
             {/* Langues & Certifications */}
             <div>
               <p className="text-xs font-700 text-foreground uppercase tracking-wider mb-2">
-                3. Langues & Certifications
+                5. Langues & Certifications
               </p>
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-1.5">
