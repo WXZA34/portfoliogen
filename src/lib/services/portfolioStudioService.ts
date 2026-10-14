@@ -446,6 +446,15 @@ export async function saveStudioPortfolio(
   const updated = [item, ...filtered];
   setLocalStudioPortfolios(updated, userId);
 
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('portfoliogen_current_active_portfolio', JSON.stringify(item));
+    localStorage.setItem('portfoliogen_current_active_portfolio_id', item.id);
+    if (item.slug) {
+      localStorage.setItem(`portfoliogen_portfolio_${item.slug.toLowerCase().trim()}`, JSON.stringify(item));
+    }
+    localStorage.setItem(`portfoliogen_portfolio_${item.id.toLowerCase().trim()}`, JSON.stringify(item));
+  }
+
   return item;
 }
 
@@ -480,6 +489,25 @@ export async function fetchPublicStudioPortfolio(
   // 1. Try to search in localStorage first (if same browser or user session)
   if (typeof window !== 'undefined') {
     try {
+      // If no slug provided or asking for active, return the currently active portfolio
+      if (!normalized || normalized === 'active' || normalized === 'current') {
+        const activeRaw = localStorage.getItem('portfoliogen_current_active_portfolio');
+        if (activeRaw) {
+          const parsed = JSON.parse(activeRaw);
+          if (parsed) return parsed;
+        }
+      }
+
+      // Check direct exact lookup keys in localStorage
+      if (normalized) {
+        const directSlug = localStorage.getItem(`portfoliogen_portfolio_${normalized}`);
+        if (directSlug) {
+          const parsed: StudioPortfolio = JSON.parse(directSlug);
+          if (parsed) return parsed;
+        }
+      }
+
+      // Search all studio portfolio lists in localStorage
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith(LOCAL_STORAGE_STUDIO_PREFIX)) {
@@ -490,9 +518,9 @@ export async function fetchPublicStudioPortfolio(
               (p) =>
                 p.id.toLowerCase() === normalized ||
                 p.slug.toLowerCase() === normalized ||
-                p.slug.toLowerCase().endsWith(normalized) ||
+                p.slug.toLowerCase().replace(/^\/+|\/+$/g, '') === normalized ||
                 normalized.endsWith(p.slug.toLowerCase()) ||
-                (normalized && p.slug.toLowerCase().includes(normalized))
+                p.slug.toLowerCase().endsWith(normalized)
             );
             if (found) return found;
           }
@@ -512,7 +540,7 @@ export async function fetchPublicStudioPortfolio(
     if (isUUID) {
       query = query.eq('id', normalized);
     } else {
-      query = query.or(`slug.ilike.%${normalized}%,name.ilike.%${normalized}%`);
+      query = query.or(`slug.eq.${normalized},slug.ilike.%${normalized}%,name.ilike.%${normalized}%`);
     }
 
     const { data, error } = await query.limit(1).maybeSingle();
@@ -544,22 +572,29 @@ export async function fetchPublicStudioPortfolio(
     console.warn('Supabase public portfolio lookup error:', err);
   }
 
-  // 3. Match against DEFAULT_STARTER_PORTFOLIOS
+  // 3. Exact match against DEFAULT_STARTER_PORTFOLIOS
   const starter = DEFAULT_STARTER_PORTFOLIOS.find(
     (p) =>
       p.id.toLowerCase() === normalized ||
       p.slug.toLowerCase() === normalized ||
-      p.slug.toLowerCase().endsWith(normalized) ||
-      normalized.endsWith(p.slug.toLowerCase()) ||
-      (normalized.includes('geii') && p.template === 'IndustrialGEII') ||
-      (normalized.includes('dussey') && p.template === 'IndustrialGEII') ||
-      normalized === 'portfolio-but'
+      p.slug.toLowerCase().replace(/^\/+|\/+$/g, '') === normalized
   );
 
   if (starter) {
     return starter;
   }
 
-  // 4. Default: return the full IndustrialGEII starter portfolio
+  // 4. If current active portfolio is in localStorage, use it!
+  if (typeof window !== 'undefined') {
+    try {
+      const activeRaw = localStorage.getItem('portfoliogen_current_active_portfolio');
+      if (activeRaw) {
+        const parsed = JSON.parse(activeRaw);
+        if (parsed) return parsed;
+      }
+    } catch {}
+  }
+
+  // 5. Default: return the full IndustrialGEII starter portfolio
   return DEFAULT_STARTER_PORTFOLIOS[0];
 }

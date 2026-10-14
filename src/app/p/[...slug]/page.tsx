@@ -48,7 +48,7 @@ export default async function PublicPortfolioSlugPage({
 
   return (
     <PublicPortfolioViewer
-      slug={fullSlug || 'dussey-larry/geii-automatisme'}
+      slug={fullSlug || ''}
       recipientCompany={forParam}
     />
   );

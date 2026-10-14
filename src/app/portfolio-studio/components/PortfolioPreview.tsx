@@ -208,7 +208,7 @@ export default function PortfolioPreview({
   );
 }
 
-function ClassicCreamPreview({
+export function ClassicCreamPreview({
   portfolio,
   selectedProjects,
   selectedSkills,
@@ -302,7 +302,7 @@ function ClassicCreamPreview({
   );
 }
 
-function BentoMinimalPreview({
+export function BentoMinimalPreview({
   portfolio,
   selectedProjects,
   selectedSkills,

@@ -130,12 +130,16 @@ export default function PortfolioBuilder({
     ].filter(Boolean))
   );
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      toast.success(`"${portfolio.name}" enregistré ✓`);
-    }, 600);
+    try {
+      await onUpdate(portfolio);
+      toast.success(`"${portfolio.name}" enregistré et synchronisé ✓`);
+    } catch {
+      toast.error("Erreur lors de l'enregistrement");
+    } finally {
+      setTimeout(() => setSaving(false), 300);
+    }
   };
 
   const toggleSection = (key: keyof StudioPortfolioSections) => {
@@ -254,12 +258,21 @@ export default function PortfolioBuilder({
     <div className="bg-card border border-border rounded-xl shadow-card flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
-        <div>
-          <p className="text-sm font-700 text-foreground truncate max-w-[200px]">
-            {portfolio.name}
-          </p>
-          <p className="text-xs text-muted-foreground font-mono-data truncate max-w-[180px]">
-            portfoliogen.net/{portfolio.slug}
+        <div className="flex-1 min-w-0 mr-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+            <p className="text-sm font-bold text-foreground truncate">
+              {portfolio.name}
+            </p>
+            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/25 flex-shrink-0">
+              En cours d&apos;édition
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground font-mono truncate mt-0.5 flex items-center gap-1.5">
+            <span className="text-primary font-semibold">Lien :</span>
+            <span className="text-foreground/80 underline decoration-muted-foreground/30 font-medium">
+              portfoliogen.net/p/{portfolio.slug || portfolio.id}
+            </span>
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -861,12 +874,17 @@ export default function PortfolioBuilder({
               </label>
               <div className="flex items-center">
                 <span className="text-xs text-muted-foreground font-mono-data px-3 py-2 bg-muted border border-border rounded-l-xl border-r-0">
-                  portfoliogen.net/
+                  portfoliogen.net/p/
                 </span>
                 <input
                   type="text"
-                  value={portfolio.slug}
-                  onChange={(e) => onUpdate({ ...portfolio, slug: e.target.value })}
+                  value={portfolio.slug || ''}
+                  onChange={(e) =>
+                    onUpdate({
+                      ...portfolio,
+                      slug: e.target.value.toLowerCase().replace(/[^a-z0-9-_/]/g, ''),
+                    })
+                  }
                   className="flex-1 px-3 py-2 bg-muted border border-border rounded-r-xl text-xs font-mono-data text-foreground focus:outline-none focus:border-primary font-600"
                 />
               </div>
@@ -1820,11 +1838,12 @@ export default function PortfolioBuilder({
         {/* TAB 6: RÉGLAGES & URL PERSONNALISÉE (CONFIGURATION D'ENVOI) */}
         {/* =================================================================== */}
         {activeTab === 'settings' && (() => {
+          const activeSlug = (portfolio.slug && portfolio.slug.trim()) || portfolio.id;
           const computedShareUrl = (() => {
             if (portfolio.customShareUrl && portfolio.customShareUrl.trim()) {
               return portfolio.customShareUrl.trim();
             }
-            const base = `https://portfoliogen.net/p/${portfolio.slug || 'portfolio-but'}`;
+            const base = `https://portfoliogen.net/p/${activeSlug}`;
             if (portfolio.recipientCompany && portfolio.recipientCompany.trim()) {
               return `${base}?for=${encodeURIComponent(portfolio.recipientCompany.trim().replace(/\s+/g, ''))}`;
             }
@@ -1871,7 +1890,7 @@ export default function PortfolioBuilder({
                       onChange={(e) =>
                         onUpdate({
                           ...portfolio,
-                          slug: e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''),
+                          slug: e.target.value.toLowerCase().replace(/[^a-z0-9-_/]/g, ''),
                         })
                       }
                       className="flex-1 px-3 py-1.5 bg-background text-xs text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary"

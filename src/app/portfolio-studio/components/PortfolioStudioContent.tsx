@@ -90,7 +90,17 @@ export default function PortfolioStudioContent() {
 
         if (pList && pList.length > 0) {
           setPortfolios(pList);
-          setSelectedPortfolioId(pList[0].id);
+          const savedActiveId =
+            typeof window !== 'undefined'
+              ? localStorage.getItem('portfoliogen_current_active_portfolio_id')
+              : null;
+          const matched = pList.find((p) => p.id === savedActiveId);
+          const activeItem = matched || pList[0];
+          setSelectedPortfolioId(activeItem.id);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('portfoliogen_current_active_portfolio_id', activeItem.id);
+            localStorage.setItem('portfoliogen_current_active_portfolio', JSON.stringify(activeItem));
+          }
         }
         setProjects(projList || []);
         setPersonalProjects(persoList || []);
@@ -118,10 +128,27 @@ export default function PortfolioStudioContent() {
   const selectedPortfolio =
     portfolios.find((p) => p.id === selectedPortfolioId) || portfolios[0];
 
+  const handleSelectPortfolio = (id: string) => {
+    setSelectedPortfolioId(id);
+    const chosen = portfolios.find((p) => p.id === id);
+    if (chosen && typeof window !== 'undefined') {
+      localStorage.setItem('portfoliogen_current_active_portfolio_id', id);
+      localStorage.setItem('portfoliogen_current_active_portfolio', JSON.stringify(chosen));
+      localStorage.setItem(`portfoliogen_portfolio_${chosen.slug.toLowerCase()}`, JSON.stringify(chosen));
+      localStorage.setItem(`portfoliogen_portfolio_${chosen.id.toLowerCase()}`, JSON.stringify(chosen));
+    }
+  };
+
   const handleUpdate = async (updated: StudioPortfolio) => {
     setPortfolios((prev) =>
       prev.map((p) => (p.id === updated.id ? updated : p))
     );
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('portfoliogen_current_active_portfolio_id', updated.id);
+      localStorage.setItem('portfoliogen_current_active_portfolio', JSON.stringify(updated));
+      localStorage.setItem(`portfoliogen_portfolio_${updated.slug.toLowerCase()}`, JSON.stringify(updated));
+      localStorage.setItem(`portfoliogen_portfolio_${updated.id.toLowerCase()}`, JSON.stringify(updated));
+    }
     try {
       await saveStudioPortfolio(updated);
     } catch (err) {
@@ -130,15 +157,17 @@ export default function PortfolioStudioContent() {
   };
 
   const handleCreateNew = async () => {
+    const timestamp = Date.now().toString().slice(-4);
     const newId = `pf-${Date.now()}`;
+    const newSlug = `mon-portfolio-${timestamp}`;
     const newPortfolio: StudioPortfolio = {
       id: newId,
-      name: 'Nouveau Portfolio B.U.T. GEII',
+      name: `Nouveau Portfolio (${timestamp})`,
       persona: 'Recruteur Industriel & AII',
       template: 'IndustrialGEII',
       syncMode: 'live',
       status: 'active',
-      slug: `portfolio-${Date.now().toString().slice(-5)}`,
+      slug: newSlug,
       views: 0,
       lastUpdated: 'À l\'instant',
       enabledSections: { ...DEFAULT_STUDIO_SECTIONS },
@@ -163,9 +192,9 @@ export default function PortfolioStudioContent() {
     };
 
     setPortfolios((prev) => [newPortfolio, ...prev]);
-    setSelectedPortfolioId(newId);
+    handleSelectPortfolio(newId);
     await saveStudioPortfolio(newPortfolio);
-    toast.success('Nouveau portfolio créé !');
+    toast.success(`Nouveau portfolio "${newPortfolio.name}" créé et sélectionné !`);
   };
 
   const handleDelete = async (id: string) => {
@@ -173,7 +202,7 @@ export default function PortfolioStudioContent() {
     const remaining = portfolios.filter((p) => p.id !== id);
     setPortfolios(remaining);
     if (selectedPortfolioId === id && remaining.length > 0) {
-      setSelectedPortfolioId(remaining[0].id);
+      handleSelectPortfolio(remaining[0].id);
     }
     toast.success('Portfolio supprimé.');
   };
@@ -194,7 +223,7 @@ export default function PortfolioStudioContent() {
         <PortfolioList
           portfolios={portfolios}
           selectedId={selectedPortfolioId}
-          onSelect={setSelectedPortfolioId}
+          onSelect={handleSelectPortfolio}
           onCreateNew={handleCreateNew}
           onDelete={handleDelete}
         />

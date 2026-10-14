@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { toast } from 'sonner';
 import {
@@ -38,6 +38,10 @@ import {
   DEFAULT_STARTER_MEDIA,
 } from '@/lib/services/cvthequeService';
 import IndustrialGEIITemplatePreview from '@/app/portfolio-studio/components/templates/IndustrialGEIITemplatePreview';
+import {
+  ClassicCreamPreview,
+  BentoMinimalPreview,
+} from '@/app/portfolio-studio/components/PortfolioPreview';
 import CanvasEditor from '@/app/portfolio-editor/components/CanvasEditor';
 import { PortfolioDesign } from '@/app/portfolio-editor/components/PortfolioEditorContent';
 import { createClient } from '@/lib/supabase/client';
@@ -240,6 +244,24 @@ export default function PublicPortfolioViewer({
 
   const activePortfolio = portfolio || DEFAULT_STARTER_PORTFOLIOS[0];
 
+  const selectedProjects = useMemo(() => {
+    const list = activePortfolio.selectedProjects || [];
+    if (list.length === 0) {
+      return projects.slice(0, 3);
+    }
+    const filtered = projects.filter((p) => list.includes(p.id));
+    return filtered.length > 0 ? filtered : projects.slice(0, 3);
+  }, [activePortfolio.selectedProjects, projects]);
+
+  const selectedSkills = useMemo(() => {
+    const list = activePortfolio.selectedSkills || [];
+    if (list.length === 0) {
+      return skills.slice(0, 8);
+    }
+    const filtered = skills.filter((s) => list.includes(s.id));
+    return filtered.length > 0 ? filtered : skills.slice(0, 8);
+  }, [activePortfolio.selectedSkills, skills]);
+
   return (
     <main className="min-h-screen flex flex-col bg-[#FAF8F3] text-[#2C2720]">
       {/* =================================================================== */}
@@ -254,6 +276,9 @@ export default function PublicPortfolioViewer({
             <div className="flex items-center gap-2">
               <span className="text-xs font-extrabold text-[#1A1815] truncate">
                 {candidateName}
+              </span>
+              <span className="text-xs font-semibold text-[#8A7D63] hidden md:inline truncate">
+                • {activePortfolio.name}
               </span>
               <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -316,18 +341,32 @@ export default function PublicPortfolioViewer({
       {/* PORTFOLIO CONTENT (FULL STANDALONE VIEW) */}
       {/* =================================================================== */}
       <div className="flex-1 w-full max-w-7xl mx-auto">
-        <IndustrialGEIITemplatePreview
-          portfolio={activePortfolio}
-          projects={projects}
-          personalProjects={personalProjects}
-          creativeStudio={creativeStudio}
-          skills={skills}
-          parcours={parcours}
-          profile={profile}
-          languages={languages}
-          certifications={certifications}
-          media={media}
-        />
+        {activePortfolio.template === 'BentoMinimal' ? (
+          <BentoMinimalPreview
+            portfolio={activePortfolio}
+            selectedProjects={selectedProjects}
+            selectedSkills={selectedSkills}
+          />
+        ) : activePortfolio.template === 'ClassicCream' ? (
+          <ClassicCreamPreview
+            portfolio={activePortfolio}
+            selectedProjects={selectedProjects}
+            selectedSkills={selectedSkills}
+          />
+        ) : (
+          <IndustrialGEIITemplatePreview
+            portfolio={activePortfolio}
+            projects={projects}
+            personalProjects={personalProjects}
+            creativeStudio={creativeStudio}
+            skills={skills}
+            parcours={parcours}
+            profile={profile}
+            languages={languages}
+            certifications={certifications}
+            media={media}
+          />
+        )}
       </div>
 
       {/* =================================================================== */}

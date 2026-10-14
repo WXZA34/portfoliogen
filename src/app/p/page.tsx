@@ -20,7 +20,7 @@ export default async function PublicPortfolioRootPage({ searchParams }: PageProp
 
   return (
     <PublicPortfolioViewer
-      slug="dussey-larry/geii-automatisme"
+      slug=""
       recipientCompany={forParam}
     />
   );

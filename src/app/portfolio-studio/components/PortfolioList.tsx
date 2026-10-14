@@ -63,7 +63,7 @@ export default function PortfolioList({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
         {portfolios.map((portfolio) => {
           const badge = getTemplateBadge(portfolio.template);
           const isSelected = selectedId === portfolio.id;
@@ -71,24 +71,46 @@ export default function PortfolioList({
             <div
               key={portfolio.id}
               onClick={() => onSelect(portfolio.id)}
-              className={`p-3 rounded-xl border cursor-pointer transition-all duration-150 group relative ${
+              className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all duration-200 group relative ${
                 isSelected
-                  ? 'border-primary/50 bg-primary/5 shadow-2xs'
-                  : 'border-border hover:border-border/80 hover:bg-muted/40'
+                  ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/20 scale-[1.01]'
+                  : 'border-border/80 bg-card hover:border-primary/40 hover:bg-muted/50 hover:shadow-2xs'
               }`}
             >
+              {/* Left active accent strip */}
+              {isSelected && (
+                <div className="absolute left-0 top-3 bottom-3 w-1 bg-primary rounded-r-full" />
+              )}
+
               <div className="flex items-start justify-between gap-2 mb-1.5">
-                <p className="text-xs font-700 text-foreground leading-tight truncate">
-                  {portfolio.name}
-                </p>
-                <StatusBadge variant={portfolio.status} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={`text-xs font-bold leading-tight truncate ${
+                      isSelected ? 'text-primary' : 'text-foreground'
+                    }`}
+                  >
+                    {portfolio.name}
+                  </p>
+                  <p className="text-[10px] font-mono text-muted-foreground truncate mt-0.5">
+                    /p/{portfolio.slug}
+                  </p>
+                </div>
+
+                {isSelected ? (
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-primary text-primary-foreground flex items-center gap-1 shadow-xs flex-shrink-0 animate-in fade-in">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    En cours
+                  </span>
+                ) : (
+                  <StatusBadge variant={portfolio.status} size="sm" />
+                )}
               </div>
 
               <p className="text-[11px] text-muted-foreground mb-2 truncate">
                 {portfolio.persona}
               </p>
 
-              <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+              <div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
                 <span
                   className={`text-[10px] font-600 px-2 py-0.5 rounded-full ${
                     portfolio.syncMode === 'live' ? 'sync-live' : 'sync-frozen'
@@ -103,19 +125,30 @@ export default function PortfolioList({
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                <span className="font-mono-data">
+              <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border/40">
+                <span className="font-mono-data text-[10px] text-muted-foreground">
                   {portfolio.views} {t.studio.list.views}
                 </span>
 
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1">
+                  {isSelected && (
+                    <span className="text-[10px] font-bold text-primary flex items-center gap-1 mr-1">
+                      <Icon name="CheckCircleIcon" size={12} className="text-primary" />
+                      Actif
+                    </span>
+                  )}
+
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleCopyLink(portfolio.slug);
                     }}
-                    className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-                    title={t.studio.builder.copyLink}
+                    className={`p-1 rounded transition-colors ${
+                      isSelected
+                        ? 'bg-primary/15 text-primary hover:bg-primary/25'
+                        : 'opacity-0 group-hover:opacity-100 hover:bg-muted text-muted-foreground hover:text-foreground'
+                    }`}
+                    title="Copier le lien public"
                   >
                     <Icon name="CopyIcon" size={12} />
                   </button>
@@ -128,7 +161,7 @@ export default function PortfolioList({
                           onDelete(portfolio.id);
                         }
                       }}
-                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                      className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                       title="Supprimer"
                     >
                       <Icon name="TrashIcon" size={12} />
