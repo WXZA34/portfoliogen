@@ -1,10 +1,13 @@
 /**
  * Media upload helper utility
  * Supports direct upload from PC for Images, Videos (with duration checking), and Documents (CV PDF)
- * Gracefully uploads via /api/upload-image (Supabase storage) with automatic Base64 client fallback
+ * Gracefully uploads directly to Supabase Storage from browser (bypassing Vercel's 4.5MB serverless limit),
+ * with fallback to /api/upload-image (guarded against 413) and automatic Base64 client fallback.
  * Includes client-side Canvas compression to prevent HTTP 413 and protect localStorage quotas,
  * as well as safe document opening to bypass Chrome's about:blank#blocked restriction on data URLs.
  */
+
+import { createClient } from '@/lib/supabase/client';
 
 export interface UploadedMediaResult {
   url: string;
@@ -70,8 +73,12 @@ export async function compressImageFile(
   maxDimension = 1200,
   quality = 0.82
 ): Promise<File> {
+  const isImageByName = /\.(jpe?g|png|webp|avif|heic|heif|bmp|tiff)$/i.test(file.name);
+  const isImage = (file.type && file.type.startsWith('image/')) || isImageByName;
+  const isSvgOrGif = (file.type && (file.type.includes('svg') || file.type.includes('gif'))) || /\.(svg|gif)$/i.test(file.name);
+
   // Never compress SVG or GIF (maintain vectors and animation)
-  if (!file.type.startsWith('image/') || file.type.includes('svg') || file.type.includes('gif')) {
+  if (!isImage || isSvgOrGif) {
     return file;
   }
 
@@ -226,13 +233,16 @@ export function downloadDocumentSafe(url: string, fileName = 'CV_Document.pdf'):
 
 /**
  * Upload a media file from PC (Image, Video, or Document/PDF)
- * Automatically compresses large images to eliminate HTTP 413.
- * Tries server endpoint first; falls back to client Data URL if offline or storage issue.
+ * 1. Automatically compresses large images on client canvas.
+ * 2. Tries direct client-to-Supabase Storage upload first (bypassing Vercel's 4.5MB limit entirely).
+ * 3. Only attempts /api/upload-image if file size is safely < 3.8MB (guaranteeing NO HTTP 413).
+ * 4. Gracefully falls back to local Data URL if offline.
  */
 export async function uploadMediaFromPC(file: File): Promise<UploadedMediaResult> {
-  const isImage = file.type.startsWith('image/');
-  const isVideo = file.type.startsWith('video/');
-  const isDoc = file.type.includes('pdf') || file.type.includes('document') || file.name.match(/\.(pdf|docx?)$/i);
+  const isImageByName = /\.(jpe?g|png|webp|avif|heic|heif|bmp|tiff)$/i.test(file.name);
+  const isImage = (file.type && file.type.startsWith('image/')) || isImageByName;
+  const isVideo = (file.type && file.type.startsWith('video/')) || /\.(mp4|webm|mov|mkv)$/i.test(file.name);
+  const isDoc = (file.type && (file.type.includes('pdf') || file.type.includes('document'))) || /\.(pdf|docx?|pptx?)$/i.test(file.name);
   const mediaType: 'image' | 'video' | 'document' = isVideo ? 'video' : isDoc ? 'document' : 'image';
 
   // Client-side compression for images to prevent HTTP 413 and localStorage overflow
@@ -256,32 +266,80 @@ export async function uploadMediaFromPC(file: File): Promise<UploadedMediaResult
 
   const fileSize = formatFileSize(processedFile.size);
 
-  try {
-    const formData = new FormData();
-    formData.append('file', processedFile);
+  // 1. Direct browser-to-Supabase Storage upload (bypasses Vercel Serverless Function 4.5MB body limit!)
+  if (typeof window !== 'undefined') {
+    try {
+      const supabase = createClient();
+      const folder = isVideo ? 'videos' : isDoc ? 'documents' : 'images';
+      const ext = processedFile.name.split('.').pop() || (isImage ? 'jpg' : isDoc ? 'pdf' : 'bin');
+      const filename = `editor/${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-    const res = await fetch('/api/upload-image', {
-      method: 'POST',
-      body: formData,
-    });
+      let uploadResult = await supabase.storage
+        .from('portfolio-media')
+        .upload(filename, processedFile, {
+          contentType: processedFile.type || (isImage ? 'image/jpeg' : isDoc ? 'application/pdf' : 'application/octet-stream'),
+          upsert: false,
+        });
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data.url) {
-        return {
-          url: data.url,
-          fileName: processedFile.name,
-          fileSize,
-          mediaType,
-          durationSeconds,
-        };
+      if (uploadResult.error) {
+        uploadResult = await supabase.storage
+          .from('media')
+          .upload(filename, processedFile, {
+            contentType: processedFile.type || (isImage ? 'image/jpeg' : isDoc ? 'application/pdf' : 'application/octet-stream'),
+            upsert: false,
+          });
       }
+
+      if (!uploadResult.error) {
+        const bucket = uploadResult.data?.fullPath?.startsWith('media/') ? 'media' : 'portfolio-media';
+        const { data: urlData } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(filename);
+
+        if (urlData?.publicUrl) {
+          return {
+            url: urlData.publicUrl,
+            fileName: processedFile.name,
+            fileSize,
+            mediaType,
+            durationSeconds,
+          };
+        }
+      }
+    } catch (clientStorageErr) {
+      console.warn('Direct client Supabase upload skipped:', clientStorageErr);
     }
-  } catch (err) {
-    console.warn('Server upload failed, using local base64 fallback:', err);
   }
 
-  // Fallback to local Data URL
+  // 2. Only attempt server endpoint /api/upload-image if safely under Vercel's 4.5MB payload limit (< 3.8MB)
+  if (processedFile.size < 3.8 * 1024 * 1024) {
+    try {
+      const formData = new FormData();
+      formData.append('file', processedFile);
+
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) {
+          return {
+            url: data.url,
+            fileName: processedFile.name,
+            fileSize,
+            mediaType,
+            durationSeconds,
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Server upload failed, using local base64 fallback:', err);
+    }
+  }
+
+  // 3. Fallback to local Data URL (offline or large files without storage)
   const dataUrl = await fileToDataUrl(processedFile);
   return {
     url: dataUrl,

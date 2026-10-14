@@ -5,6 +5,7 @@ import Icon from '@/components/ui/AppIcon';
 import Modal from '@/components/ui/Modal';
 import { ProjectItem, ProjectKPI, VideoMediaItem, saveProject } from '@/lib/services/cvthequeService';
 import MediaUploadManager from './MediaUploadManager';
+import { uploadMediaFromPC } from '@/lib/utils/mediaUploadHelper';
 import { toast } from 'sonner';
 
 interface ProjectEditModalProps {
@@ -166,20 +167,8 @@ export default function ProjectEditModal({
     const toastId = toast.loading("Téléversement de l'image...");
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const res = await fetch('/api/upload-image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        throw new Error(data.error || 'Erreur lors du téléversement');
-      }
-
-      setImageUrl(data.url);
+      const res = await uploadMediaFromPC(file);
+      setImageUrl(res.url);
       toast.success('Image importée avec succès !', { id: toastId });
     } catch (err: any) {
       console.error(err);

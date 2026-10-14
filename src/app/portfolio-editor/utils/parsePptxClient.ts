@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { uploadMediaFromPC } from '@/lib/utils/mediaUploadHelper';
 
 function compressImage(dataUrl: string, mimeType: string, maxWidth: number = 1920): Promise<string> {
   return new Promise((resolve) => {
@@ -36,18 +37,11 @@ async function uploadDataUrl(dataUrl: string): Promise<string> {
   try {
     const res = await fetch(dataUrl);
     const blob = await res.blob();
-    const formData = new FormData();
     const ext = blob.type.split('/')[1] || 'jpg';
-    formData.append('file', new File([blob], `image.${ext}`, { type: blob.type }));
+    const file = new File([blob], `slide_${Date.now()}.${ext}`, { type: blob.type });
     
-    const uploadRes = await fetch('/api/upload-image', {
-      method: 'POST',
-      body: formData
-    });
-    if (uploadRes.ok) {
-      const data = await uploadRes.json();
-      if (data.url) return data.url;
-    }
+    const uploadRes = await uploadMediaFromPC(file);
+    if (uploadRes.url) return uploadRes.url;
   } catch(e) {
     console.error("Upload error in parsePptxClient", e);
   }

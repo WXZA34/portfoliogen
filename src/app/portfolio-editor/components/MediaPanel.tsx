@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { createClient } from '@/lib/supabase/client';
+import { uploadMediaFromPC } from '@/lib/utils/mediaUploadHelper';
 
 interface MediaPanelProps {
   onInsertImage: (url: string) => void;
@@ -16,13 +17,8 @@ export default function MediaPanel({ onInsertImage }: MediaPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const uploadFile = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const res = await fetch('/api/upload-image', { method: 'POST', body: formData });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Erreur upload');
-    return data.url as string;
+    const res = await uploadMediaFromPC(file);
+    return res.url;
   };
 
   const handleFiles = useCallback(async (files: FileList | null) => {

@@ -3,24 +3,19 @@ import * as pdfjsLib from 'pdfjs-dist';
 // Define the worker script manually for Next.js to avoid build issues
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
+import { uploadMediaFromPC } from '@/lib/utils/mediaUploadHelper';
+
 // Helper to upload base64 to Supabase
 async function uploadDataUrl(dataUrl: string): Promise<string> {
   if (!dataUrl.startsWith('data:')) return dataUrl;
   try {
     const res = await fetch(dataUrl);
     const blob = await res.blob();
-    const formData = new FormData();
     const ext = blob.type.split('/')[1] || 'jpg';
-    formData.append('file', new File([blob], `image.${ext}`, { type: blob.type }));
+    const file = new File([blob], `slide_${Date.now()}.${ext}`, { type: blob.type });
     
-    const uploadRes = await fetch('/api/upload-image', {
-      method: 'POST',
-      body: formData
-    });
-    if (uploadRes.ok) {
-      const data = await uploadRes.json();
-      if (data.url) return data.url;
-    }
+    const uploadRes = await uploadMediaFromPC(file);
+    if (uploadRes.url) return uploadRes.url;
   } catch(e) {
     console.error("Upload error in parsePdfClient", e);
   }
