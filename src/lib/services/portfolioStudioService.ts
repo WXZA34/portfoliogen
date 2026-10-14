@@ -45,6 +45,54 @@ export const DEFAULT_STUDIO_SECTIONS: StudioPortfolioSections = {
   contact: true,
 };
 
+export interface SectionColors {
+  backgroundColor?: string;       // Page background (default: #FAF8F3)
+  cardBackground?: string;        // Card surface background (default: #EFEAE1)
+  hero?: string;                  // Accent color for hero & splash (default: #8A7D63)
+  about?: string;                 // Accent color for about (default: #8A7D63)
+  projects?: string;              // Accent color for SAÉ (default: #1A1815)
+  personalProjects?: string;      // Accent color for Projets Perso (default: #059669 - emerald)
+  creativeStudio?: string;        // Accent color for Studio Créatif (default: #9333EA - purple)
+  skills?: string;                // Accent color for Compétences (default: #D97706 - amber)
+  tools?: string;                 // Accent color for Outils (default: #475569 - slate)
+  parcours?: string;              // Accent color for Parcours (default: #2563EB - blue)
+  languages?: string;             // Accent color for Langues (default: #A4967A)
+  gallery?: string;               // Accent color for Galerie (default: #8A7D63)
+  contact?: string;               // Accent color for Contact (default: #8A7D63)
+}
+
+export interface SectionTexts {
+  heroGreeting?: string;
+  heroHeadline?: string;
+  heroSlogan?: string;
+  heroAvailability?: string;
+  aboutTitle?: string;
+  aboutSubtitle?: string;
+  aboutBio?: string;
+  aboutObjective?: string;
+  projectsTitle?: string;
+  projectsSubtitle?: string;
+  personalProjectsTitle?: string;
+  personalProjectsSubtitle?: string;
+  creativeStudioTitle?: string;
+  creativeStudioSubtitle?: string;
+  skillsTitle?: string;
+  skillsSubtitle?: string;
+  toolsTitle?: string;
+  toolsSubtitle?: string;
+  parcoursTitle?: string;
+  parcoursSubtitle?: string;
+  languagesTitle?: string;
+  languagesSubtitle?: string;
+  galleryTitle?: string;
+  gallerySubtitle?: string;
+  contactTitle?: string;
+  contactSubtitle?: string;
+  contactHeading?: string;
+  contactDescription?: string;
+  [key: string]: string | undefined;
+}
+
 export interface StudioPortfolio {
   id: string;
   userId?: string;
@@ -58,6 +106,8 @@ export interface StudioPortfolio {
   lastUpdated: string;
   enabledSections?: StudioPortfolioSections;
   sectionTitles?: Record<string, string>;
+  themeColors?: SectionColors;
+  sectionTexts?: SectionTexts;
   selectedProjects: string[];
   selectedPersonalProjects?: string[];
   selectedCreativeStudio?: string[];
@@ -90,9 +140,68 @@ export const DEFAULT_STARTER_PORTFOLIOS: StudioPortfolio[] = [
     views: 487,
     lastUpdated: '14 oct. 2026',
     enabledSections: { ...DEFAULT_STUDIO_SECTIONS },
-    selectedProjects: ['proj-001', 'proj-002', 'proj-003'],
+    themeColors: {
+      backgroundColor: '#FAF8F3',
+      cardBackground: '#EFEAE1',
+      hero: '#8A7D63',
+      about: '#8A7D63',
+      projects: '#1A1815',
+      personalProjects: '#059669',
+      creativeStudio: '#9333EA',
+      skills: '#D97706',
+      tools: '#475569',
+      parcours: '#2563EB',
+      languages: '#A4967A',
+      gallery: '#8A7D63',
+      contact: '#8A7D63',
+    },
+    sectionTexts: {
+      coverDepartment: "DÉPARTEMENT GÉNIE ÉLECTRIQUE ET INFORMATIQUE INDUSTRIELLE",
+      coverDegree: "BACHELOR UNIVERSITAIRE DE TECHNOLOGIE",
+      coverSubtitle: "Portfolio Semestre 2",
+      coverPromotion: "PROMOTION 2025–2026",
+      coverButton: "Accéder au portfolio",
+      heroHeadline: "Étudiant en B.U.T. GEII & Automatisme",
+      heroSlogan: "Concevoir la logique. Piloter le système.",
+      heroAvailability: "Recherche alternance 2026-2028",
+      heroDownloadCv: "Télécharger CV",
+      aboutTitle: "À propos & Projet Professionnel",
+      aboutSubtitle: "Présentation, démarche d'ingénierie et recherche d'alternance",
+      aboutBioTitle: "Présentation personnelle",
+      aboutBio: "Actuellement en formation B.U.T. GEII à l'IUT Sénart-Fontainebleau, je développe une solide expertise en automatisme industriel, programmation et conception électronique.",
+      aboutObjectiveTitle: "Objectif professionnel ciblé",
+      aboutObjective: "Recherche d'une alternance de 2 ans dès la rentrée 2026 dans les secteurs de l'automatisme, de la robotique industrielle ou des systèmes embarqués.",
+      projectsTitle: "Situations d'Apprentissage et d'Évaluation (SAÉ)",
+      projectsSubtitle: "Activités pratiques d'ingénierie, simulation et pilotage de systèmes automatisés",
+      personalProjectsTitle: "Projets Personnels (Savoir-Faire)",
+      personalProjectsSubtitle: "Développements autonomes, applications web/mobiles et intégration de technologies émergentes",
+      creativeStudioTitle: "Studio Créatif (Savoir-Être)",
+      creativeStudioSubtitle: "La technique c'est bien, savoir la communiquer en équipe c'est mieux. Voici quelques réalisations audiovisuelles produites en groupe lors de nos modules de communication.",
+      creativeStudioQuote: "« La technique c'est bien, savoir la communiquer en équipe c'est mieux. Voici quelques réalisations audiovisuelles produites en groupe lors de nos modules de communication. »",
+      skillsTitle: "Compétences Techniques",
+      skillsSubtitle: "Groupes d'expertise, programmation d'automates et jauges de maîtrise",
+      skillsHardTitle: "Compétences Techniques",
+      toolsTitle: "Outils & Matériel Industriel",
+      toolsSubtitle: "Logiciels CAO, automates programmables et bancs d'essais",
+      toolsSoftTitle: "Savoir-Être",
+      parcoursTitle: "Parcours & Formations",
+      parcoursSubtitle: "Timeline chronologique des diplômes, études et stages",
+      languagesTitle: "Langues & Habilitations",
+      languagesSubtitle: "Certifications de sécurité électrique et compétences linguistiques",
+      languagesBlockTitle: "Langues",
+      certificationsBlockTitle: "Habilitations & Certifications",
+      galleryTitle: "Galerie de Réalisations",
+      gallerySubtitle: "Photographies d'ateliers, montages et bancs de test",
+      contactTitle: "Coordonnées Professionnelles",
+      contactSubtitle: "Me contacter pour un stage ou une alternance",
+      contactHeading: "Me contacter pour un stage ou une alternance",
+      contactDescription: "Disponible pour échanger sur vos projets industriels et besoins techniques.",
+      learnMoreText: "En savoir plus →",
+      footerText: "Portfolio ciblé généré via PortfolioGen Studio & synchronisé avec la CVthèque Master",
+    },
+    selectedProjects: ['proj-sae-001', 'proj-sae-002', 'proj-001'],
     selectedPersonalProjects: ['perso-001', 'perso-002', 'perso-003'],
-    selectedCreativeStudio: ['crea-001', 'crea-002', 'crea-003'],
+    selectedCreativeStudio: ['creat-001', 'creat-002', 'creat-003'],
     selectedSkills: ['sk-001', 'sk-005', 'sk-006', 'sk-009'],
     selectedParcours: ['par-001', 'par-004'],
     selectedLanguages: ['lang-001', 'lang-002'],
@@ -188,9 +297,9 @@ export async function fetchStudioPortfolios(): Promise<StudioPortfolio[]> {
           slug: row.slug || `portfolio-${row.id.slice(0, 6)}`,
           views: row.views_count ?? 0,
           lastUpdated: row.updated_at ? new Date(row.updated_at).toLocaleDateString('fr-FR') : 'Récemment',
-          selectedProjects: Array.isArray(row.selected_projects) ? row.selected_projects : (localMatch?.selectedProjects || []),
+          selectedProjects: Array.isArray(row.selected_projects) ? row.selected_projects : (localMatch?.selectedProjects || ['proj-sae-001', 'proj-sae-002', 'proj-001']),
           selectedPersonalProjects: localMatch?.selectedPersonalProjects || ['perso-001', 'perso-002', 'perso-003'],
-          selectedCreativeStudio: localMatch?.selectedCreativeStudio || ['crea-001', 'crea-002', 'crea-003'],
+          selectedCreativeStudio: localMatch?.selectedCreativeStudio || ['creat-001', 'creat-002', 'creat-003'],
           selectedSkills: Array.isArray(row.selected_skills) ? row.selected_skills : (localMatch?.selectedSkills || []),
           selectedParcours: localMatch?.selectedParcours || [],
           selectedLanguages: localMatch?.selectedLanguages || ['lang-001', 'lang-002'],
@@ -198,6 +307,8 @@ export async function fetchStudioPortfolios(): Promise<StudioPortfolio[]> {
           selectedMedia: localMatch?.selectedMedia || [],
           enabledSections: { ...DEFAULT_STUDIO_SECTIONS, ...(localMatch?.enabledSections || {}) },
           sectionTitles: localMatch?.sectionTitles || {},
+          themeColors: localMatch?.themeColors || { ...DEFAULT_STARTER_PORTFOLIOS[0].themeColors },
+          sectionTexts: localMatch?.sectionTexts || { ...DEFAULT_STARTER_PORTFOLIOS[0].sectionTexts },
           customIntro: row.custom_intro || localMatch?.customIntro || 'Concevoir la logique. Piloter le système.',
           institution: localMatch?.institution || 'IUT SÉNART-FONTAINEBLEAU',
           degree: localMatch?.degree || 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE',

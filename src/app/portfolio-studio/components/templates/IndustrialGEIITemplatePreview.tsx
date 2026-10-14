@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import AppImage from '@/components/ui/AppImage';
-import type { StudioPortfolio } from '@/lib/services/portfolioStudioService';
+import type { StudioPortfolio, SectionColors, SectionTexts } from '@/lib/services/portfolioStudioService';
 import type {
   ProjectItem,
   PersonalProjectItem,
@@ -27,6 +27,19 @@ interface IndustrialGEIITemplatePreviewProps {
   languages?: LanguageItem[];
   certifications?: CertificationItem[];
   media?: MediaFileItem[];
+}
+
+interface DetailModalItem {
+  title: string;
+  category?: string;
+  description: string;
+  imageUrl?: string;
+  tags?: string[];
+  links?: { label: string; url: string; icon?: string }[];
+  kpis?: { label: string; value: string }[];
+  year?: string;
+  role?: string;
+  accentColor?: string;
 }
 
 export default function IndustrialGEIITemplatePreview({
@@ -57,27 +70,44 @@ export default function IndustrialGEIITemplatePreview({
   };
 
   const titles = portfolio.sectionTitles || {};
+  const colors: SectionColors = portfolio.themeColors || {};
+  const texts: SectionTexts = portfolio.sectionTexts || {};
 
-  // If cover section is disabled, directly enter the portfolio
+  // Color variables with user-configured values or fallbacks
+  const pageBg = colors.backgroundColor || '#FAF8F3';
+  const cardBg = colors.cardBackground || '#EFEAE1';
+  const heroColor = colors.hero || '#8A7D63';
+  const aboutColor = colors.about || '#8A7D63';
+  const saeColor = colors.projects || '#1A1815';
+  const persoColor = colors.personalProjects || '#059669';
+  const creativeColor = colors.creativeStudio || '#9333EA';
+  const skillsColor = colors.skills || '#D97706';
+  const toolsColor = colors.tools || '#475569';
+  const parcoursColor = colors.parcours || '#2563EB';
+  const languagesColor = colors.languages || '#0D9488';
+  const galleryColor = colors.gallery || '#E11D48';
+  const contactColor = colors.contact || '#4F46E5';
+
+  // Modal and navigation states
   const [splashEntered, setSplashEntered] = useState(!sections.cover);
   const [activeSection, setActiveSection] = useState<string>('accueil');
-  const [projectCategoryFilter, setProjectCategoryFilter] = useState<string>('all');
+  const [selectedDetailItem, setSelectedDetailItem] = useState<DetailModalItem | null>(null);
 
   // Filter items based on portfolio selections
   const displayProjects = projects.filter((p) =>
-    portfolio.selectedProjects.includes(p.id)
+    !portfolio.selectedProjects || portfolio.selectedProjects.length === 0 || portfolio.selectedProjects.includes(p.id)
   );
 
   const displayPersonalProjects = personalProjects.filter((p) =>
-    !portfolio.selectedPersonalProjects || portfolio.selectedPersonalProjects.includes(p.id)
+    !portfolio.selectedPersonalProjects || portfolio.selectedPersonalProjects.length === 0 || portfolio.selectedPersonalProjects.includes(p.id)
   );
 
   const displayCreativeStudio = creativeStudio.filter((c) =>
-    !portfolio.selectedCreativeStudio || portfolio.selectedCreativeStudio.includes(c.id)
+    !portfolio.selectedCreativeStudio || portfolio.selectedCreativeStudio.length === 0 || portfolio.selectedCreativeStudio.includes(c.id)
   );
 
   const displaySkills = skills.filter((s) =>
-    portfolio.selectedSkills.includes(s.id)
+    !portfolio.selectedSkills || portfolio.selectedSkills.length === 0 || portfolio.selectedSkills.includes(s.id)
   );
 
   const displayParcours = parcours;
@@ -93,14 +123,14 @@ export default function IndustrialGEIITemplatePreview({
   const displayMedia = media.slice(0, 6);
 
   const authorName = portfolio.authorName || profile?.fullName || 'KOKOU DUSSEY';
-  const headline = profile?.headline || 'Étudiant en B.U.T. GEII & Automatisme';
+  const headline = texts.heroHeadline || profile?.headline || 'Étudiant en B.U.T. GEII & Automatisme';
   const institution = portfolio.institution || 'IUT SÉNART-FONTAINEBLEAU';
-  const degree = portfolio.degree || 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE';
-  const subTitle = portfolio.subTitle || 'Portfolio Semestre 2';
-  const promotion = portfolio.promotion || 'PROMOTION 2025–2026';
-  const customIntro = portfolio.customIntro || profile?.slogan || 'Concevoir la logique. Piloter le système.';
-  const bio = profile?.bio || "Actuellement en formation B.U.T. GEII à l'IUT Sénart-Fontainebleau, je développe une solide expertise en automatisme industriel, programmation et conception électronique.";
-  const objective = profile?.objective || "Recherche d'une alternance de 2 ans dès la rentrée 2026 dans les secteurs de l'automatisme, de la robotique industrielle ou des systèmes embarqués.";
+  const degree = texts.coverDegree || portfolio.degree || 'BACHELOR UNIVERSITAIRE DE TECHNOLOGIE';
+  const subTitle = texts.coverSubtitle || portfolio.subTitle || 'Portfolio Semestre 2';
+  const promotion = texts.coverPromotion || portfolio.promotion || 'PROMOTION 2025–2026';
+  const customIntro = texts.heroSlogan || portfolio.customIntro || profile?.slogan || 'Concevoir la logique. Piloter le système.';
+  const bio = texts.aboutBio || profile?.bio || "Actuellement en formation B.U.T. GEII à l'IUT Sénart-Fontainebleau, je développe une solide expertise en automatisme industriel, programmation et conception électronique.";
+  const objective = texts.aboutObjective || profile?.objective || "Recherche d'une alternance de 2 ans dès la rentrée 2026 dans les secteurs de l'automatisme, de la robotique industrielle ou des systèmes embarqués.";
   const email = profile?.email || 'kokou.dussey@etu.u-pec.fr';
   const phone = profile?.phone || '+33 6 12 34 56 78';
   const location = profile?.location || 'Île-de-France, France';
@@ -111,44 +141,50 @@ export default function IndustrialGEIITemplatePreview({
   const softSkills = displaySkills.filter((s) => s.category === 'soft');
   const toolsSkills = displaySkills.filter((s) => s.category === 'tools');
 
-  // Filter projects by category tab
-  const filteredProjects = displayProjects.filter((p) => {
-    if (projectCategoryFilter === 'all') return true;
-    return p.category === projectCategoryFilter;
-  });
-
   // =========================================================================
   // SECTION 0: SPLASH SCREEN (Couverture d'accueil style My-Portfolify)
   // =========================================================================
   if (sections.cover && !splashEntered) {
     return (
-      <div className="relative min-h-[580px] h-full flex flex-col justify-between items-center text-center p-6 bg-[#FAF8F3] text-[#2C2720] select-none overflow-hidden border border-[#E1D9C6]/60 rounded-xl font-sans transition-all">
+      <div
+        className="relative min-h-[580px] h-full flex flex-col justify-between items-center text-center p-6 text-[#2C2720] select-none overflow-hidden border border-[#E1D9C6]/60 rounded-xl font-sans transition-all"
+        style={{ backgroundColor: pageBg }}
+      >
         {/* Top department headers */}
         <div className="pt-6 w-full max-w-lg space-y-2">
-          <p className="text-[11px] sm:text-xs font-700 tracking-[0.2em] text-[#8A7D63] uppercase">
-            {titles.coverDepartment || 'DÉPARTEMENT GÉNIE ÉLECTRIQUE ET INFORMATIQUE INDUSTRIELLE'}
+          <p
+            className="text-[11px] sm:text-xs font-bold tracking-[0.2em] uppercase"
+            style={{ color: heroColor }}
+          >
+            {texts.coverDepartment || titles.coverDepartment || 'DÉPARTEMENT GÉNIE ÉLECTRIQUE ET INFORMATIQUE INDUSTRIELLE'}
           </p>
-          <h2 className="text-3xl sm:text-4xl font-900 tracking-tight text-[#1A1815]">
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-[#1A1815]">
             B.U.T.
           </h2>
-          <p className="text-xs sm:text-sm font-800 tracking-wide text-[#2C2720] uppercase">
+          <p className="text-xs sm:text-sm font-extrabold tracking-wide text-[#2C2720] uppercase">
             {degree}
           </p>
-          <div className="w-12 h-0.5 bg-[#C2B59C] mx-auto my-3 opacity-60" />
+          <div className="w-12 h-0.5 mx-auto my-3 opacity-60" style={{ backgroundColor: heroColor }} />
           <p className="text-xs italic text-[#6D624C]">
             {subTitle}
           </p>
         </div>
 
         {/* Center author block */}
-        <div className="my-8 w-full max-w-sm px-6 py-7 rounded-2xl bg-[#F0EDE6]/80 border border-[#E1D9C6] shadow-sm backdrop-blur-xs">
-          <p className="text-[10px] font-700 tracking-[0.2em] text-[#8A7D63] uppercase mb-1">
+        <div
+          className="my-8 w-full max-w-sm px-6 py-7 rounded-3xl border border-black/5 shadow-sm backdrop-blur-xs"
+          style={{ backgroundColor: cardBg }}
+        >
+          <p
+            className="text-[10px] font-bold tracking-[0.2em] uppercase mb-1"
+            style={{ color: heroColor }}
+          >
             RÉALISÉ PAR
           </p>
-          <h1 className="text-xl sm:text-2xl font-900 tracking-wide text-[#1A1815] uppercase">
+          <h1 className="text-xl sm:text-2xl font-black tracking-wide text-[#1A1815] uppercase">
             {authorName}
           </h1>
-          <p className="text-[11px] text-[#6D624C] mt-1 font-600">
+          <p className="text-[11px] text-[#6D624C] mt-1 font-semibold">
             {headline}
           </p>
         </div>
@@ -156,19 +192,23 @@ export default function IndustrialGEIITemplatePreview({
         {/* Bottom footer & enter action */}
         <div className="pb-6 w-full max-w-sm space-y-4">
           <div>
-            <p className="text-xs font-800 tracking-wider text-[#4A4234] uppercase">
+            <p className="text-xs font-extrabold tracking-wider text-[#4A4234] uppercase">
               {institution}
             </p>
-            <p className="text-[10px] font-600 tracking-widest text-[#8A7D63] uppercase mt-0.5">
+            <p
+              className="text-[10px] font-semibold tracking-widest uppercase mt-0.5"
+              style={{ color: heroColor }}
+            >
               {promotion}
             </p>
           </div>
 
           <button
             onClick={() => setSplashEntered(true)}
-            className="w-full sm:w-auto px-7 py-3 rounded-full bg-[#A4967A] hover:bg-[#8A7D63] text-white text-xs font-700 tracking-wide transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 mx-auto btn-press"
+            className="w-full sm:w-auto px-7 py-3 rounded-full text-white text-xs font-bold tracking-wide transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 mx-auto btn-press hover:opacity-90"
+            style={{ backgroundColor: heroColor }}
           >
-            Accéder au portfolio
+            {texts.coverButton || 'Accéder au portfolio'}
             <Icon name="ArrowRightIcon" size={14} />
           </button>
         </div>
@@ -177,38 +217,48 @@ export default function IndustrialGEIITemplatePreview({
   }
 
   // =========================================================================
-  // MAIN PORTFOLIO BODY (Entièrement modulable & synchronisé CVthèque)
+  // MAIN PORTFOLIO BODY
   // =========================================================================
   return (
-    <div className="bg-[#FAF8F3] text-[#2C2720] min-h-full font-sans text-xs relative selection:bg-[#C2B59C] selection:text-white">
+    <div
+      className="text-[#2C2720] min-h-full font-sans text-xs relative selection:bg-[#C2B59C] selection:text-white"
+      style={{ backgroundColor: pageBg }}
+    >
       {/* Sticky Navigation Bar */}
-      <nav className="sticky top-0 z-20 bg-[#FAF8F3]/95 backdrop-blur-md border-b border-[#E1D9C6] px-4 py-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <nav
+        className="sticky top-0 z-20 backdrop-blur-md border-b border-[#E1D9C6]/80 px-4 sm:px-6 py-2.5 flex items-center justify-between"
+        style={{ backgroundColor: `${pageBg}F2` }}
+      >
+        <div className="flex items-center gap-2.5">
           {sections.cover && (
             <button
               onClick={() => setSplashEntered(false)}
-              className="w-7 h-7 rounded-lg bg-[#C2B59C] text-white flex items-center justify-center font-bold text-xs hover:bg-[#A4967A] transition-colors"
+              className="w-7 h-7 rounded-lg text-white flex items-center justify-center font-bold text-xs hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: heroColor }}
               title="Revenir à la page de couverture"
             >
               {authorName.charAt(0)}
             </button>
           )}
           <div>
-            <span className="font-800 text-[11px] text-[#1A1815] block leading-tight">
+            <span className="font-extrabold text-[12px] text-[#1A1815] block leading-tight">
               {authorName}
             </span>
-            <span className="text-[9px] text-[#8A7D63] font-600 uppercase tracking-wider block">
+            <span
+              className="text-[9px] font-bold uppercase tracking-wider block"
+              style={{ color: heroColor }}
+            >
               {portfolio.name}
             </span>
           </div>
         </div>
 
-        {/* Dynamic Anchor links (Only enabled sections are shown) */}
-        <div className="hidden sm:flex items-center gap-1 text-[11px] font-600 text-[#6D624C] flex-wrap">
+        {/* Dynamic Anchor links */}
+        <div className="hidden sm:flex items-center gap-1 text-[11px] font-semibold text-[#6D624C] flex-wrap">
           {sections.hero && (
             <button
               onClick={() => setActiveSection('accueil')}
-              className={`px-2 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeSection === 'accueil' ? 'bg-[#E1D9C6] text-[#1A1815]' : 'hover:text-[#1A1815]'
               }`}
             >
@@ -219,7 +269,7 @@ export default function IndustrialGEIITemplatePreview({
           {sections.about && (
             <button
               onClick={() => setActiveSection('apropos')}
-              className={`px-2 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeSection === 'apropos' ? 'bg-[#E1D9C6] text-[#1A1815]' : 'hover:text-[#1A1815]'
               }`}
             >
@@ -230,7 +280,7 @@ export default function IndustrialGEIITemplatePreview({
           {sections.projects && (
             <button
               onClick={() => setActiveSection('projets')}
-              className={`px-2 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeSection === 'projets' ? 'bg-[#E1D9C6] text-[#1A1815]' : 'hover:text-[#1A1815]'
               }`}
             >
@@ -241,7 +291,7 @@ export default function IndustrialGEIITemplatePreview({
           {sections.personalProjects && (
             <button
               onClick={() => setActiveSection('projets-perso')}
-              className={`px-2 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeSection === 'projets-perso' ? 'bg-[#E1D9C6] text-[#1A1815]' : 'hover:text-[#1A1815]'
               }`}
             >
@@ -252,7 +302,7 @@ export default function IndustrialGEIITemplatePreview({
           {sections.creativeStudio && (
             <button
               onClick={() => setActiveSection('studio-creatif')}
-              className={`px-2 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeSection === 'studio-creatif' ? 'bg-[#E1D9C6] text-[#1A1815]' : 'hover:text-[#1A1815]'
               }`}
             >
@@ -263,7 +313,7 @@ export default function IndustrialGEIITemplatePreview({
           {sections.skills && (
             <button
               onClick={() => setActiveSection('competences')}
-              className={`px-2 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeSection === 'competences' ? 'bg-[#E1D9C6] text-[#1A1815]' : 'hover:text-[#1A1815]'
               }`}
             >
@@ -274,7 +324,7 @@ export default function IndustrialGEIITemplatePreview({
           {sections.parcours && (
             <button
               onClick={() => setActiveSection('parcours')}
-              className={`px-2 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeSection === 'parcours' ? 'bg-[#E1D9C6] text-[#1A1815]' : 'hover:text-[#1A1815]'
               }`}
             >
@@ -282,21 +332,10 @@ export default function IndustrialGEIITemplatePreview({
             </button>
           )}
 
-          {sections.languages && (displayLanguages.length > 0 || displayCertifications.length > 0) && (
-            <button
-              onClick={() => setActiveSection('langues')}
-              className={`px-2 py-1 rounded-md transition-colors ${
-                activeSection === 'langues' ? 'bg-[#E1D9C6] text-[#1A1815]' : 'hover:text-[#1A1815]'
-              }`}
-            >
-              Langues & Certifs
-            </button>
-          )}
-
           {sections.contact && (
             <button
               onClick={() => setActiveSection('contact')}
-              className={`px-2 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeSection === 'contact' ? 'bg-[#E1D9C6] text-[#1A1815]' : 'hover:text-[#1A1815]'
               }`}
             >
@@ -308,7 +347,8 @@ export default function IndustrialGEIITemplatePreview({
         {sections.cover && (
           <button
             onClick={() => setSplashEntered(false)}
-            className="text-[10px] font-700 text-[#8A7D63] hover:text-[#1A1815] flex items-center gap-1 bg-[#F0EDE6] px-2.5 py-1 rounded-full border border-[#E1D9C6]"
+            className="text-[10px] font-bold flex items-center gap-1 px-3 py-1 rounded-full border border-black/10 hover:bg-black/5 transition-colors"
+            style={{ color: heroColor }}
           >
             <Icon name="ArrowLeftIcon" size={10} />
             Sas d&apos;accueil
@@ -320,49 +360,60 @@ export default function IndustrialGEIITemplatePreview({
       {/* SECTION 1 : HERO SECTION */}
       {/* ===================================================================== */}
       {sections.hero && (
-        <header className="px-5 py-8 border-b border-[#E1D9C6]/60 bg-gradient-to-b from-[#FAF8F3] to-[#F0EDE6]/40">
-          <div className="max-w-xl mx-auto text-center space-y-3">
-            <div className="w-16 h-16 rounded-2xl bg-[#E1D9C6] border-2 border-[#C2B59C] mx-auto flex items-center justify-center text-xl font-bold text-[#4A4234] shadow-sm">
+        <header className="px-5 py-10 border-b border-[#E1D9C6]/60">
+          <div className="max-w-2xl mx-auto text-center space-y-3.5">
+            <div
+              className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-xl font-bold text-white shadow-sm"
+              style={{ backgroundColor: heroColor }}
+            >
               {authorName.charAt(0)}
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-900 text-[#1A1815] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-[#1A1815] tracking-tight">
               {authorName}
             </h1>
 
-            <div className="inline-block px-3 py-1 rounded-full bg-[#E1D9C6]/80 text-[#4A4234] text-[11px] font-700 tracking-wide border border-[#C2B59C]/40">
+            <div
+              className="inline-block px-3 py-1 rounded-full text-[11px] font-bold tracking-wide border border-black/10"
+              style={{ backgroundColor: cardBg, color: heroColor }}
+            >
               {portfolio.persona} · {institution}
             </div>
 
-            <p className="text-sm sm:text-base font-800 text-[#8A7D63] italic max-w-md mx-auto pt-1 leading-snug">
+            <p
+              className="text-sm sm:text-base font-extrabold italic max-w-lg mx-auto pt-1 leading-snug"
+              style={{ color: heroColor }}
+            >
               « {customIntro} »
             </p>
 
-            <p className="text-xs text-[#6D624C] leading-relaxed max-w-md mx-auto">
+            <p className="text-xs text-[#6D624C] leading-relaxed max-w-lg mx-auto font-normal">
               {headline}
             </p>
 
-            {profile?.availability && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-700">
+            {texts.heroAvailability && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                {profile.availability}
+                {texts.heroAvailability}
               </div>
             )}
 
             <div className="flex items-center justify-center gap-2 pt-2">
               <a
                 href={profile?.cvPdfUrl || '#contact'}
-                className="px-3.5 py-1.5 rounded-lg bg-[#A4967A] hover:bg-[#8A7D63] text-white text-[11px] font-700 shadow-xs flex items-center gap-1.5 transition-colors"
+                className="px-4 py-2 rounded-xl text-white text-[11px] font-bold shadow-xs flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: heroColor }}
               >
                 <Icon name="ArrowDownTrayIcon" size={12} />
-                Télécharger CV
+                {texts.heroDownloadCv || 'Télécharger CV'}
               </a>
               {linkedin && (
                 <a
                   href={linkedin}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-3 py-1.5 rounded-lg bg-[#F0EDE6] hover:bg-[#E1D9C6] text-[#4A4234] border border-[#C2B59C] text-[11px] font-600 transition-colors"
+                  className="px-3.5 py-2 rounded-xl text-[#4A4234] border border-black/10 text-[11px] font-semibold transition-colors hover:bg-black/5"
+                  style={{ backgroundColor: cardBg }}
                 >
                   LinkedIn
                 </a>
@@ -372,7 +423,8 @@ export default function IndustrialGEIITemplatePreview({
                   href={github}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-3 py-1.5 rounded-lg bg-[#F0EDE6] hover:bg-[#E1D9C6] text-[#4A4234] border border-[#C2B59C] text-[11px] font-600 transition-colors"
+                  className="px-3.5 py-2 rounded-xl text-[#4A4234] border border-black/10 text-[11px] font-semibold transition-colors hover:bg-black/5"
+                  style={{ backgroundColor: cardBg }}
                 >
                   GitHub
                 </a>
@@ -382,29 +434,36 @@ export default function IndustrialGEIITemplatePreview({
         </header>
       )}
 
-      {/* Main Body */}
-      <div className="p-5 max-w-2xl mx-auto space-y-10">
+      {/* Main Body with Wider Container for 3-Column Grid */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-14">
         {/* =================================================================== */}
         {/* SECTION 2 : À PROPOS & PROJET PROFESSIONNEL */}
         {/* =================================================================== */}
         {sections.about && (
           <section id="apropos" className="scroll-mt-16">
-            <div className="flex items-center justify-between mb-4 border-b border-[#E1D9C6] pb-2">
+            <div className="flex items-start gap-3 mb-4">
+              <div
+                className="w-1.5 h-7 rounded-full flex-shrink-0 mt-0.5"
+                style={{ backgroundColor: aboutColor }}
+              />
               <div>
-                <h2 className="text-sm font-800 text-[#1A1815] uppercase tracking-wider">
-                  {titles.about || 'À propos & Projet Professionnel'}
+                <h2 className="text-xl sm:text-2xl font-extrabold text-[#1A1815] tracking-tight">
+                  {texts.aboutTitle || titles.about || 'À propos & Projet Professionnel'}
                 </h2>
-                <p className="text-[11px] text-[#8A7D63]">
-                  Présentation, objectifs et méthodologie de travail
+                <p className="text-xs sm:text-sm text-[#6D624C] leading-relaxed mt-1 font-normal">
+                  {texts.aboutSubtitle || "Présentation, démarche d'ingénierie et recherche d'alternance"}
                 </p>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-[#E1D9C6] p-5 shadow-sm space-y-4">
+            <div
+              className="rounded-3xl border border-black/5 p-6 shadow-sm space-y-4"
+              style={{ backgroundColor: cardBg }}
+            >
               <div>
-                <h3 className="text-xs font-800 text-[#1A1815] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#A4967A]" />
-                  Présentation personnelle
+                <h3 className="text-xs font-bold text-[#1A1815] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: aboutColor }} />
+                  {texts.aboutBioTitle || 'Présentation personnelle'}
                 </h3>
                 <p className="text-xs text-[#524838] leading-relaxed">
                   {bio}
@@ -412,32 +471,19 @@ export default function IndustrialGEIITemplatePreview({
               </div>
 
               {objective && (
-                <div className="p-3.5 rounded-xl bg-[#FAF8F3] border border-[#E1D9C6]">
-                  <p className="text-[10px] font-800 uppercase tracking-wider text-[#8A7D63] mb-1">
-                    Objectif professionnel ciblé
+                <div
+                  className="p-4 rounded-2xl border border-black/5"
+                  style={{ backgroundColor: pageBg }}
+                >
+                  <p
+                    className="text-[10px] font-extrabold uppercase tracking-wider mb-1"
+                    style={{ color: aboutColor }}
+                  >
+                    {texts.aboutObjectiveTitle || 'Objectif professionnel ciblé'}
                   </p>
-                  <p className="text-xs font-600 text-[#1A1815] leading-relaxed">
+                  <p className="text-xs font-semibold text-[#1A1815] leading-relaxed">
                     {objective}
                   </p>
-                </div>
-              )}
-
-              {profile?.methodologies && profile.methodologies.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-800 text-[#1A1815] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#C2B59C]" />
-                    Méthodologie & Démarche d&apos;ingénierie
-                  </h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    {profile.methodologies.map((m, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2.5 py-1 rounded-md bg-[#FAF8F3] border border-[#E1D9C6] text-[#4A4234] text-[10px] font-600"
-                      >
-                        ✓ {m}
-                      </span>
-                    ))}
-                  </div>
                 </div>
               )}
             </div>
@@ -445,160 +491,137 @@ export default function IndustrialGEIITemplatePreview({
         )}
 
         {/* =================================================================== */}
-        {/* SECTION 3 : RÉALISATIONS & SAÉ (CATÉGORISÉES) */}
+        {/* SECTION 3 : SITUATIONS D'APPRENTISSAGE ET D'ÉVALUATION (SAÉ) */}
         {/* =================================================================== */}
         {sections.projects && (
           <section id="projets" className="scroll-mt-16">
-            <div className="flex items-center justify-between mb-3 border-b border-[#E1D9C6] pb-2">
-              <div>
-                <h2 className="text-sm font-800 text-[#1A1815] uppercase tracking-wider">
-                  {titles.projects || 'Mes Réalisations & SAÉ'}
+            <div className="flex items-start gap-3 mb-4">
+              <div
+                className="w-1.5 h-7 rounded-full flex-shrink-0 mt-0.5"
+                style={{ backgroundColor: saeColor }}
+              />
+              <div className="flex-1">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-[#1A1815] tracking-tight">
+                  {texts.projectsTitle || titles.projects || "Situations d'Apprentissage et d'Évaluation (SAÉ)"}
                 </h2>
-                <p className="text-[11px] text-[#8A7D63]">
-                  Situations d&apos;apprentissage, mini-projets de travaux pratiques et développements
+                <p className="text-xs sm:text-sm text-[#6D624C] leading-relaxed mt-1 font-normal">
+                  {texts.projectsSubtitle || "Activités pratiques d'ingénierie, simulation et pilotage de systèmes automatisés"}
                 </p>
               </div>
-              <span className="text-[11px] font-700 px-2.5 py-0.5 rounded-full bg-[#E1D9C6] text-[#4A4234]">
-                {displayProjects.length} projet{displayProjects.length > 1 ? 's' : ''}
+              <span
+                className="text-[11px] font-bold px-3 py-1 rounded-full text-white flex-shrink-0"
+                style={{ backgroundColor: saeColor }}
+              >
+                {displayProjects.length} SAÉ
               </span>
             </div>
 
-            {/* Category filter tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 text-[10px] scrollbar-none">
-              {[
-                { id: 'all', label: 'Tous les projets' },
-                { id: 'academic', label: 'Projets Académiques (IUT)' },
-                { id: 'mini', label: 'Mini Projets (TPs)' },
-                { id: 'personal', label: 'Projets Personnels' },
-                { id: 'soft', label: 'Studio Créatif' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setProjectCategoryFilter(tab.id)}
-                  className={`px-2.5 py-1 rounded-full font-600 whitespace-nowrap transition-all border ${
-                    projectCategoryFilter === tab.id
-                      ? 'bg-[#A4967A] text-white border-[#A4967A] shadow-2xs'
-                      : 'bg-white text-[#6D624C] border-[#E1D9C6] hover:border-[#A4967A]'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {filteredProjects.length === 0 ? (
-              <div className="p-6 rounded-2xl border border-dashed border-[#C2B59C] bg-[#F0EDE6]/50 text-center">
-                <Icon name="FolderIcon" size={24} className="mx-auto text-[#8A7D63] mb-2" />
-                <p className="text-xs font-700 text-[#4A4234]">
-                  Emplacement réservé à vos projets & SAÉ
+            {displayProjects.length === 0 ? (
+              <div
+                className="p-8 rounded-3xl border border-dashed border-black/10 text-center"
+                style={{ backgroundColor: cardBg }}
+              >
+                <Icon name="FolderIcon" size={28} className="mx-auto text-[#8A7D63] mb-2" />
+                <p className="text-xs font-bold text-[#4A4234]">
+                  Emplacement réservé aux SAÉ (projets académiques)
                 </p>
                 <p className="text-[11px] text-[#8A7D63] mt-1">
-                  Cochez les projets correspondants dans l&apos;onglet <strong>Contenu</strong> du Studio.
+                  Cochez les SAÉ à intégrer dans l&apos;onglet <strong>Contenu</strong> du Studio.
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {filteredProjects.map((project) => (
-                  <article
-                    key={`studio-proj-${project.id}`}
-                    className="bg-white rounded-xl border border-[#E1D9C6] p-4 shadow-sm hover:border-[#A4967A] transition-all group"
-                  >
-                    <div className="flex flex-col sm:flex-row gap-4 items-start">
-                      {project.imageUrl && (
-                        <div className="w-full sm:w-28 h-24 rounded-lg overflow-hidden bg-[#F0EDE6] border border-[#E1D9C6] flex-shrink-0 relative">
-                          <AppImage
-                            src={project.imageUrl}
-                            alt={project.imageAlt || project.title}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-                      )}
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="text-xs sm:text-sm font-800 text-[#1A1815] leading-tight group-hover:text-[#8A7D63] transition-colors">
-                            {project.title}
-                          </h3>
-                          {project.year && (
-                            <span className="text-[10px] font-mono font-600 text-[#8A7D63] bg-[#FAF8F3] px-1.5 py-0.5 rounded border border-[#E1D9C6]">
-                              {project.year}
-                            </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {displayProjects.map((project) => {
+                  const tags = project.techStack || [];
+                  return (
+                    <article
+                      key={`sae-card-${project.id}`}
+                      className="rounded-3xl p-5 flex flex-col justify-between h-full border border-black/5 hover:shadow-md transition-all group duration-200"
+                      style={{ backgroundColor: cardBg }}
+                    >
+                      <div>
+                        {/* Top Media Container with Centered Play Button */}
+                        <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-black/10 flex-shrink-0 mb-3.5">
+                          {project.imageUrl ? (
+                            <AppImage
+                              src={project.imageUrl}
+                              alt={project.imageAlt || project.title}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-[#E1D9C6] text-[#7A6E55]">
+                              <Icon name="PhotoIcon" size={32} />
+                            </div>
                           )}
+
+                          {/* Center Play Overlay Icon matching screenshot */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-black/60 border border-white/80 backdrop-blur-xs flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                              <Icon name="PlayIcon" size={18} className="translate-x-0.5 text-white" />
+                            </div>
+                          </div>
                         </div>
 
-                        {project.role && (
-                          <p className="text-[11px] font-600 text-[#8A7D63] mt-0.5">
-                            {project.role} {project.company && `· ${project.company}`}
-                          </p>
-                        )}
-
-                        <p className="text-xs text-[#6D624C] leading-relaxed mt-1.5 line-clamp-3">
-                          {project.description}
-                        </p>
-
-                        {/* KPIs */}
-                        {project.kpis && project.kpis.length > 0 && (
-                          <div className="flex gap-2 my-2.5">
-                            {project.kpis.slice(0, 3).map((kpi, kIdx) => (
-                              <div
-                                key={kIdx}
-                                className="px-2 py-1 rounded bg-[#FAF8F3] border border-[#E1D9C6] text-center"
+                        {/* Pill Tags Row */}
+                        {tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-2.5">
+                            {tags.map((tag, tIdx) => (
+                              <span
+                                key={tIdx}
+                                className="px-3 py-1 rounded-full text-[11px] font-semibold tracking-wide transition-colors"
+                                style={{
+                                  backgroundColor: `${saeColor}18`,
+                                  color: saeColor,
+                                }}
                               >
-                                <span className="text-[10px] font-800 text-[#8A7D63] block tabular-nums">
-                                  {kpi.value}
-                                </span>
-                                <span className="text-[9px] text-[#6D624C] block leading-none">
-                                  {kpi.label}
-                                </span>
-                              </div>
+                                {tag}
+                              </span>
                             ))}
                           </div>
                         )}
 
-                        {/* Tech Stack */}
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {project.techStack.map((tech) => (
-                            <span
-                              key={tech}
-                              className="px-2 py-0.5 bg-[#FAF8F3] border border-[#E1D9C6] rounded text-[10px] font-600 text-[#4A4234]"
-                            >
-                              {tech}
-                            </span>
-                          ))}
-                        </div>
+                        {/* Card Title in Section Color */}
+                        <h3
+                          className="text-lg font-bold tracking-tight leading-snug line-clamp-2"
+                          style={{ color: saeColor }}
+                        >
+                          {project.title}
+                        </h3>
 
-                        {/* Project links */}
-                        {(project.url || project.github) && (
-                          <div className="flex items-center gap-3 pt-2.5 mt-2.5 border-t border-[#F0EDE6] text-[10px]">
-                            {project.url && (
-                              <a
-                                href={project.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[#8A7D63] font-700 flex items-center gap-1 hover:underline"
-                              >
-                                <Icon name="GlobeAltIcon" size={11} />
-                                Démonstration
-                              </a>
-                            )}
-                            {project.github && (
-                              <a
-                                href={project.github.startsWith('http') ? project.github : `https://${project.github}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[#6D624C] font-600 flex items-center gap-1 hover:underline"
-                              >
-                                <Icon name="GithubIcon" size={11} />
-                                Code source
-                              </a>
-                            )}
-                          </div>
-                        )}
+                        {/* Description */}
+                        <p className="text-xs text-[#4A4234] leading-relaxed line-clamp-4 mt-2 font-normal">
+                          {project.description}
+                        </p>
                       </div>
-                    </div>
-                  </article>
-                ))}
+
+                      {/* Card Footer Link */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedDetailItem({
+                            title: project.title,
+                            category: project.category || 'SAÉ Académique',
+                            description: project.description,
+                            imageUrl: project.imageUrl,
+                            tags: project.techStack,
+                            year: project.year,
+                            role: project.role,
+                            kpis: project.kpis,
+                            accentColor: saeColor,
+                            links: [
+                              ...(project.url ? [{ label: 'Démonstration', url: project.url, icon: 'GlobeAltIcon' }] : []),
+                              ...(project.github ? [{ label: 'Code source', url: project.github.startsWith('http') ? project.github : `https://${project.github}`, icon: 'CodeBracketIcon' }] : []),
+                            ],
+                          })
+                        }
+                        className="mt-auto pt-4 flex items-center gap-1.5 text-xs font-semibold text-[#8A7D63] hover:text-[#1A1815] transition-colors group-hover:translate-x-1 duration-150 text-left"
+                      >
+                        <span>{texts.learnMoreText || 'En savoir plus →'}</span>
+                      </button>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>
@@ -609,128 +632,131 @@ export default function IndustrialGEIITemplatePreview({
         {/* =================================================================== */}
         {sections.personalProjects && (
           <section id="projets-perso" className="scroll-mt-16">
-            <div className="flex items-center justify-between mb-3 border-b border-[#E1D9C6] pb-2">
-              <div>
-                <h2 className="text-sm font-800 text-[#1A1815] uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-purple-600 inline-block" />
-                  {titles.personalProjects || 'Projets Personnels (Savoir-Faire)'}
+            <div className="flex items-start gap-3 mb-4">
+              <div
+                className="w-1.5 h-7 rounded-full flex-shrink-0 mt-0.5"
+                style={{ backgroundColor: persoColor }}
+              />
+              <div className="flex-1">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-[#1A1815] tracking-tight">
+                  {texts.personalProjectsTitle || titles.personalProjects || 'Projets Personnels (Savoir-Faire)'}
                 </h2>
-                <p className="text-[11px] text-[#8A7D63]">
-                  Développements autonomes, applications mobiles, vision par ordinateur et initiatives techniques
+                <p className="text-xs sm:text-sm text-[#6D624C] leading-relaxed mt-1 font-normal">
+                  {texts.personalProjectsSubtitle || 'Développements autonomes, applications web/mobiles et intégration de technologies émergentes'}
                 </p>
               </div>
-              <span className="text-[11px] font-700 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                {displayPersonalProjects.length} projet{displayPersonalProjects.length > 1 ? 's' : ''}
+              <span
+                className="text-[11px] font-bold px-3 py-1 rounded-full text-white flex-shrink-0"
+                style={{ backgroundColor: persoColor }}
+              >
+                {displayPersonalProjects.length} projets
               </span>
             </div>
 
             {displayPersonalProjects.length === 0 ? (
-              <div className="p-6 rounded-2xl border border-dashed border-[#C2B59C] bg-[#F0EDE6]/50 text-center">
-                <Icon name="CommandLineIcon" size={24} className="mx-auto text-[#8A7D63] mb-2" />
-                <p className="text-xs font-700 text-[#4A4234]">
+              <div
+                className="p-8 rounded-3xl border border-dashed border-black/10 text-center"
+                style={{ backgroundColor: cardBg }}
+              >
+                <Icon name="CommandLineIcon" size={28} className="mx-auto text-[#8A7D63] mb-2" />
+                <p className="text-xs font-bold text-[#4A4234]">
                   Emplacement réservé à vos projets personnels (savoir-faire)
                 </p>
                 <p className="text-[11px] text-[#8A7D63] mt-1">
-                  Sélectionnez vos projets personnels dans l&apos;onglet <strong>Contenu</strong> du Studio.
+                  Sélectionnez vos projets dans l&apos;onglet <strong>Contenu</strong> du Studio.
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {displayPersonalProjects.map((p) => (
-                  <article
-                    key={`personal-proj-${p.id}`}
-                    className="bg-white rounded-xl border border-purple-100 p-4 shadow-sm hover:border-purple-300 transition-all group"
-                  >
-                    <div className="flex flex-col sm:flex-row gap-4 items-start">
-                      {p.imageUrl && (
-                        <div className="w-full sm:w-28 h-24 rounded-lg overflow-hidden bg-purple-50/50 border border-purple-100 flex-shrink-0 relative">
-                          <AppImage
-                            src={p.imageUrl}
-                            alt={p.title}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-                      )}
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <h3 className="text-xs sm:text-sm font-800 text-[#1A1815] leading-tight group-hover:text-purple-700 transition-colors">
-                              {p.title}
-                            </h3>
-                            {p.category && (
-                              <span className="inline-block mt-0.5 text-[10px] font-700 text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200/60">
-                                {p.category}
-                              </span>
-                            )}
-                          </div>
-                          {p.status && (
-                            <span className="text-[10px] font-mono font-600 text-[#8A7D63] bg-[#FAF8F3] px-1.5 py-0.5 rounded border border-[#E1D9C6]">
-                              {p.status}
-                            </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {displayPersonalProjects.map((p) => {
+                  const tags = p.techStack || [];
+                  return (
+                    <article
+                      key={`personal-card-${p.id}`}
+                      className="rounded-3xl p-5 flex flex-col justify-between h-full border border-black/5 hover:shadow-md transition-all group duration-200"
+                      style={{ backgroundColor: cardBg }}
+                    >
+                      <div>
+                        {/* Top Media Container */}
+                        <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-black/10 flex-shrink-0 mb-3.5">
+                          {p.imageUrl ? (
+                            <AppImage
+                              src={p.imageUrl}
+                              alt={p.title}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-[#E1D9C6] text-[#7A6E55]">
+                              <Icon name="PhotoIcon" size={32} />
+                            </div>
                           )}
+
+                          {/* Center Play Overlay Icon matching screenshot */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-black/60 border border-white/80 backdrop-blur-xs flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                              <Icon name="PlayIcon" size={18} className="translate-x-0.5 text-white" />
+                            </div>
+                          </div>
                         </div>
 
-                        {p.savoirFaire && (
-                          <div className="mt-2 px-2.5 py-1 bg-purple-50/80 border border-purple-200/70 rounded-lg inline-flex items-center gap-1.5 text-[10px] text-purple-900 font-600">
-                            <Icon name="CheckCircleIcon" size={12} className="text-purple-600 flex-shrink-0" />
-                            <span>
-                              <strong className="text-purple-700">Savoir-faire clé :</strong>{' '}
-                              {Array.isArray(p.savoirFaire) ? p.savoirFaire.join(' · ') : p.savoirFaire}
-                            </span>
-                          </div>
-                        )}
-
-                        <p className="text-xs text-[#6D624C] leading-relaxed mt-2 line-clamp-3">
-                          {p.description}
-                        </p>
-
-                        {/* Tech Stack */}
-                        {p.techStack && p.techStack.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2.5">
-                            {p.techStack.map((tech) => (
+                        {/* Pill Tags Row Tinted with Section Accent */}
+                        {tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-2.5">
+                            {tags.map((tag, tIdx) => (
                               <span
-                                key={tech}
-                                className="px-2 py-0.5 bg-[#FAF8F3] border border-[#E1D9C6] rounded text-[10px] font-600 text-[#4A4234]"
+                                key={tIdx}
+                                className="px-3 py-1 rounded-full text-[11px] font-semibold tracking-wide transition-colors"
+                                style={{
+                                  backgroundColor: `${persoColor}18`,
+                                  color: persoColor,
+                                }}
                               >
-                                {tech}
+                                {tag}
                               </span>
                             ))}
                           </div>
                         )}
 
-                        {/* Links */}
-                        {(p.url || p.github) && (
-                          <div className="flex items-center gap-3 pt-2.5 mt-2.5 border-t border-[#F0EDE6] text-[10px]">
-                            {p.url && (
-                              <a
-                                href={p.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-purple-700 font-700 flex items-center gap-1 hover:underline"
-                              >
-                                <Icon name="GlobeAltIcon" size={11} />
-                                Démonstration
-                              </a>
-                            )}
-                            {p.github && (
-                              <a
-                                href={p.github.startsWith('http') ? p.github : `https://${p.github}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[#6D624C] font-600 flex items-center gap-1 hover:underline"
-                              >
-                                <Icon name="GithubIcon" size={11} />
-                                Code source
-                              </a>
-                            )}
-                          </div>
-                        )}
+                        {/* Card Title in Section Color (Emerald) */}
+                        <h3
+                          className="text-lg font-bold tracking-tight leading-snug line-clamp-2"
+                          style={{ color: persoColor }}
+                        >
+                          {p.title}
+                        </h3>
+
+                        {/* Description */}
+                        <p className="text-xs text-[#4A4234] leading-relaxed line-clamp-4 mt-2 font-normal">
+                          {p.description}
+                        </p>
                       </div>
-                    </div>
-                  </article>
-                ))}
+
+                      {/* Card Footer Link */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedDetailItem({
+                            title: p.title,
+                            category: p.category || 'Projet Personnel',
+                            description: p.description,
+                            imageUrl: p.imageUrl,
+                            tags: p.techStack,
+                            year: p.year,
+                            accentColor: persoColor,
+                            links: [
+                              ...(p.url ? [{ label: 'Tester l\'application', url: p.url, icon: 'GlobeAltIcon' }] : []),
+                              ...(p.github ? [{ label: 'Code source GitHub', url: p.github.startsWith('http') ? p.github : `https://${p.github}`, icon: 'CodeBracketIcon' }] : []),
+                            ],
+                          })
+                        }
+                        className="mt-auto pt-4 flex items-center gap-1.5 text-xs font-semibold text-[#8A7D63] hover:text-[#1A1815] transition-colors group-hover:translate-x-1 duration-150 text-left"
+                      >
+                        <span>{texts.learnMoreText || 'En savoir plus →'}</span>
+                      </button>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>
@@ -741,245 +767,244 @@ export default function IndustrialGEIITemplatePreview({
         {/* =================================================================== */}
         {sections.creativeStudio && (
           <section id="studio-creatif" className="scroll-mt-16">
-            <div className="flex items-center justify-between mb-3 border-b border-[#E1D9C6] pb-2">
-              <div>
-                <h2 className="text-sm font-800 text-[#1A1815] uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-                  {titles.creativeStudio || 'Studio Créatif (Savoir-Être)'}
+            <div className="flex items-start gap-3 mb-4">
+              <div
+                className="w-1.5 h-7 rounded-full flex-shrink-0 mt-0.5"
+                style={{ backgroundColor: creativeColor }}
+              />
+              <div className="flex-1">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-[#1A1815] tracking-tight">
+                  {texts.creativeStudioTitle || titles.creativeStudio || 'Studio Créatif (Savoir-Être)'}
                 </h2>
-                <p className="text-[11px] text-[#8A7D63]">
-                  Productions audiovisuelles, communication d&apos;équipe, vulgarisation et démarche collective
+                <p className="text-xs sm:text-sm text-[#6D624C] leading-relaxed mt-1 font-normal">
+                  {texts.creativeStudioSubtitle ||
+                    "La technique c'est bien, savoir la communiquer en équipe c'est mieux. Voici quelques réalisations audiovisuelles produites en groupe lors de nos modules de communication."}
                 </p>
               </div>
-              <span className="text-[11px] font-700 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                {displayCreativeStudio.length} réalisation{displayCreativeStudio.length > 1 ? 's' : ''}
+              <span
+                className="text-[11px] font-bold px-3 py-1 rounded-full text-white flex-shrink-0"
+                style={{ backgroundColor: creativeColor }}
+              >
+                {displayCreativeStudio.length} réalisations
               </span>
             </div>
 
-            {/* Portfolify Reference Style Quote Banner */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-l-4 border-amber-500 border-y border-r border-[#E1D9C6]/60 text-xs italic text-[#5C4F33] leading-relaxed mb-4">
-              « La technique c&apos;est bien, savoir la communiquer en équipe c&apos;est mieux. Voici quelques réalisations audiovisuelles et projets de vulgarisation produits en groupe lors de nos modules de communication et d&apos;expression. »
-            </div>
-
             {displayCreativeStudio.length === 0 ? (
-              <div className="p-6 rounded-2xl border border-dashed border-[#C2B59C] bg-[#F0EDE6]/50 text-center">
-                <Icon name="SparklesIcon" size={24} className="mx-auto text-[#8A7D63] mb-2" />
-                <p className="text-xs font-700 text-[#4A4234]">
+              <div
+                className="p-8 rounded-3xl border border-dashed border-black/10 text-center"
+                style={{ backgroundColor: cardBg }}
+              >
+                <Icon name="SparklesIcon" size={28} className="mx-auto text-[#8A7D63] mb-2" />
+                <p className="text-xs font-bold text-[#4A4234]">
                   Emplacement réservé au Studio Créatif (savoir-être)
                 </p>
                 <p className="text-[11px] text-[#8A7D63] mt-1">
-                  Sélectionnez vos réalisations audiovisuelles et de communication dans l&apos;onglet <strong>Contenu</strong> du Studio.
+                  Sélectionnez vos réalisations audiovisuelles dans l&apos;onglet <strong>Contenu</strong> du Studio.
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {displayCreativeStudio.map((item) => (
-                  <article
-                    key={`creative-item-${item.id}`}
-                    className="bg-white rounded-xl border border-amber-200/80 p-4 shadow-sm hover:border-amber-400 transition-all group"
-                  >
-                    <div className="flex flex-col sm:flex-row gap-4 items-start">
-                      {/* Media preview / Icon thumbnail */}
-                      <div className="w-full sm:w-28 h-24 rounded-lg overflow-hidden bg-amber-50 border border-amber-200/60 flex flex-col items-center justify-center flex-shrink-0 relative text-amber-700">
-                        {item.thumbnailUrl ? (
-                          <AppImage
-                            src={item.thumbnailUrl}
-                            alt={item.title}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <>
-                            <Icon
-                              name={
-                                item.mediaType === 'video'
-                                  ? 'VideoCameraIcon'
-                                  : item.mediaType === 'audio'
-                                  ? 'MicrophoneIcon'
-                                  : item.mediaType === 'image'
-                                  ? 'PhotoIcon'
-                                  : 'DocumentTextIcon'
-                              }
-                              size={28}
-                              className="text-amber-600 mb-1"
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {displayCreativeStudio.map((item) => {
+                  const tags = item.softSkills || [];
+                  return (
+                    <article
+                      key={`creative-card-${item.id}`}
+                      className="rounded-3xl p-5 flex flex-col justify-between h-full border border-black/5 hover:shadow-md transition-all group duration-200"
+                      style={{ backgroundColor: cardBg }}
+                    >
+                      <div>
+                        {/* Top Media Container */}
+                        <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-black/10 flex-shrink-0 mb-3.5">
+                          {item.thumbnailUrl ? (
+                            <AppImage
+                              src={item.thumbnailUrl}
+                              alt={item.title}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
                             />
-                            <span className="text-[9px] font-700 uppercase tracking-wider text-amber-800">
-                              {item.mediaType}
-                            </span>
-                          </>
-                        )}
-                      </div>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-[#E1D9C6] text-[#7A6E55]">
+                              <Icon name="VideoCameraIcon" size={32} />
+                            </div>
+                          )}
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <h3 className="text-xs sm:text-sm font-800 text-[#1A1815] leading-tight group-hover:text-amber-800 transition-colors">
-                              {item.title}
-                            </h3>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              {item.category && (
-                                <span className="text-[10px] font-700 text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60">
-                                  {item.category}
-                                </span>
-                              )}
-                              {item.role && (
-                                <span className="text-[10px] text-[#8A7D63]">
-                                  · {item.role}
-                                </span>
-                              )}
+                          {/* Center Play Overlay Icon matching screenshot */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-black/60 border border-white/80 backdrop-blur-xs flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                              <Icon name="PlayIcon" size={18} className="translate-x-0.5 text-white" />
                             </div>
                           </div>
-                          {item.year && (
-                            <span className="text-[10px] font-mono font-600 text-[#8A7D63] bg-[#FAF8F3] px-1.5 py-0.5 rounded border border-[#E1D9C6]">
-                              {item.year}
-                            </span>
-                          )}
                         </div>
 
-                        <p className="text-xs text-[#6D624C] leading-relaxed mt-2 line-clamp-3">
-                          {item.description}
-                        </p>
-
-                        {/* Soft Skills Tags */}
-                        {item.softSkills && item.softSkills.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2.5">
-                            {item.softSkills.map((ss) => (
+                        {/* Soft Skills Pill Tags Row Tinted with Purple Accent */}
+                        {tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-2.5">
+                            {tags.map((tag, tIdx) => (
                               <span
-                                key={ss}
-                                className="px-2 py-0.5 bg-amber-50/70 border border-amber-200/60 text-amber-900 rounded text-[10px] font-600 flex items-center gap-1"
+                                key={tIdx}
+                                className="px-3 py-1 rounded-full text-[11px] font-semibold tracking-wide transition-colors"
+                                style={{
+                                  backgroundColor: `${creativeColor}18`,
+                                  color: creativeColor,
+                                }}
                               >
-                                <span className="w-1 h-1 rounded-full bg-amber-500" />
-                                {ss}
+                                {tag}
                               </span>
                             ))}
                           </div>
                         )}
 
-                        {/* View Link */}
-                        {(item.mediaUrl || (item as any).url) && (
-                          <div className="pt-2.5 mt-2.5 border-t border-[#F0EDE6]">
-                            <a
-                              href={item.mediaUrl || (item as any).url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-amber-800 font-700 text-[10px] flex items-center gap-1 hover:underline"
-                            >
-                              <Icon name="ArrowTopRightOnSquareIcon" size={11} />
-                              Visionner la réalisation ({item.mediaType || 'Média'})
-                            </a>
-                          </div>
-                        )}
+                        {/* Card Title in Section Color (Purple) */}
+                        <h3
+                          className="text-lg font-bold tracking-tight leading-snug line-clamp-2"
+                          style={{ color: creativeColor }}
+                        >
+                          {item.title}
+                        </h3>
+
+                        {/* Description */}
+                        <p className="text-xs text-[#4A4234] leading-relaxed line-clamp-4 mt-2 font-normal">
+                          {item.description}
+                        </p>
                       </div>
-                    </div>
-                  </article>
-                ))}
+
+                      {/* Card Footer Link */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedDetailItem({
+                            title: item.title,
+                            category: item.category || 'Studio Créatif',
+                            description: item.description,
+                            imageUrl: item.thumbnailUrl,
+                            tags: item.softSkills,
+                            year: item.year,
+                            role: item.role,
+                            accentColor: creativeColor,
+                            links: [
+                              ...(item.mediaUrl ? [{ label: 'Visionner le média', url: item.mediaUrl, icon: 'PlayIcon' }] : []),
+                            ],
+                          })
+                        }
+                        className="mt-auto pt-4 flex items-center gap-1.5 text-xs font-semibold text-[#8A7D63] hover:text-[#1A1815] transition-colors group-hover:translate-x-1 duration-150 text-left"
+                      >
+                        <span>{texts.learnMoreText || 'En savoir plus →'}</span>
+                      </button>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>
         )}
 
         {/* =================================================================== */}
-        {/* SECTION 4 : COMPÉTENCES & JANGES */}
+        {/* SECTION 4 : COMPÉTENCES TECHNIQUES */}
         {/* =================================================================== */}
         {(sections.skills || sections.tools) && (
           <section id="competences" className="scroll-mt-16">
-            <div className="flex items-center justify-between mb-4 border-b border-[#E1D9C6] pb-2">
-              <div>
-                <h2 className="text-sm font-800 text-[#1A1815] uppercase tracking-wider">
-                  {titles.skills || 'Compétences & Outils Industriels'}
+            <div className="flex items-start gap-3 mb-4">
+              <div
+                className="w-1.5 h-7 rounded-full flex-shrink-0 mt-0.5"
+                style={{ backgroundColor: skillsColor }}
+              />
+              <div className="flex-1">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-[#1A1815] tracking-tight">
+                  {texts.skillsTitle || titles.skills || 'Compétences & Outils Industriels'}
                 </h2>
-                <p className="text-[11px] text-[#8A7D63]">
-                  Groupes techniques, jauges d&apos;expertise et outils logiciels
+                <p className="text-xs sm:text-sm text-[#6D624C] leading-relaxed mt-1 font-normal">
+                  {texts.skillsSubtitle || "Groupes techniques, programmation d'automates et jauges de maîtrise"}
                 </p>
               </div>
-              <span className="text-[11px] font-700 px-2 py-0.5 rounded-full bg-[#E1D9C6] text-[#4A4234]">
-                {displaySkills.length} active{displaySkills.length > 1 ? 's' : ''}
-              </span>
             </div>
 
-            {displaySkills.length === 0 ? (
-              <div className="p-6 rounded-2xl border border-dashed border-[#C2B59C] bg-[#F0EDE6]/50 text-center">
-                <Icon name="SparklesIcon" size={24} className="mx-auto text-[#8A7D63] mb-2" />
-                <p className="text-xs font-700 text-[#4A4234]">
-                  Emplacement réservé à vos compétences & outils
-                </p>
-                <p className="text-[11px] text-[#8A7D63] mt-1">
-                  Cochez vos compétences techniques et outils industriels dans l&apos;onglet <strong>Contenu</strong> du Studio.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Hard Skills */}
-                {sections.skills && (
-                  <div className="bg-white p-4 rounded-xl border border-[#E1D9C6] space-y-3">
-                    <h3 className="text-xs font-800 text-[#1A1815] uppercase tracking-wider flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#A4967A]" />
-                      Compétences Techniques ({hardSkills.length})
-                    </h3>
-                    <div className="space-y-2.5">
-                      {hardSkills.map((s) => (
-                        <div key={s.id}>
-                          <div className="flex justify-between text-[11px] font-600 mb-1">
-                            <span className="text-[#1A1815]">{s.name}</span>
-                            <span className="text-[#8A7D63] tabular-nums font-700">{s.level}%</span>
-                          </div>
-                          <div className="h-1.5 bg-[#FAF8F3] border border-[#E1D9C6] rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-[#A4967A] rounded-full"
-                              style={{ width: `${s.level}%` }}
-                            />
-                          </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Hard Skills */}
+              {sections.skills && (
+                <div
+                  className="rounded-3xl border border-black/5 p-6 shadow-sm space-y-3"
+                  style={{ backgroundColor: cardBg }}
+                >
+                  <h3 className="text-xs font-bold text-[#1A1815] uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: skillsColor }} />
+                    {texts.skillsHardTitle || 'Compétences Techniques'} ({hardSkills.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {hardSkills.map((s) => (
+                      <div key={s.id}>
+                        <div className="flex justify-between text-[11px] font-semibold mb-1">
+                          <span className="text-[#1A1815]">{s.name}</span>
+                          <span className="tabular-nums font-bold" style={{ color: skillsColor }}>
+                            {s.level}%
+                          </span>
                         </div>
+                        <div
+                          className="h-2 rounded-full overflow-hidden border border-black/5"
+                          style={{ backgroundColor: pageBg }}
+                        >
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${s.level}%`, backgroundColor: skillsColor }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tools & Soft */}
+              {sections.tools && (
+                <div className="space-y-6">
+                  {/* Tools */}
+                  <div
+                    className="rounded-3xl border border-black/5 p-6 shadow-sm"
+                    style={{ backgroundColor: cardBg }}
+                  >
+                    <h3 className="text-xs font-bold text-[#1A1815] uppercase tracking-wider flex items-center gap-1.5 mb-3">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: toolsColor }} />
+                      {texts.toolsTitle || 'Outils & Matériel'} ({toolsSkills.length})
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {toolsSkills.map((t) => (
+                        <span
+                          key={t.id}
+                          className="px-3 py-1.5 border border-black/5 text-[#4A4234] text-[11px] font-semibold rounded-xl"
+                          style={{ backgroundColor: pageBg }}
+                        >
+                          {t.name}
+                          <span className="text-[#8A7D63] font-normal ml-1">({t.years}a)</span>
+                        </span>
                       ))}
                     </div>
                   </div>
-                )}
 
-                {/* Tools & Soft */}
-                {sections.tools && (
-                  <div className="space-y-4">
-                    {/* Tools */}
-                    <div className="bg-white p-4 rounded-xl border border-[#E1D9C6]">
-                      <h3 className="text-xs font-800 text-[#1A1815] uppercase tracking-wider flex items-center gap-1.5 mb-2.5">
-                        <span className="w-2 h-2 rounded-full bg-[#C2B59C]" />
-                        Outils & Matériel ({toolsSkills.length})
+                  {/* Soft Skills */}
+                  {softSkills.length > 0 && (
+                    <div
+                      className="rounded-3xl border border-black/5 p-6 shadow-sm"
+                      style={{ backgroundColor: cardBg }}
+                    >
+                      <h3 className="text-xs font-bold text-[#1A1815] uppercase tracking-wider flex items-center gap-1.5 mb-3">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: heroColor }} />
+                        {texts.toolsSoftTitle || 'Savoir-Être'} ({softSkills.length})
                       </h3>
-                      <div className="flex flex-wrap gap-1.5">
-                        {toolsSkills.map((t) => (
+                      <div className="flex flex-wrap gap-2">
+                        {softSkills.map((soft) => (
                           <span
-                            key={t.id}
-                            className="px-2 py-1 bg-[#FAF8F3] border border-[#E1D9C6] text-[#4A4234] text-[10px] font-600 rounded-md"
+                            key={soft.id}
+                            className="px-3 py-1.5 border border-black/5 text-[#1A1815] text-[11px] font-semibold rounded-xl"
+                            style={{ backgroundColor: pageBg }}
                           >
-                            {t.name}
-                            <span className="text-[#8A7D63] font-normal ml-1">({t.years}a)</span>
+                            {soft.name}
                           </span>
                         ))}
                       </div>
                     </div>
-
-                    {/* Soft Skills */}
-                    {softSkills.length > 0 && (
-                      <div className="bg-white p-4 rounded-xl border border-[#E1D9C6]">
-                        <h3 className="text-xs font-800 text-[#1A1815] uppercase tracking-wider flex items-center gap-1.5 mb-2.5">
-                          <span className="w-2 h-2 rounded-full bg-[#8A7D63]" />
-                          Savoir-Être ({softSkills.length})
-                        </h3>
-                        <div className="flex flex-wrap gap-1.5">
-                          {softSkills.map((soft) => (
-                            <span
-                              key={soft.id}
-                              className="px-2 py-1 bg-[#F0EDE6] border border-[#C2B59C]/60 text-[#1A1815] text-[10px] font-600 rounded-md"
-                            >
-                              {soft.name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
+            </div>
           </section>
         )}
 
@@ -988,32 +1013,42 @@ export default function IndustrialGEIITemplatePreview({
         {/* =================================================================== */}
         {sections.parcours && displayParcours.length > 0 && (
           <section id="parcours" className="scroll-mt-16">
-            <div className="flex items-center justify-between mb-4 border-b border-[#E1D9C6] pb-2">
-              <div>
-                <h2 className="text-sm font-800 text-[#1A1815] uppercase tracking-wider">
-                  {titles.parcours || 'Parcours & Formations'}
+            <div className="flex items-start gap-3 mb-4">
+              <div
+                className="w-1.5 h-7 rounded-full flex-shrink-0 mt-0.5"
+                style={{ backgroundColor: parcoursColor }}
+              />
+              <div className="flex-1">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-[#1A1815] tracking-tight">
+                  {texts.parcoursTitle || titles.parcours || 'Parcours & Formations'}
                 </h2>
-                <p className="text-[11px] text-[#8A7D63]">
-                  Timeline chronologique des études et expériences
+                <p className="text-xs sm:text-sm text-[#6D624C] leading-relaxed mt-1 font-normal">
+                  {texts.parcoursSubtitle || 'Timeline chronologique des diplômes, études et stages'}
                 </p>
               </div>
             </div>
 
-            <div className="space-y-3 relative pl-6 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#E1D9C6]">
+            <div className="space-y-4 relative pl-6 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#E1D9C6]">
               {displayParcours.map((item) => (
                 <div key={item.id} className="relative">
-                  <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-[#A4967A] border-2 border-white" />
-                  <div className="bg-white p-3 rounded-xl border border-[#E1D9C6]">
+                  <div
+                    className="absolute -left-[21px] top-2 w-3 h-3 rounded-full border-2 border-white shadow-xs"
+                    style={{ backgroundColor: parcoursColor }}
+                  />
+                  <div
+                    className="rounded-2xl border border-black/5 p-4 shadow-sm"
+                    style={{ backgroundColor: cardBg }}
+                  >
                     <div className="flex justify-between items-start gap-2">
-                      <p className="text-xs font-800 text-[#1A1815]">{item.title}</p>
+                      <p className="text-xs font-bold text-[#1A1815]">{item.title}</p>
                       <span className="text-[10px] font-mono text-[#8A7D63] flex-shrink-0">
                         {item.period}
                       </span>
                     </div>
-                    <p className="text-[11px] font-600 text-[#8A7D63] mt-0.5">
+                    <p className="text-[11px] font-semibold text-[#8A7D63] mt-0.5">
                       {item.organization} {item.location && `· ${item.location}`}
                     </p>
-                    <p className="text-[11px] text-[#6D624C] mt-1 leading-relaxed">
+                    <p className="text-[11px] text-[#6D624C] mt-1.5 leading-relaxed font-normal">
                       {item.description}
                     </p>
                   </div>
@@ -1028,32 +1063,43 @@ export default function IndustrialGEIITemplatePreview({
         {/* =================================================================== */}
         {sections.languages && (displayLanguages.length > 0 || displayCertifications.length > 0) && (
           <section id="langues" className="scroll-mt-16">
-            <div className="flex items-center justify-between mb-4 border-b border-[#E1D9C6] pb-2">
-              <div>
-                <h2 className="text-sm font-800 text-[#1A1815] uppercase tracking-wider">
-                  {titles.languages || 'Langues & Certifications'}
+            <div className="flex items-start gap-3 mb-4">
+              <div
+                className="w-1.5 h-7 rounded-full flex-shrink-0 mt-0.5"
+                style={{ backgroundColor: languagesColor }}
+              />
+              <div className="flex-1">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-[#1A1815] tracking-tight">
+                  {texts.languagesTitle || titles.languages || 'Langues & Certifications'}
                 </h2>
-                <p className="text-[11px] text-[#8A7D63]">
-                  Habilitations de sécurité et compétences linguistiques
+                <p className="text-xs sm:text-sm text-[#6D624C] leading-relaxed mt-1 font-normal">
+                  {texts.languagesSubtitle || 'Certifications de sécurité électrique et compétences linguistiques'}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Langues */}
               {displayLanguages.length > 0 && (
-                <div className="bg-white p-4 rounded-xl border border-[#E1D9C6] space-y-2.5">
-                  <h3 className="text-xs font-800 text-[#1A1815] uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#A4967A]" />
-                    Langues
+                <div
+                  className="rounded-3xl border border-black/5 p-6 shadow-sm space-y-3"
+                  style={{ backgroundColor: cardBg }}
+                >
+                  <h3 className="text-xs font-bold text-[#1A1815] uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: languagesColor }} />
+                    {texts.languagesBlockTitle || 'Langues'}
                   </h3>
                   <div className="space-y-2">
                     {displayLanguages.map((l) => (
-                      <div key={l.id} className="p-2 rounded-lg bg-[#FAF8F3] border border-[#E1D9C6] flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base">{l.flag || '🌐'}</span>
+                      <div
+                        key={l.id}
+                        className="p-3 rounded-2xl border border-black/5 flex items-center justify-between"
+                        style={{ backgroundColor: pageBg }}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-lg">{l.flag || '🌐'}</span>
                           <div>
-                            <p className="text-xs font-700 text-[#1A1815]">{l.name}</p>
+                            <p className="text-xs font-bold text-[#1A1815]">{l.name}</p>
                             <p className="text-[10px] text-[#8A7D63]">{l.level}</p>
                           </div>
                         </div>
@@ -1065,16 +1111,23 @@ export default function IndustrialGEIITemplatePreview({
 
               {/* Certifications */}
               {displayCertifications.length > 0 && (
-                <div className="bg-white p-4 rounded-xl border border-[#E1D9C6] space-y-2.5">
-                  <h3 className="text-xs font-800 text-[#1A1815] uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#C2B59C]" />
-                    Habilitations & Certifications
+                <div
+                  className="rounded-3xl border border-black/5 p-6 shadow-sm space-y-3"
+                  style={{ backgroundColor: cardBg }}
+                >
+                  <h3 className="text-xs font-bold text-[#1A1815] uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: heroColor }} />
+                    {texts.certificationsBlockTitle || 'Habilitations & Certifications'}
                   </h3>
                   <div className="space-y-2">
                     {displayCertifications.map((c) => (
-                      <div key={c.id} className="p-2 rounded-lg bg-[#FAF8F3] border border-[#E1D9C6]">
-                        <p className="text-xs font-700 text-[#1A1815]">{c.title}</p>
-                        <p className="text-[10px] text-[#8A7D63]">
+                      <div
+                        key={c.id}
+                        className="p-3 rounded-2xl border border-black/5"
+                        style={{ backgroundColor: pageBg }}
+                      >
+                        <p className="text-xs font-bold text-[#1A1815]">{c.title}</p>
+                        <p className="text-[10px] text-[#8A7D63] mt-0.5">
                           {c.issuer} · {c.year}
                         </p>
                       </div>
@@ -1091,22 +1144,27 @@ export default function IndustrialGEIITemplatePreview({
         {/* =================================================================== */}
         {sections.gallery && displayMedia.length > 0 && (
           <section id="galerie" className="scroll-mt-16">
-            <div className="flex items-center justify-between mb-4 border-b border-[#E1D9C6] pb-2">
-              <div>
-                <h2 className="text-sm font-800 text-[#1A1815] uppercase tracking-wider">
-                  {titles.gallery || 'Galerie de Réalisations'}
+            <div className="flex items-start gap-3 mb-4">
+              <div
+                className="w-1.5 h-7 rounded-full flex-shrink-0 mt-0.5"
+                style={{ backgroundColor: galleryColor }}
+              />
+              <div className="flex-1">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-[#1A1815] tracking-tight">
+                  {texts.galleryTitle || titles.gallery || 'Galerie de Réalisations'}
                 </h2>
-                <p className="text-[11px] text-[#8A7D63]">
-                  Aperçus visuels, montages et captures d&apos;expérimentations
+                <p className="text-xs sm:text-sm text-[#6D624C] leading-relaxed mt-1 font-normal">
+                  {texts.gallerySubtitle || "Photographies d'ateliers, montages et bancs de test"}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {displayMedia.map((m) => (
                 <div
                   key={m.id}
-                  className="rounded-xl overflow-hidden border border-[#E1D9C6] bg-white h-28 relative group"
+                  className="rounded-2xl overflow-hidden border border-black/5 h-36 relative group"
+                  style={{ backgroundColor: cardBg }}
                 >
                   <AppImage
                     src={m.fileUrl}
@@ -1114,8 +1172,8 @@ export default function IndustrialGEIITemplatePreview({
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="text-[10px] text-white font-600 truncate">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-[10px] text-white font-semibold truncate">
                       {m.project || m.fileName}
                     </p>
                   </div>
@@ -1130,41 +1188,52 @@ export default function IndustrialGEIITemplatePreview({
         {/* =================================================================== */}
         {sections.contact && (
           <section id="contact" className="scroll-mt-16 pt-2">
-            <div className="bg-[#F0EDE6]/80 rounded-2xl border border-[#E1D9C6] p-6 text-center space-y-4">
+            <div
+              className="rounded-3xl border border-black/5 p-8 text-center space-y-4 shadow-sm"
+              style={{ backgroundColor: cardBg }}
+            >
               <div>
-                <p className="text-[10px] font-800 uppercase tracking-widest text-[#8A7D63] mb-1">
-                  COORDONNÉES PROFESSIONNELLES
+                <p
+                  className="text-[10px] font-bold uppercase tracking-widest mb-1"
+                  style={{ color: contactColor }}
+                >
+                  {texts.contactTitle || titles.contact || 'COORDONNÉES PROFESSIONNELLES'}
                 </p>
-                <h2 className="text-base sm:text-lg font-900 text-[#1A1815]">
-                  Me contacter pour un stage ou une alternance
+                <h2 className="text-lg sm:text-xl font-black text-[#1A1815]">
+                  {texts.contactHeading || 'Me contacter pour un stage ou une alternance'}
                 </h2>
-                <p className="text-xs text-[#6D624C] mt-1 max-w-md mx-auto">
-                  Disponible pour échanger sur vos projets industriels et besoins techniques.
+                <p className="text-xs text-[#6D624C] mt-1 max-w-md mx-auto font-normal">
+                  {texts.contactDescription || 'Disponible pour échanger sur vos projets industriels et besoins techniques.'}
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 max-w-lg mx-auto text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 max-w-xl mx-auto text-xs">
                 <a
                   href={`mailto:${email}`}
-                  className="p-2.5 rounded-xl bg-white border border-[#E1D9C6] hover:border-[#A4967A] transition-colors flex flex-col items-center gap-1"
+                  className="p-3 rounded-2xl border border-black/5 hover:border-black/20 transition-all flex flex-col items-center gap-1.5"
+                  style={{ backgroundColor: pageBg }}
                 >
-                  <Icon name="EnvelopeIcon" size={16} className="text-[#8A7D63]" />
-                  <span className="font-700 text-[#1A1815] truncate max-w-full">{email}</span>
+                  <Icon name="EnvelopeIcon" size={18} style={{ color: contactColor }} />
+                  <span className="font-bold text-[#1A1815] truncate max-w-full">{email}</span>
                 </a>
 
                 {phone && (
                   <a
                     href={`tel:${phone.replace(/\s+/g, '')}`}
-                    className="p-2.5 rounded-xl bg-white border border-[#E1D9C6] hover:border-[#A4967A] transition-colors flex flex-col items-center gap-1"
+                    className="p-3 rounded-2xl border border-black/5 hover:border-black/20 transition-all flex flex-col items-center gap-1.5"
+                    style={{ backgroundColor: pageBg }}
                   >
-                    <Icon name="PhoneIcon" size={16} className="text-[#8A7D63]" />
-                    <span className="font-700 text-[#1A1815]">{phone}</span>
+                    <Icon name="PhoneIcon" size={18} style={{ color: contactColor }} />
+                    <span className="font-bold text-[#1A1815]">{phone}</span>
                   </a>
                 )}
 
-                <div className="p-2.5 rounded-xl bg-white border border-[#E1D9C6] flex flex-col items-center gap-1">
-                  <Icon name="MapPinIcon" size={16} className="text-[#8A7D63]" />
-                  <span className="font-700 text-[#1A1815] truncate max-w-full">{location}</span>
+                <div
+                  className="p-3 rounded-2xl border border-black/5 flex flex-col items-center gap-1.5"
+                  style={{ backgroundColor: pageBg }}
+                >
+                  <Icon name="MapPinIcon" size={18} style={{ color: contactColor }} />
+                  <span className="font-bold text-[#1A1815] truncate max-w-full">{location}</span>
                 </div>
               </div>
             </div>
@@ -1172,15 +1241,132 @@ export default function IndustrialGEIITemplatePreview({
         )}
 
         {/* Footer */}
-        <footer className="pt-6 border-t border-[#E1D9C6] text-center space-y-1">
-          <p className="text-[11px] font-700 text-[#1A1815]">
+        <footer className="pt-8 border-t border-[#E1D9C6] text-center space-y-1">
+          <p className="text-[11px] font-bold text-[#1A1815]">
             {authorName} · {institution}
           </p>
           <p className="text-[10px] text-[#8A7D63]">
-            Portfolio ciblé généré via PortfolioGen Studio & synchronisé avec la CVthèque Master
+            {texts.footerText || 'Portfolio ciblé généré via PortfolioGen Studio & synchronisé avec la CVthèque Master'}
           </p>
         </footer>
       </div>
+
+      {/* =================================================================== */}
+      {/* INTERACTIVE DETAIL MODAL */}
+      {/* =================================================================== */}
+      {selectedDetailItem && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div
+            className="rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-black/10 relative"
+            style={{ backgroundColor: cardBg }}
+          >
+            <button
+              onClick={() => setSelectedDetailItem(null)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center text-foreground transition-colors"
+              title="Fermer"
+            >
+              <Icon name="XMarkIcon" size={16} />
+            </button>
+
+            {selectedDetailItem.imageUrl && (
+              <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden mb-4 bg-black/10">
+                <AppImage
+                  src={selectedDetailItem.imageUrl}
+                  alt={selectedDetailItem.title}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+
+            {selectedDetailItem.category && (
+              <span
+                className="inline-block px-3 py-1 rounded-full text-xs font-bold mb-2"
+                style={{
+                  backgroundColor: `${selectedDetailItem.accentColor || '#1A1815'}18`,
+                  color: selectedDetailItem.accentColor || '#1A1815',
+                }}
+              >
+                {selectedDetailItem.category}
+              </span>
+            )}
+
+            <h3
+              className="text-xl sm:text-2xl font-black tracking-tight mb-1"
+              style={{ color: selectedDetailItem.accentColor || '#1A1815' }}
+            >
+              {selectedDetailItem.title}
+            </h3>
+
+            {selectedDetailItem.role && (
+              <p className="text-xs font-semibold text-[#8A7D63] mb-3">
+                {selectedDetailItem.role} {selectedDetailItem.year && `· ${selectedDetailItem.year}`}
+              </p>
+            )}
+
+            <p className="text-xs sm:text-sm text-[#4A4234] leading-relaxed mb-4 whitespace-pre-line font-normal">
+              {selectedDetailItem.description}
+            </p>
+
+            {selectedDetailItem.tags && selectedDetailItem.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {selectedDetailItem.tags.map((t, idx) => (
+                  <span
+                    key={idx}
+                    className="px-3 py-1 rounded-full text-[11px] font-semibold"
+                    style={{
+                      backgroundColor: `${selectedDetailItem.accentColor || '#1A1815'}18`,
+                      color: selectedDetailItem.accentColor || '#1A1815',
+                    }}
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {selectedDetailItem.kpis && selectedDetailItem.kpis.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {selectedDetailItem.kpis.map((kpi, idx) => (
+                  <div
+                    key={idx}
+                    className="p-2.5 rounded-2xl text-center border border-black/5"
+                    style={{ backgroundColor: pageBg }}
+                  >
+                    <span
+                      className="text-xs font-black block"
+                      style={{ color: selectedDetailItem.accentColor }}
+                    >
+                      {kpi.value}
+                    </span>
+                    <span className="text-[10px] text-[#6D624C] block truncate">
+                      {kpi.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {selectedDetailItem.links && selectedDetailItem.links.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-3 border-t border-black/10">
+                {selectedDetailItem.links.map((link, lIdx) => (
+                  <a
+                    key={lIdx}
+                    href={link.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-opacity"
+                    style={{ backgroundColor: selectedDetailItem.accentColor || '#1A1815' }}
+                  >
+                    <Icon name={(link.icon as any) || 'ArrowTopRightOnSquareIcon'} size={14} />
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

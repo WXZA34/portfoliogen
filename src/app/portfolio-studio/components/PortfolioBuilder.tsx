@@ -4,8 +4,14 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
 import { toast } from 'sonner';
-import type { StudioPortfolio, StudioTemplateId, StudioPortfolioSections } from '@/lib/services/portfolioStudioService';
-import { DEFAULT_STUDIO_SECTIONS } from '@/lib/services/portfolioStudioService';
+import type {
+  StudioPortfolio,
+  StudioTemplateId,
+  StudioPortfolioSections,
+  SectionColors,
+  SectionTexts,
+} from '@/lib/services/portfolioStudioService';
+import { DEFAULT_STUDIO_SECTIONS, DEFAULT_STARTER_PORTFOLIOS } from '@/lib/services/portfolioStudioService';
 import type {
   ProjectItem,
   PersonalProjectItem,
@@ -54,7 +60,7 @@ export default function PortfolioBuilder({
   onTogglePreview,
 }: PortfolioBuilderProps) {
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'template' | 'sections' | 'content' | 'settings'>('sections');
+  const [activeTab, setActiveTab] = useState<'template' | 'sections' | 'content' | 'colors' | 'texts' | 'settings'>('sections');
   const [skillCategoryFilter, setSkillCategoryFilter] = useState<'all' | 'hard' | 'soft' | 'tools'>('all');
   const [projectCatFilter, setProjectCatFilter] = useState<string>('all');
   const { t } = useLanguage();
@@ -219,6 +225,31 @@ export default function PortfolioBuilder({
     { key: 'contact', title: 'Coordonnées & Pied de page', subtitle: 'Email, téléphone, LinkedIn, GitHub et CV', icon: 'EnvelopeIcon' },
   ];
 
+  // Theme colors and editable section texts with defaults
+  const themeColors: SectionColors = portfolio.themeColors || { ...DEFAULT_STARTER_PORTFOLIOS[0].themeColors };
+  const sectionTexts: SectionTexts = portfolio.sectionTexts || { ...DEFAULT_STARTER_PORTFOLIOS[0].sectionTexts };
+
+  const updateThemeColor = (key: keyof SectionColors, value: string) => {
+    onUpdate({
+      ...portfolio,
+      themeColors: {
+        ...themeColors,
+        [key]: value,
+      },
+    });
+  };
+
+  const updateSectionText = (key: string, value: string) => {
+    onUpdate({
+      ...portfolio,
+      sectionTexts: {
+        ...sectionTexts,
+        [key]: value,
+      },
+    });
+  };
+
+
   return (
     <div className="bg-card border border-border rounded-xl shadow-card flex flex-col h-full">
       {/* Header */}
@@ -254,48 +285,28 @@ export default function PortfolioBuilder({
         </div>
       </div>
 
-      {/* 4 Tabs: Modèle | Sections | Contenu | Réglages */}
-      <div className="flex border-b border-border text-xs font-600">
-        <button
-          onClick={() => setActiveTab('template')}
-          className={`flex-1 py-2.5 text-center transition-all ${
-            activeTab === 'template'
-              ? 'border-b-2 border-primary text-primary font-700'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Modèle
-        </button>
-        <button
-          onClick={() => setActiveTab('sections')}
-          className={`flex-1 py-2.5 text-center transition-all ${
-            activeTab === 'sections'
-              ? 'border-b-2 border-primary text-primary font-700'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Sections
-        </button>
-        <button
-          onClick={() => setActiveTab('content')}
-          className={`flex-1 py-2.5 text-center transition-all ${
-            activeTab === 'content'
-              ? 'border-b-2 border-primary text-primary font-700'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Contenu
-        </button>
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`flex-1 py-2.5 text-center transition-all ${
-            activeTab === 'settings'
-              ? 'border-b-2 border-primary text-primary font-700'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Réglages
-        </button>
+      {/* 6 Tabs: Modèle | Sections | Contenu | Couleurs | Textes | Réglages */}
+      <div className="flex border-b border-border text-xs font-semibold overflow-x-auto scrollbar-none">
+        {[
+          { id: 'template', label: 'Modèle' },
+          { id: 'sections', label: 'Sections' },
+          { id: 'content', label: 'Contenu' },
+          { id: 'colors', label: 'Couleurs' },
+          { id: 'texts', label: 'Textes' },
+          { id: 'settings', label: 'Réglages' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`flex-1 min-w-[62px] py-2.5 text-center transition-all ${
+              activeTab === tab.id
+                ? 'border-b-2 border-primary text-primary font-bold'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Tab Panels */}
@@ -936,6 +947,778 @@ export default function PortfolioBuilder({
                     onChange={(e) => onUpdate({ ...portfolio, degree: e.target.value })}
                     className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-xs text-foreground focus:outline-none focus:border-primary"
                   />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* TAB 4: COULEURS (ARRIÈRE-PLAN & COULEUR PAR SECTION) */}
+        {/* =================================================================== */}
+        {activeTab === 'colors' && (
+          <div className="space-y-6">
+            <div>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                Palette & Arrière-plans
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Personnalisez la couleur de fond générale ainsi que la couleur d&apos;accent propre à chaque section.
+              </p>
+            </div>
+
+            {/* Global Backgrounds Card */}
+            <div className="p-4 bg-muted/30 border border-border rounded-xl space-y-4">
+              <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                <Icon name="SwatchIcon" size={14} className="text-primary" />
+                Arrière-plans Globaux
+              </p>
+
+              {/* 1. Page Background */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-foreground">
+                    Fond de la page
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={themeColors.backgroundColor || '#FAF8F3'}
+                      onChange={(e) => updateThemeColor('backgroundColor', e.target.value)}
+                      className="w-7 h-7 rounded-lg border border-border cursor-pointer p-0.5 bg-card"
+                    />
+                    <input
+                      type="text"
+                      value={themeColors.backgroundColor || '#FAF8F3'}
+                      onChange={(e) => updateThemeColor('backgroundColor', e.target.value)}
+                      className="w-20 px-2 py-1 text-xs font-mono-data bg-card border border-border rounded-md text-foreground"
+                    />
+                  </div>
+                </div>
+                {/* Presets */}
+                <div className="flex items-center gap-1.5 pt-1">
+                  <span className="text-[10px] text-muted-foreground">Préréglages :</span>
+                  {[
+                    { name: 'Crème', hex: '#FAF8F3' },
+                    { name: 'Sable', hex: '#F5EFE6' },
+                    { name: 'Blanc', hex: '#FFFFFF' },
+                    { name: 'Gris ardoise', hex: '#F1F5F9' },
+                    { name: 'Zinc sombre', hex: '#18181B' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.hex}
+                      type="button"
+                      onClick={() => updateThemeColor('backgroundColor', preset.hex)}
+                      className={`w-5 h-5 rounded-full border shadow-2xs transition-transform hover:scale-110 ${
+                        themeColors.backgroundColor === preset.hex ? 'ring-2 ring-primary ring-offset-1' : 'border-border'
+                      }`}
+                      style={{ backgroundColor: preset.hex }}
+                      title={`${preset.name} (${preset.hex})`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Card Background */}
+              <div className="space-y-2 pt-3 border-t border-border/60">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-foreground">
+                    Fond des cartes & blocs
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={themeColors.cardBackground || '#EFEAE1'}
+                      onChange={(e) => updateThemeColor('cardBackground', e.target.value)}
+                      className="w-7 h-7 rounded-lg border border-border cursor-pointer p-0.5 bg-card"
+                    />
+                    <input
+                      type="text"
+                      value={themeColors.cardBackground || '#EFEAE1'}
+                      onChange={(e) => updateThemeColor('cardBackground', e.target.value)}
+                      className="w-20 px-2 py-1 text-xs font-mono-data bg-card border border-border rounded-md text-foreground"
+                    />
+                  </div>
+                </div>
+                {/* Presets */}
+                <div className="flex items-center gap-1.5 pt-1">
+                  <span className="text-[10px] text-muted-foreground">Préréglages :</span>
+                  {[
+                    { name: 'Beige crème', hex: '#EFEAE1' },
+                    { name: 'Crème doux', hex: '#F0ECE1' },
+                    { name: 'Blanc pur', hex: '#FFFFFF' },
+                    { name: 'Gris doux', hex: '#F8F6F0' },
+                    { name: 'Zinc foncé', hex: '#27272A' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.hex}
+                      type="button"
+                      onClick={() => updateThemeColor('cardBackground', preset.hex)}
+                      className={`w-5 h-5 rounded-full border shadow-2xs transition-transform hover:scale-110 ${
+                        themeColors.cardBackground === preset.hex ? 'ring-2 ring-primary ring-offset-1' : 'border-border'
+                      }`}
+                      style={{ backgroundColor: preset.hex }}
+                      title={`${preset.name} (${preset.hex})`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Section Accent Colors */}
+            <div className="space-y-3">
+              <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                <Icon name="SparklesIcon" size={14} className="text-primary" />
+                Couleurs d&apos;Accent par Section
+              </p>
+
+              {[
+                {
+                  key: 'projects' as keyof SectionColors,
+                  label: "Situations d'Apprentissage & Évaluation (SAÉ)",
+                  defaultColor: '#1A1815',
+                  icon: 'FolderIcon',
+                  presets: ['#1A1815', '#1E293B', '#8A7D63', '#059669', '#9333EA', '#DC2626'],
+                },
+                {
+                  key: 'personalProjects' as keyof SectionColors,
+                  label: 'Projets Personnels (Savoir-Faire)',
+                  defaultColor: '#059669',
+                  icon: 'CommandLineIcon',
+                  presets: ['#059669', '#10B981', '#0284C7', '#7C3AED', '#D97706', '#E11D48'],
+                },
+                {
+                  key: 'creativeStudio' as keyof SectionColors,
+                  label: 'Studio Créatif (Savoir-Être)',
+                  defaultColor: '#9333EA',
+                  icon: 'SparklesIcon',
+                  presets: ['#9333EA', '#7C3AED', '#C026D3', '#DB2777', '#4F46E5', '#2563EB'],
+                },
+                {
+                  key: 'hero' as keyof SectionColors,
+                  label: 'Accueil (Hero & Slogan)',
+                  defaultColor: '#8A7D63',
+                  icon: 'SparklesIcon',
+                  presets: ['#8A7D63', '#A4967A', '#1A1815', '#2563EB', '#059669', '#D97706'],
+                },
+                {
+                  key: 'about' as keyof SectionColors,
+                  label: 'À propos & Profil',
+                  defaultColor: '#8A7D63',
+                  icon: 'UserIcon',
+                  presets: ['#8A7D63', '#A4967A', '#1A1815', '#059669', '#7C3AED', '#2563EB'],
+                },
+                {
+                  key: 'skills' as keyof SectionColors,
+                  label: 'Compétences Techniques',
+                  defaultColor: '#D97706',
+                  icon: 'BrainIcon',
+                  presets: ['#D97706', '#F59E0B', '#059669', '#2563EB', '#9333EA', '#475569'],
+                },
+                {
+                  key: 'tools' as keyof SectionColors,
+                  label: 'Outils & Matériel Industriel',
+                  defaultColor: '#475569',
+                  icon: 'WrenchScrewdriverIcon',
+                  presets: ['#475569', '#64748B', '#334155', '#0D9488', '#B45309', '#1E293B'],
+                },
+                {
+                  key: 'parcours' as keyof SectionColors,
+                  label: 'Parcours & Formations',
+                  defaultColor: '#2563EB',
+                  icon: 'GraduationCapIcon',
+                  presets: ['#2563EB', '#3B82F6', '#1D4ED8', '#059669', '#9333EA', '#475569'],
+                },
+                {
+                  key: 'languages' as keyof SectionColors,
+                  label: 'Langues & Certifications',
+                  defaultColor: '#0D9488',
+                  icon: 'GlobeAltIcon',
+                  presets: ['#0D9488', '#14B8A6', '#0284C7', '#2563EB', '#D97706', '#8A7D63'],
+                },
+                {
+                  key: 'gallery' as keyof SectionColors,
+                  label: 'Galerie Médias',
+                  defaultColor: '#E11D48',
+                  icon: 'ImageIcon',
+                  presets: ['#E11D48', '#F43F5E', '#DB2777', '#9333EA', '#8A7D63', '#1A1815'],
+                },
+                {
+                  key: 'contact' as keyof SectionColors,
+                  label: 'Contact & Coordonnées',
+                  defaultColor: '#4F46E5',
+                  icon: 'EnvelopeIcon',
+                  presets: ['#4F46E5', '#6366F1', '#2563EB', '#059669', '#8A7D63', '#1A1815'],
+                },
+              ].map((item) => {
+                const currentColor = (themeColors as any)[item.key] || item.defaultColor;
+                return (
+                  <div
+                    key={item.key}
+                    className="p-3 bg-card border border-border rounded-xl space-y-2 hover:border-border/80 transition-all shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="w-3.5 h-3.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: currentColor }}
+                        />
+                        <span className="text-xs font-bold text-foreground truncate">
+                          {item.label}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <input
+                          type="color"
+                          value={currentColor}
+                          onChange={(e) => updateThemeColor(item.key, e.target.value)}
+                          className="w-6 h-6 rounded-md border border-border cursor-pointer p-0.5 bg-card"
+                        />
+                        <input
+                          type="text"
+                          value={currentColor}
+                          onChange={(e) => updateThemeColor(item.key, e.target.value)}
+                          className="w-20 px-2 py-0.5 text-xs font-mono-data bg-muted border border-border rounded text-foreground"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 pt-0.5">
+                      <span className="text-[10px] text-muted-foreground">Palettes :</span>
+                      {item.presets.map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => updateThemeColor(item.key, preset)}
+                          className={`w-4 h-4 rounded-full border shadow-2xs transition-transform hover:scale-110 ${
+                            currentColor === preset ? 'ring-2 ring-primary ring-offset-1' : 'border-border'
+                          }`}
+                          style={{ backgroundColor: preset }}
+                          title={preset}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* TAB 5: TEXTES (TOUTES LES PHRASES MODIFIABLES) */}
+        {/* =================================================================== */}
+        {activeTab === 'texts' && (
+          <div className="space-y-6">
+            <div>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                Édition Complète des Textes & Phrases
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Modifiez chaque phrase, titre, sous-titre et paragraphe individuellement avec aperçu en temps réel.
+              </p>
+            </div>
+
+            {/* 1. Page de garde & Couverture */}
+            <div className="p-4 bg-card border border-border rounded-xl space-y-3">
+              <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                <Icon name="ShieldCheckIcon" size={14} className="text-primary" />
+                1. Page de Garde (Sas d&apos;accueil)
+              </p>
+              <div className="space-y-2.5">
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Département / En-tête supérieur
+                  </label>
+                  <input
+                    type="text"
+                    value={sectionTexts.coverDepartment || ''}
+                    placeholder="DÉPARTEMENT GÉNIE ÉLECTRIQUE ET INFORMATIQUE INDUSTRIELLE"
+                    onChange={(e) => updateSectionText('coverDepartment', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Diplôme (Sous B.U.T.)
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.coverDegree || ''}
+                      placeholder="BACHELOR UNIVERSITAIRE DE TECHNOLOGIE"
+                      onChange={(e) => updateSectionText('coverDegree', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Sous-titre / Semestre
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.coverSubtitle || ''}
+                      placeholder="Portfolio Semestre 2"
+                      onChange={(e) => updateSectionText('coverSubtitle', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Promotion
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.coverPromotion || ''}
+                      placeholder="PROMOTION 2025–2026"
+                      onChange={(e) => updateSectionText('coverPromotion', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Libellé bouton d&apos;entrée
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.coverButton || ''}
+                      placeholder="Accéder au portfolio"
+                      onChange={(e) => updateSectionText('coverButton', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Section Accueil (Hero & Slogan) */}
+            <div className="p-4 bg-card border border-border rounded-xl space-y-3">
+              <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                <Icon name="SparklesIcon" size={14} className="text-primary" />
+                2. Section Accueil (Hero & Slogan)
+              </p>
+              <div className="space-y-2.5">
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Phrase d&apos;accroche / Slogan principal
+                  </label>
+                  <input
+                    type="text"
+                    value={sectionTexts.heroSlogan || ''}
+                    placeholder="Concevoir la logique. Piloter le système."
+                    onChange={(e) => updateSectionText('heroSlogan', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary italic"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Sous-titre / Spécialité détaillée
+                  </label>
+                  <input
+                    type="text"
+                    value={sectionTexts.heroHeadline || ''}
+                    placeholder="Étudiant en B.U.T. GEII & Automatisme"
+                    onChange={(e) => updateSectionText('heroHeadline', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Badge disponibilité
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.heroAvailability || ''}
+                      placeholder="Recherche alternance 2026-2028"
+                      onChange={(e) => updateSectionText('heroAvailability', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Bouton Télécharger CV
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.heroDownloadCv || ''}
+                      placeholder="Télécharger CV"
+                      onChange={(e) => updateSectionText('heroDownloadCv', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Section À propos & Projet Professionnel */}
+            <div className="p-4 bg-card border border-border rounded-xl space-y-3">
+              <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                <Icon name="UserIcon" size={14} className="text-primary" />
+                3. Section À propos & Projet Professionnel
+              </p>
+              <div className="space-y-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Titre de la section
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.aboutTitle || ''}
+                      placeholder="À propos & Projet Professionnel"
+                      onChange={(e) => updateSectionText('aboutTitle', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Sous-titre
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.aboutSubtitle || ''}
+                      placeholder="Présentation, démarche d'ingénierie et recherche d'alternance"
+                      onChange={(e) => updateSectionText('aboutSubtitle', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Titre bloc présentation
+                  </label>
+                  <input
+                    type="text"
+                    value={sectionTexts.aboutBioTitle || ''}
+                    placeholder="Présentation personnelle"
+                    onChange={(e) => updateSectionText('aboutBioTitle', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Paragraphe de présentation personnelle
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={sectionTexts.aboutBio || ''}
+                    placeholder="Votre biographie complète..."
+                    onChange={(e) => updateSectionText('aboutBio', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Titre bloc objectif
+                  </label>
+                  <input
+                    type="text"
+                    value={sectionTexts.aboutObjectiveTitle || ''}
+                    placeholder="Objectif professionnel ciblé"
+                    onChange={(e) => updateSectionText('aboutObjectiveTitle', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Paragraphe objectif professionnel
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={sectionTexts.aboutObjective || ''}
+                    placeholder="Votre recherche d'alternance, stage ou emploi..."
+                    onChange={(e) => updateSectionText('aboutObjective', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Situations d'Apprentissage & Évaluation (SAÉ) */}
+            <div className="p-4 bg-card border border-border rounded-xl space-y-3">
+              <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                <Icon name="FolderIcon" size={14} className="text-primary" />
+                4. Situations d&apos;Apprentissage et d&apos;Évaluation (SAÉ)
+              </p>
+              <div className="space-y-2.5">
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Titre de la section
+                  </label>
+                  <input
+                    type="text"
+                    value={sectionTexts.projectsTitle || ''}
+                    placeholder="Situations d'Apprentissage et d'Évaluation (SAÉ)"
+                    onChange={(e) => updateSectionText('projectsTitle', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Sous-titre explicatif
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={sectionTexts.projectsSubtitle || ''}
+                    placeholder="Activités pratiques d'ingénierie, simulation et pilotage de systèmes automatisés"
+                    onChange={(e) => updateSectionText('projectsSubtitle', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 5. Projets Personnels (Savoir-Faire) */}
+            <div className="p-4 bg-card border border-border rounded-xl space-y-3">
+              <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                <Icon name="CommandLineIcon" size={14} className="text-emerald-600" />
+                5. Projets Personnels (Savoir-Faire)
+              </p>
+              <div className="space-y-2.5">
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Titre de la section
+                  </label>
+                  <input
+                    type="text"
+                    value={sectionTexts.personalProjectsTitle || ''}
+                    placeholder="Projets Personnels (Savoir-Faire)"
+                    onChange={(e) => updateSectionText('personalProjectsTitle', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary font-bold text-emerald-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Sous-titre explicatif
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={sectionTexts.personalProjectsSubtitle || ''}
+                    placeholder="Développements autonomes, applications web/mobiles et intégration de technologies émergentes"
+                    onChange={(e) => updateSectionText('personalProjectsSubtitle', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 6. Studio Créatif (Savoir-Être) */}
+            <div className="p-4 bg-card border border-border rounded-xl space-y-3">
+              <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                <Icon name="SparklesIcon" size={14} className="text-purple-600" />
+                6. Studio Créatif (Savoir-Être)
+              </p>
+              <div className="space-y-2.5">
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Titre de la section
+                  </label>
+                  <input
+                    type="text"
+                    value={sectionTexts.creativeStudioTitle || ''}
+                    placeholder="Studio Créatif (Savoir-Être)"
+                    onChange={(e) => updateSectionText('creativeStudioTitle', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary font-bold text-purple-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Citation d&apos;accroche / Paragraphe de vulgarisation
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={sectionTexts.creativeStudioSubtitle || ''}
+                    placeholder="La technique c'est bien, savoir la communiquer en équipe c'est mieux. Voici quelques réalisations audiovisuelles produites en groupe..."
+                    onChange={(e) => updateSectionText('creativeStudioSubtitle', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 7. Compétences & Outils */}
+            <div className="p-4 bg-card border border-border rounded-xl space-y-3">
+              <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                <Icon name="BrainIcon" size={14} className="text-primary" />
+                7. Compétences Techniques & Outils
+              </p>
+              <div className="space-y-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Titre section Compétences
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.skillsTitle || ''}
+                      placeholder="Compétences & Outils Industriels"
+                      onChange={(e) => updateSectionText('skillsTitle', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Sous-titre Compétences
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.skillsSubtitle || ''}
+                      placeholder="Groupes techniques, programmation d'automates..."
+                      onChange={(e) => updateSectionText('skillsSubtitle', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Titre section Outils
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.toolsTitle || ''}
+                      placeholder="Outils & Matériel Industriel"
+                      onChange={(e) => updateSectionText('toolsTitle', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Titre bloc Savoir-Être
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.toolsSoftTitle || ''}
+                      placeholder="Savoir-Être"
+                      onChange={(e) => updateSectionText('toolsSoftTitle', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 8. Parcours, Langues & Galerie */}
+            <div className="p-4 bg-card border border-border rounded-xl space-y-3">
+              <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                <Icon name="GraduationCapIcon" size={14} className="text-primary" />
+                8. Parcours, Langues & Galerie
+              </p>
+              <div className="space-y-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Titre Parcours
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.parcoursTitle || ''}
+                      placeholder="Parcours & Formations"
+                      onChange={(e) => updateSectionText('parcoursTitle', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Sous-titre Parcours
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.parcoursSubtitle || ''}
+                      placeholder="Timeline chronologique des diplômes, études et stages"
+                      onChange={(e) => updateSectionText('parcoursSubtitle', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Titre Langues
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.languagesTitle || ''}
+                      placeholder="Langues & Certifications"
+                      onChange={(e) => updateSectionText('languagesTitle', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Titre Galerie
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.galleryTitle || ''}
+                      placeholder="Galerie de Réalisations"
+                      onChange={(e) => updateSectionText('galleryTitle', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 9. Contact & Pied de page */}
+            <div className="p-4 bg-card border border-border rounded-xl space-y-3">
+              <p className="text-xs font-bold text-foreground flex items-center gap-2">
+                <Icon name="EnvelopeIcon" size={14} className="text-primary" />
+                9. Contact, Boutons & Pied de page
+              </p>
+              <div className="space-y-2.5">
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Grand titre d&apos;appel contact
+                  </label>
+                  <input
+                    type="text"
+                    value={sectionTexts.contactHeading || ''}
+                    placeholder="Me contacter pour un stage ou une alternance"
+                    onChange={(e) => updateSectionText('contactHeading', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                    Phrase d&apos;invitation au contact
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={sectionTexts.contactDescription || ''}
+                    placeholder="Disponible pour échanger sur vos projets industriels et besoins techniques."
+                    onChange={(e) => updateSectionText('contactDescription', e.target.value)}
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary resize-none"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Libellé des cartes (&quot;En savoir plus&quot;)
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.learnMoreText || ''}
+                      placeholder="En savoir plus →"
+                      onChange={(e) => updateSectionText('learnMoreText', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                      Phrase du pied de page
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionTexts.footerText || ''}
+                      placeholder="Portfolio ciblé généré via PortfolioGen Studio..."
+                      onChange={(e) => updateSectionText('footerText', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
